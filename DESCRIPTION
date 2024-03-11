@@ -20,3 +20,5 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+URL: https://github.com/catpetersen/permuteDE
+BugReports: https://github.com/catpetersen/permuteDE/issues
