@@ -136,7 +136,6 @@ getPseudobulk <- function(object,
     split_s <- splits == s
     model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
     pb_mat <- count_matrix[, split_s] %*% model_mat
-    print(is(pb_mat))
     keep_genes <- rowSums(as.matrix(pb_mat > 0)) >= min_cells_per_feature
     pb_mat <- pb_mat[keep_genes, ]
     return(pb_mat)
