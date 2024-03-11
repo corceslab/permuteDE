@@ -12,7 +12,7 @@
 .validInput <- function(input = NULL,
                         name = NULL,
                         other = NULL) {
-  
+
   # object
   if (name == "object") {
     # Only allowed to be NULL for function countCombinations()
@@ -22,7 +22,7 @@
       stop("Input value for '", name, "' is not one of classes Seurat or SingleCellExperiment. Please supply valid input!")
     }
   }
-  
+
   # replicate_labels, group_labels, split_labels
   if (name %in% c("replicate_labels", "group_labels", "split_labels")) {
     # If not NULL
@@ -43,7 +43,7 @@
       }
     }
   }
-  
+
   # use_cells
   if (name == "use_cells") {
     if (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment")) {
@@ -53,12 +53,12 @@
       stop("Not all provided cells are present in the provided object, please supply valid input!")
     }
   }
-  
+
   # Single positive integer
   # n_samples, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, random_seed
   if (name %in% c("min_cells_per_split", "min_replicates_per_split",
-                  "n_samples", "n_group1", 
-                  "n_combinations", "n_iterations", 
+                  "n_samples", "n_group1",
+                  "n_combinations", "n_iterations",
                   "random_seed", "n_cores")) {
     # n_cores can be NULL
     if (!(name == "n_cores" & is.null(input))) {
@@ -78,7 +78,7 @@
       }
     }
   }
-  
+
   # Single non-negative integer
   # min_cells_per_feature
   if (name %in% c("min_cells_per_feature")) {
@@ -91,7 +91,7 @@
       stop("Input value for '", name, "' must be a non-negative integer. Please supply valid input!")
     }
   }
-  
+
   # Single logical value
   # verbose, return_all
   if (name %in% c("verbose")) {
@@ -100,7 +100,7 @@
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
     }
   }
-  
+
   # use_assay
   if (name == "use_assay") {
     # If not NULL
@@ -117,10 +117,10 @@
         if (!(input %in% names(other@assays))) {
           stop("Assay '", input, "' provided for parameter '", name, "' is not present in provided object, please supply valid input!")
         }
-      } 
+      }
     }
   }
-  
+
   # use_layer
   if (name == "use_layer") {
     # If not NULL
@@ -156,7 +156,7 @@
       }
     }
   }
-  
+
   # de_method
   if (name == "de_method") {
     # Should be of class 'character'
@@ -168,7 +168,7 @@
       stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma"), collapse = ", "), "), please supply valid input!")
     }
   }
-  
+
   # de_test
   if (name == "de_test") {
     # Should be of class 'character'
@@ -188,9 +188,9 @@
       if (!(input %in% c("trend", "voom"))) {
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("trend", "voom"), collapse = ", "), "), please supply valid input!")
       }
-    } 
+    }
   }
-  
+
   # p_adjust_method
   if (name == "p_adjust_method") {
     # Should be of class 'character'
@@ -202,7 +202,7 @@
       stop("Input for '", name, "' must be among permitted values (", paste0(stats::p.adjust.methods, collapse = ", "), "), please supply valid input!")
     }
   }
-  
+
   # input
   if (name == "input") {
     # Must be of type list
@@ -210,12 +210,12 @@
       stop("Parameter '", name, "' must be a list, please supply valid input!")
     }
     # Must have expected elements with set names
-    if (!identical(names(input), c("DE_results", "PB_values",  "parameters"))) {
+    if (!identical(names(input), c("DE_results", "PB_values",  "group_key", "parameters"))) {
       stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with four named elements ",
            "('DE_results', 'PB_values', 'group_key', and 'parameters'). Please supply valid input!")
     }
   }
-  
+
   # Single non-negative number
   # alpha
   if (name %in% c("min_cells_per_feature")) {
@@ -226,7 +226,7 @@
       stop("Input value for '", name, "' cannot be negative. Please supply valid input!")
     }
   }
-  
+
   # use_splits
   if (name == "use_splits") {
     # If not NULL
