@@ -140,7 +140,8 @@ getPseudobulk <- function(object,
     keep_genes <- rowSums(pb_mat > 0) >= min_cells_per_feature
     pb_mat <- pb_mat[keep_genes, ]
     return(pb_mat)
-  }, mc.cores = n_cores)
+  }#, mc.cores = n_cores)
+    )
   names(pb_list) <- keep_splits
 
   # Return list
