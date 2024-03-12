@@ -131,16 +131,14 @@ getPseudobulk <- function(object,
   }
 
   # Create list of gene x replicate pseudobulk matrices, one per split
-  pb_list <- #pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
-    lapply(keep_splits, FUN = function(s) {
+  pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
     split_s <- splits == s
     model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
     pb_mat <- count_matrix[, split_s] %*% model_mat
     keep_genes <- rowSums(as.matrix(pb_mat > 0)) >= min_cells_per_feature
     pb_mat <- pb_mat[keep_genes, ]
     return(pb_mat)
-  }#, mc.cores = n_cores)
-    )
+  }, mc.cores = n_cores)
   names(pb_list) <- keep_splits
 
   # Return list
