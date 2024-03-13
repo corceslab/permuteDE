@@ -90,7 +90,7 @@ permuteDE <- function(input,
   use_splits <- intersect(use_splits,
                           dplyr::filter(true_DE_values, n_sig >= min_DE)$split)
   remove_splits <- dplyr::filter(true_DE_values, n_sig < min_DE)$split
-  if (verbose & length(removed_splits) > 0) {
+  if (verbose & length(remove_splits) > 0) {
     message(format(Sys.time(), "%Y-%m-%d %X")," : Will skip ", length(remove_splits), " split label",
             ifelse(length(remove_splits) == 1, "", "s"),
             " due to insufficient differentially expressed features: ",
