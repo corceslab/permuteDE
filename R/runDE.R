@@ -152,7 +152,7 @@ runDE <- function(object,
     replicates_i <- colnames(i)
     groups_i <- group_key[replicates_i, c("replicate", "group")]
     # Remove splits with fewer than required number of replicates per group
-    if (min(table_groups_i) < min_replicates_per_group) {
+    if (min(table(groups_i$group)) < min_replicates_per_group) {
       remove_splits <- c(remove_splits, i)
     }
   })

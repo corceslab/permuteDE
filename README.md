@@ -8,7 +8,16 @@ This package performs permutation testing for differential expression analysis b
 
 ## Installation
 
+Because this is a private repository, you will need to create an access token at: github.com/settings/tokens
+
+Then provide your GitHub credentials prior to installing the package, using the following command:
+
 ``` r
-# 
+credentials::set_github_pat()
 ```
 
+You can then install the package with the following command:
+
+``` r
+remotes::install_github("catpetersen/permuteDE")
+```
