@@ -21,14 +21,20 @@
 #' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
 #' use all cells.
 #' @param min_cells_per_split A numeric value indicating the minimum number of
-#' cells within one split. Pseudobulk expression will not be calculated for
-#' splits with fewer cells. Defaults to 1.
+#' cells within one split. Pseudobulk expression and differential expression
+#' will not be performed for splits with fewer cells. Defaults to 4.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
-#' will not be calculated for splits with fewer replicates. Defaults to 1.
+#' and differential expression will not be performed for splits with fewer
+#' replicates. Defaults to 4.
+#' @param min_replicates_per_group A numeric value indicating the minimum number
+#' of distinct replicates represented within each of the two comparison groups.
+#' Pseudobulk expression and differential expression will not be performed for
+#' splits with fewer replicates. Defaults to 2.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
 #' of cells (within a split) with expression of a gene. Pseudobulk expression
-#' will not be calculated for genes with fewer cells. Defaults to 0.
+#' and differential expression will not be calculated for genes with fewer
+#' cells. Defaults to 1.
 #' @param de_method Which tool to use for differential expression. Permitted
 #' values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.
 #' @param de_test Which test to use for differential expression. Defaults to
@@ -66,8 +72,9 @@ runDE <- function(object,
                   group_labels,
                   split_labels = NULL,
                   use_cells = NULL,
-                  min_cells_per_split = 2,
-                  min_replicates_per_split = 2,
+                  min_cells_per_split = 4,
+                  min_replicates_per_split = 4,
+                  min_replicates_per_group = 2,
                   min_cells_per_feature = 1,
                   de_method = "edgeR",
                   de_test = "LRT",
@@ -88,6 +95,7 @@ runDE <- function(object,
   .validInput(use_cells, "use_cells", object)
   .validInput(min_cells_per_split, "min_cells_per_split")
   .validInput(min_replicates_per_split, "min_replicates_per_split")
+  .validInput(min_replicates_per_split, "min_replicates_per_group")
   .validInput(min_cells_per_feature, "min_cells_per_feature")
   .validInput(de_method, "de_method")
   .validInput(de_test, "de_test", de_method)
@@ -139,10 +147,25 @@ runDE <- function(object,
     dplyr::select(-n) %>%
     data.frame()
   rownames(group_key) <- group_key$replicate
+  remove_splits <- c()
   target_list <- lapply(pb_list, FUN = function(i) {
     replicates_i <- colnames(i)
     groups_i <- group_key[replicates_i, c("replicate", "group")]
+    # Remove splits with fewer than required number of replicates per group
+    if (min(table_groups_i) < min_replicates_per_group) {
+      remove_splits <- c(remove_splits, i)
+    }
   })
+  # Remove splits with fewer than required number of replicates per group
+  if (length(remove_splits) > 0) {
+    pb_list[[remove_splits]] <- NULL
+    target_list[[remove_splits]] <- NULL
+    message("Skipped ", length(remove_splits), " split label",
+            ifelse(length(remove_splits) == 1, "", "s"),
+            " due to insufficient replicates per group: ",
+            paste0(remove_splits,
+                   collapse = ", "))
+  }
 
   # ---------------------------------------------------------------------------
   # Perform pseudobulk differential expression
@@ -192,6 +215,7 @@ runDE <- function(object,
                          "use_cells" = use_cells,
                          "min_cells_per_split" = min_cells_per_split,
                          "min_replicates_per_split" = min_replicates_per_split,
+                         "min_replicates_per_group" = min_replicates_per_group,
                          "min_cells_per_feature" = min_cells_per_feature,
                          "de_method" = de_method,
                          "de_test" = de_test,

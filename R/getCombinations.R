@@ -18,6 +18,10 @@
 #' to one of the two groups (doesn't matter which). Defaults to \code{NULL}.
 #' @param n_combinations A numeric value indicating the number of combinations
 #' to generate. Defaults to 1000.
+#' @param message A character string indicating additional progress messaging
+#' (internal use). Defaults to "".
+#' @param random_seed A numeric value indicating the random seed to be used.
+#' Defaults to 1.
 #' @param verbose A boolean value indicating whether to use verbose output
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
@@ -34,6 +38,8 @@ getCombinations <- function(object = NULL,
                             n_replicates = NULL,
                             n_group1 = NULL,
                             n_combinations = 1000,
+                            message = "",
+                            random_seed = 1,
                             verbose = TRUE) {
   # ---------------------------------------------------------------------------
   # Check input validity
@@ -46,7 +52,12 @@ getCombinations <- function(object = NULL,
   .validInput(n_replicates, "n_replicates")
   .validInput(n_group1, "n_group1", n_replicates)
   .validInput(n_combinations, "n_combinations")
+  .validInput(message, "message")
+  .validInput(random_seed, "random_seed")
   .validInput(verbose, "verbose")
+
+  # Set seed
+  set.seed(random_seed)
 
   # Either use just 'n_replicates' and 'n_group1' or use object and column labels
   if (!is.null(n_replicates) & !is.null(n_group1)) {
@@ -94,7 +105,8 @@ getCombinations <- function(object = NULL,
 
   # Progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
-                       n_combinations, " of ", n_possible_combinations, " possible combinations..")
+                       n_combinations, " of ", n_possible_combinations,
+                       " possible combinations", message, "..")
 
   # When efficient, generate all combinations, then sample
   if (n_possible_combinations < 1000000) {

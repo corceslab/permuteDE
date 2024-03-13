@@ -12,6 +12,8 @@ getCombinations(
   n_replicates = NULL,
   n_group1 = NULL,
   n_combinations = 1000,
+  message = "",
+  random_seed = 1,
   verbose = TRUE
 )
 }
@@ -35,6 +37,12 @@ to one of the two groups (doesn't matter which). Defaults to \code{NULL}.}
 
 \item{n_combinations}{A numeric value indicating the number of combinations
 to generate. Defaults to 1000.}
+
+\item{message}{A character string indicating additional progress messaging
+(internal use). Defaults to "".}
+
+\item{random_seed}{A numeric value indicating the random seed to be used.
+Defaults to 1.}
 
 \item{verbose}{A boolean value indicating whether to use verbose output
 during the execution of this function. Defaults to \code{TRUE}.

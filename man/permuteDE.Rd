@@ -9,6 +9,7 @@ permuteDE(
   alpha = 0.05,
   n_iterations = 1000,
   use_splits = NULL,
+  min_DE = 2,
   random_seed = 1,
   n_cores = NULL,
   verbose = TRUE
@@ -27,6 +28,11 @@ for the permutation test. Defaults to 1000.}
 
 \item{use_splits}{A vector containing the names of splits to use. Defaults to
 \code{NULL}.}
+
+\item{min_DE}{A numeric value indicating the minimum number of
+differentially expressed features between the true group labels for a split,
+below which permutations will not be run. Defaults to 2. Set to 0 to run
+permutation test for all splits, regardless of the true number of DEGs.}
 
 \item{random_seed}{A numeric value indicating the random seed to be used.
 Defaults to 1.}

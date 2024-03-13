@@ -23,8 +23,8 @@
     }
   }
 
-  # replicate_labels, group_labels, split_labels
-  if (name %in% c("replicate_labels", "group_labels", "split_labels")) {
+  # replicate_labels, group_labels, split_labels, message
+  if (name %in% c("replicate_labels", "group_labels", "split_labels", "message")) {
     # If not NULL
     if (!is.null(input)) {
       # Should be of class "character"
@@ -55,8 +55,8 @@
   }
 
   # Single positive integer
-  # n_samples, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, random_seed
-  if (name %in% c("min_cells_per_split", "min_replicates_per_split",
+  # n_samples, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, random_seed
+  if (name %in% c("min_cells_per_split", "min_replicates_per_split", "min_replicates_per_group",
                   "n_samples", "n_group1",
                   "n_combinations", "n_iterations",
                   "random_seed", "n_cores")) {
@@ -80,8 +80,8 @@
   }
 
   # Single non-negative integer
-  # min_cells_per_feature
-  if (name %in% c("min_cells_per_feature")) {
+  # min_cells_per_feature, min_DE
+  if (name %in% c("min_cells_per_feature", "min_DE")) {
     # Should be of class 'numeric', must be a single value
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")

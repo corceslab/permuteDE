@@ -10,8 +10,9 @@ runDE(
   group_labels,
   split_labels = NULL,
   use_cells = NULL,
-  min_cells_per_split = 2,
-  min_replicates_per_split = 2,
+  min_cells_per_split = 4,
+  min_replicates_per_split = 4,
+  min_replicates_per_group = 2,
   min_cells_per_feature = 1,
   de_method = "edgeR",
   de_test = "LRT",
@@ -42,16 +43,23 @@ together.}
 use all cells.}
 
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
-cells within one split. Pseudobulk expression will not be calculated for
-splits with fewer cells. Defaults to 1.}
+cells within one split. Pseudobulk expression and differential expression
+will not be performed for splits with fewer cells. Defaults to 4.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk expression
-will not be calculated for splits with fewer replicates. Defaults to 1.}
+and differential expression will not be performed for splits with fewer
+replicates. Defaults to 4.}
+
+\item{min_replicates_per_group}{A numeric value indicating the minimum number
+of distinct replicates represented within each of the two comparison groups.
+Pseudobulk expression and differential expression will not be performed for
+splits with fewer replicates. Defaults to 2.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
 of cells (within a split) with expression of a gene. Pseudobulk expression
-will not be calculated for genes with fewer cells. Defaults to 0.}
+and differential expression will not be calculated for genes with fewer
+cells. Defaults to 1.}
 
 \item{de_method}{Which tool to use for differential expression. Permitted
 values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.}

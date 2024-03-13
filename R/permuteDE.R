@@ -29,6 +29,10 @@
 #' for the permutation test. Defaults to 1000.
 #' @param use_splits A vector containing the names of splits to use. Defaults to
 #' \code{NULL}.
+#' @param min_DE A numeric value indicating the minimum number of
+#' differentially expressed features between the true group labels for a split,
+#' below which permutations will not be run. Defaults to 2. Set to 0 to run
+#' permutation test for all splits, regardless of the true number of DEGs.
 #' @param random_seed A numeric value indicating the random seed to be used.
 #' Defaults to 1.
 #' @param n_cores A numeric value indicating the number of cores to use for
@@ -52,6 +56,7 @@ permuteDE <- function(input,
                       alpha = 0.05,
                       n_iterations = 1000,
                       use_splits = NULL,
+                      min_DE = 2,
                       random_seed = 1,
                       n_cores = NULL,
                       verbose = TRUE) {
@@ -65,6 +70,7 @@ permuteDE <- function(input,
   .validInput(n_iterations, "n_iterations")
   .validInput(return_all, "return_all")
   .validInput(use_splits, "use_splits", input)
+  .validInput(min_de, "min_de")
   .validInput(random_seed, "random_seed")
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
@@ -76,6 +82,22 @@ permuteDE <- function(input,
   if (is.null(use_splits)) {
     use_splits <- names(input$PB_values)
   }
+
+  # Filter out additional splits based on true DE values
+  true_DE_values <- input$DE_results %>%
+    group_by(split) %>%
+    dplyr::summarise(n_sig = sum(p_adjust < alpha))
+  use_splits <- intersect(use_splits,
+                          dplyr::filter(true_DE_values, n_sig >= min_DE)$split)
+  remove_splits <- dplyr::filter(true_DE_values, n_sig < min_DE)$split
+  if (verbose & length(removed_splits) > 0) {
+    message(format(Sys.time(), "%Y-%m-%d %X")," : Will skip ", length(remove_splits), " split label",
+            ifelse(length(remove_splits) == 1, "", "s"),
+            " due to insufficient differentially expressed features: ",
+            paste0(remove_splits,
+                   collapse = ", "))
+  }
+
   n_splits <- length(use_splits)
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
@@ -120,6 +142,8 @@ permuteDE <- function(input,
       permuted_group_labels <- getCombinations(n_replicates = n_replicates,
                                                n_group1 = n_group1,
                                                n_combinations = n_iterations,
+                                               message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
+                                               random_seed = random_seed,
                                                verbose = TRUE)
       current_n_iterations <- ncol(permuted_group_labels)
       # Progress
@@ -173,12 +197,11 @@ permuteDE <- function(input,
         permutation_DE_results_s <- permutation_DE_results_s[-nrow(permutation_DE_results_s),]
       }
       # Conduct permutation test
-      true_values <- input$DE_results %>%
-        dplyr::filter(split == current_split) %>%
-        dplyr::summarise(n_sig = sum(p_adjust < alpha))
-      permutation_test_p_value <- 1 - stats::ecdf(c(true_values$true_n_sig, permutation_DE_results_s$n_sig))(true_values$n_sig)
+      true_n_sig <- dplyr::filter(true_DE_values, split == current_split)$n_sig
+
+      permutation_test_p_value <- 1 - stats::ecdf(c(true_n_sig, permutation_DE_results_s$n_sig))(true_n_sig)
       permutation_test_results_s <- data.frame(split = current_split,
-                                               true_n_sig = true_values$n_sig,
+                                               true_n_sig = true_n_sig,
                                                p_n_sig = permutation_test_p_value,
                                                n_iterations = current_n_iterations)
       # Add to overall results
@@ -198,6 +221,7 @@ permuteDE <- function(input,
   parameter_list <- list("alpha" = alpha,
                          "n_iterations" = n_iterations,
                          "use_splits" = use_splits,
+                         "min_DE" = min_DE,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "p_adjust_method" = p_adjust_method,
