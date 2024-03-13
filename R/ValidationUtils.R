@@ -46,22 +46,23 @@
 
   # use_cells
   if (name == "use_cells") {
-    if (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment")) {
+    # If not NULL & object is not NULL
+    if (!is.null(input) & (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment"))) {
       cell_ids <- colnames(other)
-    }
-    if (length(intersect(input, cell_ids)) != length(input)) {
-      stop("Not all provided cells are present in the provided object, please supply valid input!")
+      if (length(intersect(input, cell_ids)) != length(input)) {
+        stop("Not all provided cells are present in the provided object, please supply valid input!")
+      }
     }
   }
 
   # Single positive integer
-  # n_samples, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, random_seed
+  # n_replicates, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, random_seed
   if (name %in% c("min_cells_per_split", "min_replicates_per_split", "min_replicates_per_group",
-                  "n_samples", "n_group1",
+                  "n_replicates", "n_group1",
                   "n_combinations", "n_iterations",
                   "random_seed", "n_cores")) {
-    # n_cores can be NULL
-    if (!(name == "n_cores" & is.null(input))) {
+    # n_cores, n_replicates, n_group1, can be NULL
+    if (!(name %in% c("n_replicates", "n_group1", "n_cores") & is.null(input))) {
       # Should be of class 'numeric', must be a single value
       if (!methods::is(input, "numeric") | length(input) != 1) {
         stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
@@ -70,10 +71,10 @@
       if (input %% 1 != 0 | input < 1) {
         stop("Input value for '", name, "' must be a positive integer. Please supply valid input!")
       }
-      # n_group1 must be < n_samples
+      # n_group1 must be < n_replicates
       if (name == "n_group1") {
         if (input >= other) {
-          stop("Input value for '", name, "' must be less than input value for 'n_samples'. Please supply valid input!")
+          stop("Input value for '", name, "' must be less than input value for 'n_replicates'. Please supply valid input!")
         }
       }
     }
