@@ -147,16 +147,19 @@ runDE <- function(object,
     dplyr::select(-n) %>%
     data.frame()
   rownames(group_key) <- group_key$replicate
-  remove_splits <- c()
   target_list <- lapply(pb_list, FUN = function(i) {
     replicates_i <- colnames(i)
     groups_i <- group_key[replicates_i, c("replicate", "group")]
-    # Remove splits with fewer than required number of replicates per group
-    if (min(table(groups_i$group)) < min_replicates_per_group) {
-      remove_splits <- c(remove_splits, i)
-    }
+    return(groups_i)
   })
+
   # Remove splits with fewer than required number of replicates per group
+  remove_splits <- c()
+  for (i in 1:length(target_list)) {
+    if (min(table(target_list[[i]]$group)) < min_replicates_per_group) {
+      remove_splits <- c(remove_splits, names(pb_list)[i])
+    }
+  }
   if (length(remove_splits) > 0) {
     pb_list[[remove_splits]] <- NULL
     target_list[[remove_splits]] <- NULL
@@ -203,7 +206,7 @@ runDE <- function(object,
                                            mc.cores = n_cores,
                                            mc.set.seed = TRUE)
   de_results <- do.call(rbind, de_results_list)
-  de_results <- de_results %>% data.frame() #%>% dplyr::arrange(split, p_adjust)
+  de_results <- de_results %>% data.frame() %>% dplyr::arrange(split, p_adjust)
 
   # ---------------------------------------------------------------------------
   # Wrap up
