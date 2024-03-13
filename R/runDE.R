@@ -203,7 +203,7 @@ runDE <- function(object,
                                            mc.cores = n_cores,
                                            mc.set.seed = TRUE)
   de_results <- do.call(rbind, de_results_list)
-  de_results <- de_results %>% data.frame() %>% dplyr::arrange("split", "p_adjust")
+  de_results <- de_results %>% data.frame() #%>% dplyr::arrange(split, p_adjust)
 
   # ---------------------------------------------------------------------------
   # Wrap up
