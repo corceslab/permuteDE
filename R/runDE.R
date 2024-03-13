@@ -152,7 +152,6 @@ runDE <- function(object,
     groups_i <- group_key[replicates_i, c("replicate", "group")]
     return(groups_i)
   })
-
   # Remove splits with fewer than required number of replicates per group
   remove_splits <- c()
   for (i in 1:length(target_list)) {
