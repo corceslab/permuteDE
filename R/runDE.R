@@ -158,7 +158,7 @@ runDE <- function(object,
   remove_splits <- c()
   for (i in 1:length(target_list)) {
     if (min(table(target_list[[i]]$group)) >= min_replicates_per_group) {
-      keep_splits <- c(remove_splits, names(pb_list)[i])
+      keep_splits <- c(keep_splits, names(pb_list)[i])
     } else {
       remove_splits <- c(remove_splits, names(pb_list)[i])
     }
