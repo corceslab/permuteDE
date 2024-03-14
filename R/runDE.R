@@ -152,16 +152,20 @@ runDE <- function(object,
     groups_i <- group_key[replicates_i, c("replicate", "group")]
     return(groups_i)
   })
+  names(target_list) <- names(pb_list)
   # Remove splits with fewer than required number of replicates per group
+  keep_splits <- c()
   remove_splits <- c()
   for (i in 1:length(target_list)) {
-    if (min(table(target_list[[i]]$group)) < min_replicates_per_group) {
+    if (min(table(target_list[[i]]$group)) >= min_replicates_per_group) {
+      keep_splits <- c(remove_splits, names(pb_list)[i])
+    } else {
       remove_splits <- c(remove_splits, names(pb_list)[i])
     }
   }
-  if (length(remove_splits) > 0) {
-    pb_list[[remove_splits]] <- NULL
-    target_list[[remove_splits]] <- NULL
+  if (length(keep_splits) < length(pb_list)) {
+    pb_list <- pb_list[keep_splits]
+    target_list <- target_list[keep_splits]
     message("Skipped ", length(remove_splits), " split label",
             ifelse(length(remove_splits) == 1, "", "s"),
             " due to insufficient replicates per group: ",
