@@ -129,7 +129,7 @@ getCombinations <- function(object = NULL,
       }
     }
     # Simplify combinations to a matrix
-    do.call(cbind, output_combinations)
+    output_combinations <- do.call(cbind, output_combinations)
   }
 
   # Return matrix of combinations
