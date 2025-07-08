@@ -5,7 +5,7 @@
 #' This function was inspired by R package neurorestore/Libra
 #' (Squair et al. 2021).
 #'
-#' @param object An object of class 'Seurat' or 'SingleCellExperiment'.
+#' @param object A 'Seurat' or 'SingleCellExperiment' object.
 #' @param replicate_labels A character string or vector indicating the name of the
 #' column containing the replicate labels.
 #' @param split_labels A character string or vector indicating the name of a
