@@ -15,9 +15,9 @@
 
   # object
   if (name == "object") {
-    # Only allowed to be NULL for function countCombinations()
+    # Only allowed to be NULL for function countCombinations() or getCombinations()
     # Otherwise, must be either of type Seurat or SingleCellExperiment
-    if (any(other != "countCombinations", !is.null(input)) &
+    if (any(other != "countCombinations" | 'getCombinations', !is.null(input)) &
         length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment"))) < 1) {
       stop("Input value for '", name, "' is not one of classes Seurat or SingleCellExperiment. Please supply valid input!")
     }

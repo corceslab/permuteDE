@@ -1,36 +1,28 @@
 # ---------------------------------------------------------------------------
-# General helper functions
+# Helper Functions
 # ---------------------------------------------------------------------------
 
-# Retrieve data ---------------------------
-#
-# Retrieve stored data from object
-#
-# object -- An object of class Seurat or SingleCellExperiment
-# type -- A string indicating the type of data, so that it can be more easily retrieved
-# name -- Name under which data is stored
-# use_cells -- Vector of cell names to subset to
+
+#' Retrieve data from an object
+#'
+#' @param object A 'Seurat' or 'SingleCellExperiment' object
+#' @param type A string indicating data type to retrieve
+#' @name name A string under which data are stored
+#' @use_cells (Optional) A string vector of cell names to subset
 .retrieveData <- function(object, type, name, use_cells = NULL) {
-  # By object type
+
   if (methods::is(object, "Seurat")) {
-    # By type
+    # for a Seurat object
     if (type == "cell_metadata") {
-      if (is.null(use_cells)) {
-        output_data <- object@meta.data[, name]
-      } else {
-        output_data <- object@meta.data[use_cells, name]
-      }
+      output_data <- object@meta.data[if (is.null(use_cells)) TRUE else use_cells, name]
     }
   } else if (methods::is(object, "SingleCellExperiment")) {
-    # By type
+    # for a SingleCellExperiment object
     if (type == "cell_metadata") {
-      if (is.null(use_cells)) {
-        output_data <- object@colData[, name]
-      } else {
-        output_data <- object@colData[use_cells, name]
-      }
+      output_data <- object@colData[if (is.null(use_cells)) TRUE else use_cells, name]
     }
   }
+  # TODO: may extend beyond 'cell_metadata'; refine as needed.
   return(output_data)
 }
 
@@ -151,7 +143,7 @@
       if (verbose) warning("Input for parameter 'use_layer' is not used when a matrix is provided for parameter 'use_matrix'.")
     }
   }
-  
+
   # If matrix has no row names
   if (is.null(rownames(use_matrix))) {
     # Stop if trying to subset features
@@ -176,7 +168,7 @@
   if (length(use_features) < 1) {
     stop("No remaining features in matrix. Please check input to 'use_features' and/or 'exclude_features'!")
   }
-  
+
   # If matrix has no column names
   if (is.null(colnames(use_matrix))) {
     # Stop if trying to subset cells
@@ -197,7 +189,7 @@
   } else {
     use_cells <- colnames(use_matrix)
   }
-  
+
   use_matrix <- use_matrix[use_features, use_cells]
   return(use_matrix)
 }
@@ -229,7 +221,7 @@
   if (!is.null(use_layer)) {
     if (verbose) warning("Input for parameter 'use_layer' is not used when input for parameter 'object' is of type 'SingleCellExperiment'.")
   }
-  
+
   # If matrix has no row names
   if (is.null(rownames(use_matrix))) {
     # Stop if trying to subset features
@@ -254,7 +246,7 @@
   if (length(use_features) < 1) {
     stop("No remaining features in matrix. Please check input to 'use_features' and/or 'exclude_features'!")
   }
-  
+
   # If matrix has no column names
   if (is.null(colnames(use_matrix))) {
     # Stop if trying to subset cells
@@ -275,7 +267,7 @@
   } else {
     use_cells <- colnames(use_matrix)
   }
-  
+
   use_matrix <- use_matrix[use_features, use_cells]
   return(use_matrix)
 }
