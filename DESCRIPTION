@@ -15,7 +15,9 @@ Imports:
     magrittr,
     methods,
     pbmcapply,
-    Seurat
+    Seurat,
+    DESeq2,
+    limma
 Suggests: 
     knitr,
     rmarkdown

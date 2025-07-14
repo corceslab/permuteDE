@@ -129,8 +129,6 @@ runDE <- function(object,
   # ---------------------------------------------------------------------------
 
   # Pseudobulk matri(ces)
-  ## a list containing a matrix per split
-  ## matrix format: gene x replicate
   pb_list <- getPseudobulk(object = object,
                            replicate_labels = replicate_labels,
                            split_labels = split_labels,
@@ -142,14 +140,12 @@ runDE <- function(object,
                            verbose = verbose)
 
   # Group labels for each replicate, by split
-  ## two columns: replicate, group
   group_key <- data.frame(replicate = paste0("rep_", replicates),
                           group = groups) %>%
     dplyr::group_by(replicate, group) %>%
     dplyr::summarise(n = dplyr::n()) %>%
     dplyr::select(-n) %>%
     data.frame()
-  
   rownames(group_key) <- group_key$replicate
   target_list <- lapply(pb_list, FUN = function(i) {
     replicates_i <- colnames(i)
@@ -157,7 +153,6 @@ runDE <- function(object,
     return(groups_i)
   })
   names(target_list) <- names(pb_list)
-  
   # Remove splits with fewer than required number of replicates per group
   keep_splits <- c()
   remove_splits <- c()
@@ -182,12 +177,10 @@ runDE <- function(object,
   # Perform pseudobulk differential expression
   # ---------------------------------------------------------------------------
 
-  # for each item in pb_list
   de_results_list <- pbmcapply::pbmclapply(seq_len(length(pb_list)),
                                            FUN = function(i) {
                                              n_groups <- dplyr::n_distinct(target_list[[i]]$group)
                                              if (n_groups == 2) {
-                                               # TODO: add a parameter to force balanced group size
                                                design_i <- stats::model.matrix(~ group, data = target_list[[i]])
                                                de_results_i <- switch(de_method,
                                                                       edgeR = .runDE.edgeR(pseudobulk = pb_list[[i]],
@@ -282,7 +275,7 @@ runDE <- function(object,
 # Run DESeq2 differential expression ---------------------------
 #
 # pseudobulk -- A feature x replicate pseudobulk matrix
-# targets -- A dataframe containing sample to group key (splits to keep)
+# targets -- A dataframe containing sample to group key
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
 
@@ -291,11 +284,23 @@ runDE.DESeq2 <- function(pseudobulk,
                          design,
                          de_test = "LRT") {
   
+  if (!requireNamespace("DESeq2", quietly = TRUE)) {
+    stop("Please install the DESeq2 package to use this function.")
+  }
+  
+  
+  if (!all(colnames(pseudobulk) %in% rownames(targets))) {
+    stop("All column names in pseudobulk must be present as rownames in targets.")
+  }
+  
+  
+  targets <- targets[colnames(pseudobulk), , drop = FALSE]
+  
   # Construct DESeq2 dataset
   dds <- DESeq2::DESeqDataSetFromMatrix(
     countData = pseudobulk,
     colData = targets,
-    design = design
+    design = attr(design, "terms")
   )
   
   # Run DESeq
@@ -304,57 +309,14 @@ runDE.DESeq2 <- function(pseudobulk,
     full_design <- design
     reduced_design <- model.matrix(~ 1, data = targets)
     dds <- DESeq2::DESeq(dds, test = "LRT", reduced = reduced_design)
-    res <- DESeq2::results(dds) |> as.data.frame()
   } else if (de_test == "Wald") {
-    # Wald test DESeq2 Default
     dds <- DESeq2::DESeq(dds, test = "Wald")
-    res <- DESeq2::results(dds) |> as.data.frame()
-  } else if (de_test == "wilcox") {
-    # DESeq2 does not implement Wilcoxon rank sum test, but we can 
-    ## 1. Extracting normalized counts from the dds
-    ## 2. Performing the Wilcoxon rank-sum test per gene
-    ## 3. Adjusting the p-values
-    dds <- estimateSizeFactors(dds)
-    norm_counts <- counts(dds, normalized = TRUE)
-    
-    groups <- targets$group
-    if (length(unique(groups)) != 2) {
-      stop("Wilcoxon test requires exactly two groups.")
-    }
-    
-    group1 <- unique(groups)[1] # NO
-    group2 <- unique(groups)[2] # YES
-    
-    # Subset sample columns by group
-    group1_samples <- rownames(targets)[groups == group1]
-    group2_samples <- rownames(targets)[groups == group2]
-    
-    # Apply Wilcoxon test per gene
-    pvals <- apply(norm_counts, 1, function(row) {
-      x <- row[group1_samples]
-      y <- row[group2_samples]
-      tryCatch(wilcox.test(x, y)$p.value, error = function(e) NA)
-    })
-    
-    # Adjust p-values
-    padj <- p.adjust(pvals, method = "BH")
-    
-    log2FC <- apply(norm_counts, 1, function(row) {
-      mean_x <- mean(row[group1_samples])
-      mean_y <- mean(row[group2_samples])
-      log2((mean_y) / (mean_x)) # YES/NO
-    })
-    
-    res <- cbind(rownames(norm_counts), log2FC, pvals, padj)
-    colnames(res) <- c('gene', 'log2FC', 'p_value', 'padj')
-    # TODO: col names might not match code from later. come back later to this.
-  }
-  else {
-    # DESeq2 does not support QLF
-    # TODO: discuss how to implement QLF in DESeq2
+  } else {
     stop("Unsupported test. Choose either 'LRT' or 'Wald'.")
   }
-  return(res)
+  
+  res <- DESeq2::results(dds)
+  return(as.data.frame(res))
 }
 
 # Run limma differential expression ---------------------------
@@ -368,20 +330,6 @@ runDE.limma <- function(pseudobulk,
                         targets,
                         design,
                         de_test = "voom") {
-  
-  
-  # TODO: limma does not support QLF; figure out how to implement it
-  
-  # voom
-  # TODO: need to double check
-  if (de_test == 'voom') {
-    dge <- DGEList(counts = pseudobulk) |> calcNormFactors()
-    
-    v <- voom(dge, design, plot = TRUE) 
-    fit <- lmFit(v, design)
-    fit <- eBayes(fit)
-    res <- topTable(fit, coef = 2, number = Inf)
-  }
-  return(res)
+  NULL
 }
 
