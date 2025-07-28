@@ -101,6 +101,16 @@
   return(use_matrix)
 }
 
+# Extract a matrix from a Seurat object
+#
+# object -- A Seurat object
+# use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
+# use_assay -- a string indicating the assay to use
+# use_layer -- a string indicating the layer/slot to use
+# use_features -- A vector of feature names to use to subset the matrix
+# exclude_features -- A vector of feature names to exclude from the matrix
+# use_cells -- A vector of cell IDs to use to subset the matrix
+# verbose -- A boolean value indicating whether to use verbose output during the executio
 .getMatrix.Seurat <- function(object,
                               use_matrix,
                               use_assay,

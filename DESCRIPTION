@@ -15,7 +15,10 @@ Imports:
     magrittr,
     methods,
     pbmcapply,
-    Seurat
+    Seurat,
+    SingleCellExperiment,
+    DESeq2,
+    limma
 Suggests: 
     knitr,
     rmarkdown

@@ -15,7 +15,7 @@
 
   # object
   if (name == "object") {
-    # Only allowed to be NULL for function countCombinations() or getCombinations()
+    # Only allowed to be NULL for function countCombinations()
     # Otherwise, must be either of type Seurat or SingleCellExperiment
     if (any(other != "countCombinations", !is.null(input)) &
         length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment"))) < 1) {
