@@ -9,6 +9,7 @@ runDE(
   replicate_labels,
   group_labels,
   split_labels = NULL,
+  force_balance = FALSE,
   use_cells = NULL,
   min_cells_per_split = 4,
   min_replicates_per_split = 4,
@@ -38,6 +39,13 @@ differential expression (e.g., cell types). Results will be returned for
 each unique value in the column indicated by 'split_labels'. Default =
 \code{NULL} will run pseudobulk differential expression on all cells
 together.}
+
+\item{force_balance}{A boolean indicating if two groups have equal sample size. 
+Default to \code{FALSE}.}
+
+\item{reference_group}{A string specifying the reference group. Default to 
+\code{NULL}, in which case the first value in the group column is used as the 
+reference.}
 
 \item{use_cells}{A vector of cell names subset to. Default = \code{NULL} will
 use all cells.}

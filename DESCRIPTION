@@ -16,6 +16,7 @@ Imports:
     methods,
     pbmcapply,
     Seurat,
+    SingleCellExperiment,
     DESeq2,
     limma
 Suggests: 
