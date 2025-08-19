@@ -141,7 +141,7 @@ getPseudobulk <- function(object,
   pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
     split_s <- splits == s
 
-    keep_genes_count <- rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
+    keep_genes_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
 
     prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
     keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
