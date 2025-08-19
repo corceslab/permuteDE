@@ -2,6 +2,7 @@
 
 export("%>%")
 export(countCombinations)
+export(generateHistogram)
 export(getCombinations)
 export(getPseudobulk)
 export(permuteDE)

@@ -19,7 +19,7 @@ getPseudobulk(
 )
 }
 \arguments{
-\item{object}{An object of class 'Seurat' or 'SingleCellExperiment'.}
+\item{object}{A 'Seurat' or 'SingleCellExperiment' object.}
 
 \item{replicate_labels}{A character string or vector indicating the name of the
 column containing the replicate labels.}

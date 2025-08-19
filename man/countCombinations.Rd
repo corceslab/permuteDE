@@ -2,7 +2,7 @@
 % Please edit documentation in R/countCombinations.R
 \name{countCombinations}
 \alias{countCombinations}
-\title{Calculate number of possible group combinations}
+\title{Calculate the number of possible group combinations}
 \usage{
 countCombinations(
   object = NULL,
@@ -14,37 +14,34 @@ countCombinations(
 )
 }
 \arguments{
-\item{object}{An object of class 'Seurat' or 'SingleCellExperiment'.}
+\item{object}{A 'Seurat' or 'SingleCellExperiment' object.}
 
-\item{replicate_labels}{A character string or vector indicating the name of the
-column containing the replicate labels. Defaults to \code{NULL}.}
-
-\item{group_labels}{A character string or vector indicating the name of the
-column containing the two comparison group labels. Defaults to \code{NULL}.}
-
-\item{use_cells}{A vector of cell names subset to. Default = \code{NULL} will
-use all cells.}
+\item{use_cells}{A vector of cell names to subset. Defaults to \code{NULL},
+which includes all cells.}
 
 \item{n_replicates}{A numeric value indicating the total number of replicates.
 Defaults to \code{NULL}.}
 
-\item{n_group1}{A numeric value indicating the number of replicates that belong
-to one of the two groups (doesn't matter which). Defaults to \code{NULL}.}
+\item{n_group1}{A numeric value indicating the number of replicates in one
+group (doesn't matter which). Defaults to \code{NULL}.}
+
+\item{replicate_label}{A string or character vector indicating the column
+containing replicate labels. Defaults to \code{NULL}.}
+
+\item{group_label}{A string or character vector indicating the column
+containing two comparison group labels. Defaults to \code{NULL}.}
 }
 \value{
-Returns a numeric value indicating the number of possible group
+Returns a numeric value indicating the number of all possible group
 combinations.
 }
 \description{
-For a set of replicates that belong to two groups, this function will
-calculate how many different randomized group combinations are possible
-(i.e., how many ways to divide the replicates into two groups while retaining
-the same number of replicates per group). The input should be either the
-replicate and group column names from an object's metadata, or simply the
-total number of replicates (n) and the number of samples in one of the two
-groups (k).
+Given two groups of replicates, this function calculates the number of unique
+ways to divide the replicates into two groups while preserving group sizes.
+The formula is: C = n!/(k!(n-k)!). The input takes two forms: (1) replicate
+and group column names; (2) total number of replicates (n) and the number of
+replicates in one group (k)(doesn't matter which).
 }
 \details{
-The formula is: C = n!/(k!(n-k)!)
 (see base function \code{choose})
 }
