@@ -146,7 +146,7 @@ getPseudobulk <- function(object,
     prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
     keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
 
-    keep_genes <- which(keep_count & keep_prop)
+    keep_genes <- which(keep_genes_count & keep_genes_prop)
 
     model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
     pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
