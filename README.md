@@ -19,5 +19,5 @@ credentials::set_github_pat()
 You can then install the package with the following command:
 
 ``` r
-remotes::install_github("catpetersen/permuteDE")
+remotes::install_github("cathrinesant/permuteDE")
 ```
