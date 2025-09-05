@@ -2,8 +2,12 @@
 
 export("%>%")
 export(countCombinations)
+export(generateHistogram)
 export(getCombinations)
 export(getPseudobulk)
+export(ggPlotHistogram)
 export(permuteDE)
 export(runDE)
+export(runSCDE)
+export(themeCorcesRegular)
 importFrom(magrittr,"%>%")
