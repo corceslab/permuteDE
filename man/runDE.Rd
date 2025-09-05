@@ -42,7 +42,8 @@ each unique value in the column indicated by 'split_labels'. Default =
 together.}
 
 \item{force_balance}{A boolean indicating if two groups have equal sample size.
-Default to \code{FALSE}.}
+Default to \code{FALSE}. If TRUE, and the two groups have unequal sample sizes,
+the larger group will be randomly downsampled to match the size of the smaller group.}
 
 \item{reference_group}{A string specifying the reference group. Default to
 \code{NULL}, in which case the first value in the group column is used as the reference.}

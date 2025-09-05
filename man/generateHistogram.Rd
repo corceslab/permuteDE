@@ -4,43 +4,14 @@
 \alias{generateHistogram}
 \title{Generate Histograms of Permutation Test Results}
 \usage{
-generateHistogram(
-  permuteDE_result,
-  theme = c("minimal", "bw", "classic", "light", "dark", "gray", "grey", "linedraw",
-    "test"),
-  bar_color = "#7DD06F",
-  line_color = "red",
-  line_type = "solid"
-)
+generateHistogram(permuteDE_result)
 }
 \arguments{
 \item{permuteDE_result}{A returned list from \code{permuteDE}}
-
-\item{theme}{Character string indicating the \code{ggplot2} theme to apply.
-One of: \code{"minimal"}, \code{"bw"}, \code{"classic"}, \code{"light"}, \code{"dark"}, \code{"gray"},
-\code{"grey"}, \code{"linedraw"}, or \code{"test"}. Default is \code{"minimal"}.}
-
-\item{bar_color}{Color for the histogram bars. Default is \code{"#7DD06F"}.}
-
-\item{line_color}{Color for the vertical line indicating the observed number of DE genes.
-Default is \code{"red"}.}
-
-\item{line_type}{Line type for the vertical line. Accepts any \code{ggplot2}-supported
-linetype, e.g., \code{"solid"}, \code{"dashed"}, \code{"dotted"}. Default is \code{"solid"}.}
-}
-\value{
-A named list of \code{ggplot} objects, one for each unique \code{split} value in the data.
-Each plot shows the null distribution of DE gene counts and highlights the
-observed value with a vertical line and p-value label.
 }
 \description{
 This function creates a list of \code{ggplot2} histogram plots showing the distribution
 of the number of differentially expressed (DE) genes across permutations for each
 split in the permutation DE results. Each histogram includes a vertical line at
 the observed number of DE genes and a p-value annotation.
-}
-\examples{
-# result <- generateHistogram(permuteDE_result)
-# print(result[["Astrocytes"]])
-
 }
