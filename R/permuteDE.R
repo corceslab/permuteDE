@@ -56,7 +56,7 @@
 #'
 permuteDE <- function(input,
                       alpha = 0.05,
-                      lfc_threshold = 0.01,
+                      lfc_threshold = 0.5,
                       n_iterations = 1000,
                       use_splits = NULL,
                       min_DE = 2,
