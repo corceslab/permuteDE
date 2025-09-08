@@ -12,10 +12,11 @@ runDE(
   force_balance = FALSE,
   reference_group = NULL,
   use_cells = NULL,
-  min_cells_per_split = 4,
-  min_replicates_per_split = 4,
-  min_replicates_per_group = 2,
-  min_cells_per_feature = 1,
+  min_cells_per_split = 100,
+  min_replicates_per_split = 6,
+  min_replicates_per_group = 3,
+  min_cells_per_feature = 10,
+  min_prop_cells_per_feature = 0.1,
   de_method = "edgeR",
   de_test = "LRT",
   p_adjust_method = "fdr",
@@ -41,34 +42,41 @@ each unique value in the column indicated by 'split_labels'. Default =
 \code{NULL} will run pseudobulk differential expression on all cells
 together.}
 
-\item{force_balance}{A boolean indicating if two groups have equal sample size.
-Default to \code{FALSE}. If TRUE, and the two groups have unequal sample sizes,
-the larger group will be randomly downsampled to match the size of the smaller group.}
+\item{force_balance}{A boolean indicating whether to force the two comparison
+groups to have the same sample size. Defaults to \code{FALSE}. If
+\code{TRUE}, the larger group will be randomly downsampled to the size of the
+smaller group.}
 
-\item{reference_group}{A string specifying the reference group. Default to
-\code{NULL}, in which case the first value in the group column is used as the reference.}
+\item{reference_group}{A string specifying the reference group. Defaults to
+\code{NULL}, in which case the first value in the group column is used as the
+reference.}
 
 \item{use_cells}{A vector of cell names subset to. Default = \code{NULL} will
 use all cells.}
 
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
 cells within one split. Pseudobulk expression and differential expression
-will not be performed for splits with fewer cells. Defaults to 4.}
+will not be performed for splits with fewer cells. Defaults to 100.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk expression
 and differential expression will not be performed for splits with fewer
-replicates. Defaults to 4.}
+replicates. Defaults to 6.}
 
 \item{min_replicates_per_group}{A numeric value indicating the minimum number
 of distinct replicates represented within each of the two comparison groups.
 Pseudobulk expression and differential expression will not be performed for
-splits with fewer replicates. Defaults to 2.}
+splits with fewer replicates. Defaults to 3.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
 of cells (within a split) with expression of a gene. Pseudobulk expression
-and differential expression will not be calculated for genes with fewer
-cells. Defaults to 1.}
+and differential expression will not be calculated for genes expressed in
+fewer cells. Defaults to 10.}
+
+\item{min_prop_cells_per_feature}{A numeric value indicating the minimum
+proportion of cells (within a split) with expression of a gene. Pseudobulk
+expression and differential expression will not be calculated for genes
+expressed in fewer cells. Defaults to 0.1.}
 
 \item{de_method}{Which tool to use for differential expression. Permitted
 values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.}

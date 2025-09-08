@@ -3,6 +3,7 @@
 export("%>%")
 export(countCombinations)
 export(generateHistogram)
+export(generateVolcanoPlot)
 export(getCombinations)
 export(getPseudobulk)
 export(ggPlotHistogram)

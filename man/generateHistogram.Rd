@@ -4,10 +4,12 @@
 \alias{generateHistogram}
 \title{Generate Histograms of Permutation Test Results}
 \usage{
-generateHistogram(permuteDE_result)
+generateHistogram(permuteDE_result, title = NULL)
 }
 \arguments{
 \item{permuteDE_result}{A returned list from \code{permuteDE}}
+
+\item{title}{A string to be the title of histograms. Default to \code{NULL}.}
 }
 \description{
 This function creates a list of \code{ggplot2} histogram plots showing the distribution

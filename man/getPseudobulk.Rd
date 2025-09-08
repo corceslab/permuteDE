@@ -9,9 +9,10 @@ getPseudobulk(
   replicate_labels,
   split_labels = NULL,
   use_cells = NULL,
-  min_cells_per_split = 1,
-  min_replicates_per_split = 1,
-  min_cells_per_feature = 0,
+  min_cells_per_split = 100,
+  min_replicates_per_split = 6,
+  min_cells_per_feature = 10,
+  min_prop_cells_per_feature = 0,
   use_assay = NULL,
   use_layer = NULL,
   n_cores = NULL,
@@ -36,15 +37,21 @@ use all cells.}
 
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
 cells within one split. Pseudobulk expression will not be calculated for
-splits with fewer cells. Defaults to 1.}
+splits with fewer cells. Defaults to 100.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk expression
-will not be calculated for splits with fewer replicates. Defaults to 1.}
+will not be calculated for splits with fewer replicates. Defaults to 6.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
 of cells (within a split) with expression of a gene. Pseudobulk expression
-will not be calculated for genes with fewer cells. Defaults to 0.}
+and differential expression will not be calculated for genes expressed in
+fewer cells. Defaults to 10.}
+
+\item{min_prop_cells_per_feature}{A numeric value indicating the minimum
+proportion of cells (within a split) with expression of a gene. Pseudobulk
+expression and differential expression will not be calculated for genes
+expressed in fewer cells. Defaults to 0.1.}
 
 \item{use_assay}{A character string indicating the assay to use in the
 provided object. Default = \code{NULL} will choose the current active assay

@@ -46,12 +46,19 @@ generateHistogram <- function(permuteDE_result, title = NULL) {
         fontface = "bold",
         label.size = 0.3
       ) + 
-      labs(title = if (is.null(title)) 
-        str_wrap(paste0('Distribution of # DE genes across ', 
-                        n_iterations, ' Iterations in ', split_id) 
-                 else title,
-        width = 40
-      ))
+      labs(
+        title = if (is.null(title)) {
+          str_wrap(
+            paste0(
+              'Distribution of # DE genes across ', 
+              n_iterations, ' Iterations in ', split_id
+            ),
+            width = 40
+          )
+        } else {
+          title
+        }
+      )
   })
   names(histogram_list) <- all_splits
   return(histogram_list)
