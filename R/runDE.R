@@ -18,31 +18,34 @@
 #' each unique value in the column indicated by 'split_labels'. Default =
 #' \code{NULL} will run pseudobulk differential expression on all cells
 #' together.
-#' @param force_balance A boolean indicating if two groups have equal sample size.
-#' Default to \code{FALSE}.
-#' @param reference_group A string specifying the reference group. Default to
-#' \code{NULL}, in which case the first value in the group column is used as the reference.
+#' @param force_balance A boolean indicating whether to force the two comparison
+#' groups to have the same sample size. Defaults to \code{FALSE}. If
+#' \code{TRUE}, the larger group will be randomly downsampled to the size of the
+#' smaller group.
+#' @param reference_group A string specifying the reference group. Defaults to
+#' \code{NULL}, in which case the first value in the group column is used as the
+#' reference.
 #' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
 #' use all cells.
 #' @param min_cells_per_split A numeric value indicating the minimum number of
 #' cells within one split. Pseudobulk expression and differential expression
-#' will not be performed for splits with fewer cells. Defaults to 4.
+#' will not be performed for splits with fewer cells. Defaults to 100.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
 #' and differential expression will not be performed for splits with fewer
-#' replicates. Defaults to 4.
+#' replicates. Defaults to 6.
 #' @param min_replicates_per_group A numeric value indicating the minimum number
 #' of distinct replicates represented within each of the two comparison groups.
 #' Pseudobulk expression and differential expression will not be performed for
-#' splits with fewer replicates. Defaults to 2.
+#' splits with fewer replicates. Defaults to 3.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
 #' of cells (within a split) with expression of a gene. Pseudobulk expression
 #' and differential expression will not be calculated for genes expressed in
-#' fewer cells. Defaults to 1.
+#' fewer cells. Defaults to 10.
 #' @param min_prop_cells_per_feature A numeric value indicating the minimum
 #' proportion of cells (within a split) with expression of a gene. Pseudobulk
 #' expression and differential expression will not be calculated for genes
-#' expressed in fewer cells. Defaults to 0.
+#' expressed in fewer cells. Defaults to 0.1.
 #' @param de_method Which tool to use for differential expression. Permitted
 #' values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.
 #' @param de_test Which test to use for differential expression. Defaults to
@@ -82,11 +85,11 @@ runDE <- function(object,
                   force_balance = FALSE,
                   reference_group = NULL,
                   use_cells = NULL,
-                  min_cells_per_split = 4,
-                  min_replicates_per_split = 4,
-                  min_replicates_per_group = 2,
-                  min_cells_per_feature = 1,
-                  min_prop_cells_per_feature = 0,
+                  min_cells_per_split = 100,
+                  min_replicates_per_split = 6,
+                  min_replicates_per_group = 3,
+                  min_cells_per_feature = 10,
+                  min_prop_cells_per_feature = 0.1,
                   de_method = "edgeR",
                   de_test = "LRT",
                   p_adjust_method = "fdr",
@@ -184,8 +187,25 @@ runDE <- function(object,
 
   rownames(group_key) <- group_key$replicate
 
-  if (force_balance && length(unique(table(group_key$group))) > 1) {
-    stop('Two groups are not balanced.')
+  if (force_balance) {
+    group_counts <- table(group_key$group)
+
+    if (length(group_counts) > 1) {
+      min_size <- min(group_counts)
+
+      # Downsample the bigger group to the same size
+      balanced_indices <- unlist(lapply(names(group_counts), function(grp) {
+        grp_indices <- which(group_key$group == grp)
+        if (length(grp_indices) > min_size) {
+          sample(grp_indices, min_size)
+        } else {
+          grp_indices
+        }
+      }))
+
+      # Subset group_key accordingly
+      group_key <- group_key[balanced_indices, , drop = FALSE]
+    }
   }
 
   target_list <- lapply(pb_list, FUN = function(i) {

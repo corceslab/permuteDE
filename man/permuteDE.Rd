@@ -7,6 +7,7 @@
 permuteDE(
   input,
   alpha = 0.05,
+  lfc_threshold = 0.01,
   n_iterations = 1000,
   use_splits = NULL,
   min_DE = 2,
@@ -22,6 +23,9 @@ results, pseudobulk values, and parameters used.}
 \item{alpha}{A numeric value indicating the significance level used for
 permutation test comparisons of the number of differentially expressed
 features. Defaults to 0.05.}
+
+\item{lfc_threshold}{A numeric value indicating the log2 Fold Change level
+used to define statistically significant genes.}
 
 \item{n_iterations}{A numeric value indicating the number of iterations run
 for the permutation test. Defaults to 1000.}
