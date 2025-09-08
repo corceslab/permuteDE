@@ -18,28 +18,34 @@
 #' each unique value in the column indicated by 'split_labels'. Default =
 #' \code{NULL} will run pseudobulk differential expression on all cells
 #' together.
-#' @param force_balance A boolean indicating if two groups have equal sample size.
-#' Default to \code{FALSE}. If TRUE, and the two groups have unequal sample sizes, 
-#' the larger group will be randomly downsampled to match the size of the smaller group.
-#' @param reference_group A string specifying the reference group. Default to 
-#' \code{NULL}, in which case the first value in the group column is used as the reference.
+#' @param force_balance A boolean indicating whether to force the two comparison
+#' groups to have the same sample size. Defaults to \code{FALSE}. If
+#' \code{TRUE}, the larger group will be randomly downsampled to the size of the
+#' smaller group.
+#' @param reference_group A string specifying the reference group. Defaults to
+#' \code{NULL}, in which case the first value in the group column is used as the
+#' reference.
 #' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
 #' use all cells.
 #' @param min_cells_per_split A numeric value indicating the minimum number of
 #' cells within one split. Pseudobulk expression and differential expression
-#' will not be performed for splits with fewer cells. Defaults to 4.
+#' will not be performed for splits with fewer cells. Defaults to 100.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
 #' and differential expression will not be performed for splits with fewer
-#' replicates. Defaults to 4.
+#' replicates. Defaults to 6.
 #' @param min_replicates_per_group A numeric value indicating the minimum number
 #' of distinct replicates represented within each of the two comparison groups.
 #' Pseudobulk expression and differential expression will not be performed for
-#' splits with fewer replicates. Defaults to 2.
+#' splits with fewer replicates. Defaults to 3.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
 #' of cells (within a split) with expression of a gene. Pseudobulk expression
-#' and differential expression will not be calculated for genes with fewer
-#' cells. Defaults to 1.
+#' and differential expression will not be calculated for genes expressed in
+#' fewer cells. Defaults to 10.
+#' @param min_prop_cells_per_feature A numeric value indicating the minimum
+#' proportion of cells (within a split) with expression of a gene. Pseudobulk
+#' expression and differential expression will not be calculated for genes
+#' expressed in fewer cells. Defaults to 0.1.
 #' @param de_method Which tool to use for differential expression. Permitted
 #' values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.
 #' @param de_test Which test to use for differential expression. Defaults to
@@ -83,6 +89,7 @@ runDE <- function(object,
                   min_replicates_per_split = 6,
                   min_replicates_per_group = 3,
                   min_cells_per_feature = 10,
+                  min_prop_cells_per_feature = 0.1,
                   de_method = "edgeR",
                   de_test = "LRT",
                   p_adjust_method = "fdr",
@@ -104,6 +111,7 @@ runDE <- function(object,
   .validInput(min_replicates_per_split, "min_replicates_per_split")
   .validInput(min_replicates_per_split, "min_replicates_per_group")
   .validInput(min_cells_per_feature, "min_cells_per_feature")
+  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature")
   .validInput(de_method, "de_method")
   .validInput(de_test, "de_test", de_method)
   .validInput(p_adjust_method, "p_adjust_method")
@@ -116,7 +124,7 @@ runDE <- function(object,
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
   }
-  
+
   # ensure each test works for that method
   if (de_method == 'edgeR') {
     if (!(de_test %in% c('LRT', 'QLF', 'exact'))) {
@@ -148,8 +156,8 @@ runDE <- function(object,
     stop("Input value '", group_labels,
          "' for parameter 'group_labels' must represent a cell metadata column that contains exactly 2 groups for the selected cells, please supply valid input!")
   }
-  
- 
+
+
   # ---------------------------------------------------------------------------
   # Calculate pseudobulk values
   # ---------------------------------------------------------------------------
@@ -164,6 +172,7 @@ runDE <- function(object,
                            min_cells_per_split = min_cells_per_split,
                            min_replicates_per_split = min_replicates_per_split,
                            min_cells_per_feature = min_cells_per_feature,
+                           min_prop_cells_per_feature = min_prop_cells_per_feature,
                            n_cores = n_cores,
                            verbose = verbose)
 
@@ -175,38 +184,37 @@ runDE <- function(object,
     dplyr::summarise(n = dplyr::n()) %>%
     dplyr::select(-n) %>%
     data.frame()
-  
+
   rownames(group_key) <- group_key$replicate
-  
+
   if (force_balance) {
     group_counts <- table(group_key$group)
-    
+
     if (length(group_counts) > 1) {
       min_size <- min(group_counts)
-      
+
       # Downsample the bigger group to the same size
       balanced_indices <- unlist(lapply(names(group_counts), function(grp) {
         grp_indices <- which(group_key$group == grp)
         if (length(grp_indices) > min_size) {
           sample(grp_indices, min_size)
         } else {
-          grp_indices 
+          grp_indices
         }
       }))
-      
+
       # Subset group_key accordingly
       group_key <- group_key[balanced_indices, , drop = FALSE]
     }
-    
   }
-  
+
   target_list <- lapply(pb_list, FUN = function(i) {
     replicates_i <- colnames(i)
     groups_i <- group_key[replicates_i, c("replicate", "group")]
     return(groups_i)
   })
   names(target_list) <- names(pb_list)
-  
+
   # Remove splits with fewer than required number of replicates per group
   keep_splits <- c()
   remove_splits <- c()
@@ -245,7 +253,7 @@ runDE <- function(object,
                                                  group_factor <- relevel(group_factor, ref = reference_group)
                                                }
                                                target_list[[i]]$group <- group_factor
-                                               
+
                                                design_i <- stats::model.matrix(~ group, data = target_list[[i]])
                                                de_results_i <- switch(de_method,
                                                                       edgeR = .runDE.edgeR(pseudobulk = pb_list[[i]],
@@ -290,6 +298,7 @@ runDE <- function(object,
                          "min_replicates_per_split" = min_replicates_per_split,
                          "min_replicates_per_group" = min_replicates_per_group,
                          "min_cells_per_feature" = min_cells_per_feature,
+                         "min_prop_cells_per_feature" = min_prop_cells_per_feature,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "p_adjust_method" = p_adjust_method)
@@ -317,7 +326,7 @@ runDE <- function(object,
     y <- edgeR::DGEList(counts = pseudobulk, group = targets$group) %>%
       edgeR::calcNormFactors(method = 'TMM') %>%
       edgeR::estimateDisp(design)
-    
+
     fit <- switch(de_test,
                   QLF = edgeR::glmQLFit(y, design),
                   LRT = edgeR::glmFit(y, design = design),
@@ -354,14 +363,14 @@ runDE <- function(object,
                          targets,
                          design,
                          de_test = "LRT") {
-  
+
   # Construct DESeq2 dataset
   dds <- DESeq2::DESeqDataSetFromMatrix(
     countData = pseudobulk,
     colData = targets,
     design = design
   )
-  
+
   # Run DESeq
   if (de_test == "LRT") {
     reduced_design <- model.matrix(~ 1, data = targets)
@@ -369,12 +378,12 @@ runDE <- function(object,
   } else if (de_test == "Wald") {
     dds <- DESeq2::DESeq(dds, test = "Wald")
   }
-  
+
   res <- DESeq2::results(dds) |>
     as.data.frame() |>
     rename(lfc = log2FoldChange) |>
     rownames_to_column(var = "gene")
-  
+
   return(res)
 }
 
@@ -389,10 +398,10 @@ runDE <- function(object,
                         targets,
                         design,
                         de_test = "voom") {
-  
-  
+
+
   # TODO: limma does not support QLF; figure out how to implement it
-  
+
   # voom
   if (de_test == 'voom') {
     # create a DGE list using pseudobulk data
@@ -400,12 +409,12 @@ runDE <- function(object,
     # remove rows that consistently have zero or very low counts
     keep <- edgeR::filterByExpr(dge, design)
     dge <- dge[keep,,keep.lib.sizes=FALSE]
-    # apply TMM normalization 
+    # apply TMM normalization
     dge <- edgeR::calcNormFactors(dge)
-    
+
     # apply voom transformation
-    v <- limma::voom(dge, design, plot = TRUE) 
-    
+    v <- limma::voom(dge, design, plot = TRUE)
+
     # usual limma pipelines for differential expression
     fit <- limma::lmFit(v, design)
     fit <- limma::eBayes(fit)

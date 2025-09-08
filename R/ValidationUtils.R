@@ -217,14 +217,17 @@
     }
   }
 
-  # Single non-negative number
-  # alpha
-  if (name %in% c("min_cells_per_feature")) {
+  # Single number from 0-1
+  # alpha, min_prop_cells_per_feature
+  if (name %in% c("alpha", "min_prop_cells_per_feature")) {
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
     }
     if (input < 0) {
       stop("Input value for '", name, "' cannot be negative. Please supply valid input!")
+    }
+    if (input > 1) {
+      stop("Input value for '", name, "' cannot be greater than 1. Please supply valid input!")
     }
   }
 

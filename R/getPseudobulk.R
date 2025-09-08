@@ -18,13 +18,18 @@
 #' use all cells.
 #' @param min_cells_per_split A numeric value indicating the minimum number of
 #' cells within one split. Pseudobulk expression will not be calculated for
-#' splits with fewer cells. Defaults to 1.
+#' splits with fewer cells. Defaults to 100.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
-#' will not be calculated for splits with fewer replicates. Defaults to 1.
+#' will not be calculated for splits with fewer replicates. Defaults to 6.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
 #' of cells (within a split) with expression of a gene. Pseudobulk expression
-#' will not be calculated for genes with fewer cells. Defaults to 0.
+#' and differential expression will not be calculated for genes expressed in
+#' fewer cells. Defaults to 10.
+#' @param min_prop_cells_per_feature A numeric value indicating the minimum
+#' proportion of cells (within a split) with expression of a gene. Pseudobulk
+#' expression and differential expression will not be calculated for genes
+#' expressed in fewer cells. Defaults to 0.1.
 #' @param use_assay A character string indicating the assay to use in the
 #' provided object. Default = \code{NULL} will choose the current active assay
 #' for Seurat objects and the \code{counts} assay for SingleCellExperiment
@@ -51,6 +56,7 @@ getPseudobulk <- function(object,
                           min_cells_per_split = 100,
                           min_replicates_per_split = 6,
                           min_cells_per_feature = 10,
+                          min_prop_cells_per_feature = 0,
                           use_assay = NULL,
                           use_layer = NULL,
                           n_cores = NULL,
@@ -67,6 +73,7 @@ getPseudobulk <- function(object,
   .validInput(min_cells_per_split, "min_cells_per_split")
   .validInput(min_replicates_per_split, "min_replicates_per_split")
   .validInput(min_cells_per_feature, "min_cells_per_feature")
+  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature")
   .validInput(use_assay, "use_assay", object)
   .validInput(use_slot, "use_slot", list(object, use_assay))
   .validInput(n_cores, "n_cores")
@@ -133,10 +140,16 @@ getPseudobulk <- function(object,
   # Create list of gene x replicate pseudobulk matrices, one per split
   pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
     split_s <- splits == s
+
+    keep_genes_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
+
+    prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
+    keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
+
+    keep_genes <- which(keep_genes_count & keep_genes_prop)
+
     model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
-    pb_mat <- count_matrix[, split_s] %*% model_mat
-    keep_genes <- rowSums(as.matrix(pb_mat > 0)) >= min_cells_per_feature
-    pb_mat <- pb_mat[keep_genes, ]
+    pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
     return(pb_mat)
   }, mc.cores = n_cores)
   names(pb_list) <- keep_splits
