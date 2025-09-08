@@ -56,7 +56,7 @@
 #'
 permuteDE <- function(input,
                       alpha = 0.05,
-                      lfc_threshold = 0.01,
+                      lfc_threshold = 0.5,
                       n_iterations = 1000,
                       use_splits = NULL,
                       min_DE = 2,
@@ -222,58 +222,6 @@ permuteDE <- function(input,
                            " : Skipping split ", current_split, ", ", dplyr::n_distinct(true_groups), " group(s) present.")
     }
   }
-
-  # create a list of histograms per split
-  all_splits <- unique(permutation_DE_results$split)
-  histogram_list <- lapply(all_splits, function(split_id) {
-    df_perm <- dplyr::filter(permutation_DE_results, split == split_id)
-    df_test <- dplyr::filter(permutation_test_results, split == split_id)
-    
-    ggplot(df_perm, aes(x = n_sig)) +
-      geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
-      geom_vline(xintercept = df_test$true_n_sig, color = 'red', linewidth = 1) +
-      annotate("text",
-               x = Inf,
-               y = Inf,
-               label = paste0("p = ", signif(df_test$p_n_sig, 2)),
-               hjust = 3,
-               vjust = 5,
-               color = "red", fontface = "bold") +
-      labs(
-        x = "# Significant DEGs", y = "Count",
-        title = paste0("Distribution of # Significant DEGs across ", n_iterations, " Iterations in ", split_id)
-      ) +
-      coord_cartesian(clip = "off") +
-      theme_minimal()
-  })
-  
-  names(histogram_list) <- all_splits
-  
-  # add in a histogram of all splits
-  perm_totals <- permutation_DE_results |>
-    group_by(permutation) |>
-    summarise(total_n_sig = sum(n_sig), .groups = "drop")
-  
-  true_total_n_sig <- sum(permutation_test_results$true_n_sig)
-  p_total <- 1 - ecdf(perm_totals$total_n_sig)(true_total_n_sig)
-  
-  gg_total <- ggplot(perm_totals, aes(x = total_n_sig)) +
-    geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
-    geom_vline(xintercept = true_total_n_sig, color = 'red', linewidth = 1) +
-    annotate("text",
-             x = Inf,
-             y = Inf,
-             label = paste0("p = ", signif(p_total, 2)),
-             hjust = 3,
-             vjust = 5,
-             color = "red", fontface = "bold") +
-    labs(
-      x = "Total # Significant DEGs", y = "Count",
-      title = paste0("Distribution of Total # Significant DEGs across ", n_iterations, " Iterations in All Splits")
-    ) +
-    coord_cartesian(clip = "off") +
-    theme_minimal()
-  histogram_list[["Total"]] <- gg_total
   
   # ---------------------------------------------------------------------------
   # Wrap up
@@ -291,6 +239,5 @@ permuteDE <- function(input,
   # Return
   return(list("permutation_test_results" = permutation_test_results,
               "permutation_DE_results" = permutation_DE_results,
-              "parameters" = parameter_list,
-              'histograms' = histogram_list))
+              "parameters" = parameter_list))
 }

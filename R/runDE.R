@@ -19,7 +19,8 @@
 #' \code{NULL} will run pseudobulk differential expression on all cells
 #' together.
 #' @param force_balance A boolean indicating if two groups have equal sample size.
-#' Default to \code{FALSE}.
+#' Default to \code{FALSE}. If TRUE, and the two groups have unequal sample sizes, 
+#' the larger group will be randomly downsampled to match the size of the smaller group.
 #' @param reference_group A string specifying the reference group. Default to 
 #' \code{NULL}, in which case the first value in the group column is used as the reference.
 #' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
@@ -78,10 +79,10 @@ runDE <- function(object,
                   force_balance = FALSE,
                   reference_group = NULL,
                   use_cells = NULL,
-                  min_cells_per_split = 4,
-                  min_replicates_per_split = 4,
-                  min_replicates_per_group = 2,
-                  min_cells_per_feature = 1,
+                  min_cells_per_split = 100,
+                  min_replicates_per_split = 6,
+                  min_replicates_per_group = 3,
+                  min_cells_per_feature = 10,
                   de_method = "edgeR",
                   de_test = "LRT",
                   p_adjust_method = "fdr",
@@ -177,8 +178,26 @@ runDE <- function(object,
   
   rownames(group_key) <- group_key$replicate
   
-  if (force_balance && length(unique(table(group_key$group))) > 1) {
-    stop('Two groups are not balanced.')
+  if (force_balance) {
+    group_counts <- table(group_key$group)
+    
+    if (length(group_counts) > 1) {
+      min_size <- min(group_counts)
+      
+      # Downsample the bigger group to the same size
+      balanced_indices <- unlist(lapply(names(group_counts), function(grp) {
+        grp_indices <- which(group_key$group == grp)
+        if (length(grp_indices) > min_size) {
+          sample(grp_indices, min_size)
+        } else {
+          grp_indices 
+        }
+      }))
+      
+      # Subset group_key accordingly
+      group_key <- group_key[balanced_indices, , drop = FALSE]
+    }
+    
   }
   
   target_list <- lapply(pb_list, FUN = function(i) {
