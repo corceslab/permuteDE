@@ -25,12 +25,9 @@ generateHistogram <- function(permuteDE_result, title = NULL) {
     x_max <- max(df_perm$n_sig, df_test$true_n_sig)
     label_x <- min(df_test$true_n_sig + 5, x_max * 0.95)
     
-<<<<<<< HEAD
-    ggPlotHistogram(df_perm$n_sig, xlabel = 'Number of DE genes', histAlpha = 0.5, vline = df_test$true_n_sig) + 
-=======
+
     ggPlotHistogram(df_perm$n_sig, xlabel = 'Number of DE genes', 
                     histAlpha = 0.5, vline = df_test$true_n_sig) + 
->>>>>>> dev_JG
       geom_vline(xintercept = df_test$true_n_sig, 
                  color = 'red', 
                  linewidth = 1, 
@@ -49,16 +46,10 @@ generateHistogram <- function(permuteDE_result, title = NULL) {
         fontface = "bold",
         label.size = 0.3
       ) + 
-<<<<<<< HEAD
-      labs(title = str_wrap(
-        paste0('Distribution of # DE genes across ', 
-               n_iterations, ' Iterations in ', split_id), 
-=======
       labs(title = if (is.null(title)) 
         str_wrap(paste0('Distribution of # DE genes across ', 
                         n_iterations, ' Iterations in ', split_id) 
                  else title,
->>>>>>> dev_JG
         width = 40
       ))
   })

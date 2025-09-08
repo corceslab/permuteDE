@@ -399,9 +399,6 @@ runDE <- function(object,
                         design,
                         de_test = "voom") {
 
-
-  # TODO: limma does not support QLF; figure out how to implement it
-
   # voom
   if (de_test == 'voom') {
     # create a DGE list using pseudobulk data
@@ -425,7 +422,6 @@ runDE <- function(object,
         pvalue = P.Value
       )
   }
-  # TODO: should we implement limma-trend, voomLmFit
   return(res)
 }
 
