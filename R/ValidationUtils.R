@@ -16,10 +16,14 @@
   # object
   if (name == "object") {
     # Only allowed to be NULL for function countCombinations()
-    # Otherwise, must be either of type Seurat or SingleCellExperiment
+    # Otherwise, must be of type Seurat, SingleCellExperiment, or matrix
     if (any(other != "countCombinations", !is.null(input)) &
-        length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment"))) < 1) {
-      stop("Input value for '", name, "' is not one of classes Seurat or SingleCellExperiment. Please supply valid input!")
+        length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment", "matrix"))) < 1) {
+      stop("Input value for '", name, "' is not one of classes Seurat, SingleCellExperiment, or matrix. Please supply valid input!")
+    }
+    # If object is of type matrix, must have row names
+    if ("matrix" %in% methods::is(input) & is.null(rownames(input))) {
+      stop("When input value for '", name, "' is of class matrix, row names cannot be NULL. Please set row names to feature names.")
     }
   }
 
@@ -93,9 +97,9 @@
     }
   }
 
-  # Single logical value
-  # verbose, return_all
-  if (name %in% c("verbose")) {
+  # Single Boolean value
+  # pseudobulk, return_all, verbose
+  if (name %in% c("pseudobulk", "return_all", "verbose")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
@@ -241,4 +245,20 @@
       }
     }
   }
+
+  # reference_group
+  if (name == "reference_group") {
+    # If not NULL
+    if (!is.null(input)) {
+      # Value must be among those indicated by group_labels
+      groups <- .retrieveData(object = other[[1]],
+                              type = "cell_metadata",
+                              name = other[[2]],
+                              use_cells = other[[3]])
+      if (!input %in% groups) {
+        stop("Input value for '", name, "' must be present among provided group labels. Please supply valid input!")
+      }
+    }
+  }
+
 }

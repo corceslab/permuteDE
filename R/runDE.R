@@ -1,66 +1,87 @@
-#' Run pseudobulk differential expression
+#' Run differential expression to compare two groups
 #'
-#' Generate pseudobulk matri(ces) and run pseudobulk differential expression
-#' between two groups for each using existing tools: \code{edgeR},
-#' \code{DESeq2}, or \code{limma}.
+#' This function identifies differentially expressed features between two groups
+#' using indicated differential expression analysis methods.
+#'
+#' By default, pseudobulk matri(ces) are generated or supplied by the user, then
+#' used to run pseudobulk differential expression. The following existing tools
+#' are supported: \code{edgeR}, \code{DESeq2}, \code{limma}, and the Wilcoxon
+#' rank-sum test. Alternately, users may skip pseudobulking and run cell-level
+#' differential expression (not recommended in most cases).
 #'
 #' This function was inspired by R package neurorestore/Libra and some aspects
 #' are adapted therefrom (Squair et al. 2021).
 #'
-#' @param object An object of class 'Seurat' or 'SingleCellExperiment'.
-#' @param replicate_labels A character string or vector indicating the name of the
-#' column containing the replicate labels.
-#' @param group_labels A character string or vector indicating the name of the
-#' column containing the two comparison group labels.
-#' @param split_labels A character string or vector indicating the name of a
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{matrix}. Data supplied as class \code{matrix} may be either a
+#' feature x cell matrix or a pre-computed pseudobulk feature x replicate
+#' matrix.
+#' @param replicate_labels A character string indicating the name of the
+#' metadata column containing the replicate labels or a character vector
+#' containing the replicate labels in order.
+#' @param group_labels A character string indicating the name of the
+#' column containing the two comparison group labels or a character vector
+#' containing the comparison labels in order.
+#' @param split_labels A character string indicating the name of a
 #' column by which to split the cells prior to pseudobulking and performing
-#' differential expression (e.g., cell types). Results will be returned for
-#' each unique value in the column indicated by 'split_labels'. Default =
-#' \code{NULL} will run pseudobulk differential expression on all cells
-#' together.
-#' @param force_balance A boolean indicating if two groups have equal sample size.
-#' Default to \code{FALSE}.
-#' @param reference_group A string specifying the reference group. Default to
-#' \code{NULL}, in which case the first value in the group column is used as the reference.
-#' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
-#' use all cells.
+#' differential expression (e.g., cell types). Alternately, a character vector
+#' containing the split labels for each cell in order. Results will be returned
+#' for each unique value indicated by \code{split_labels}. Default = \code{NULL}
+#' will run pseudobulk differential expression on all cells together.
+#' @param reference_group A string specifying the reference group. Defaults to
+#' \code{NULL}, in which case the first value in the group column is used as the
+#' reference.
+#' @param use_cells A vector of cell names to subset the object to prior to
+#' subsequent pseudobulk and differential expression steps. Default =
+#' \code{NULL} will use all cells.
+#' @param pseudobulk A Boolean value indicating whether or not to generate
+#' pseudobulk matrices prior to running differential expression analysis.
+#' Defaults to \code{TRUE}.
+#' @param de_method Which tool to use for differential expression. Permitted
+#' values are "edgeR", "DESeq2", "limma", and "wilcox" (indicating the Wilcoxon
+#' rank sum test).Defaults to "edgeR".
+#' @param de_test Which test to use for differential expression. Defaults to
+#' "LRT".
+#' @param p_adjust_method A string indicating which multiple comparison
+#' adjustment to use. For permitted values, see \code{stats::p.adjust}. Defaults
+#' to "fdr" (Benjamini & Hochberg, 1995).
 #' @param min_cells_per_split A numeric value indicating the minimum number of
-#' cells within one split. Pseudobulk expression and differential expression
-#' will not be performed for splits with fewer cells. Defaults to 4.
+#' cells within one split. Pseudobulk and differential expression steps will not
+#' be performed for splits with fewer cells. Defaults to 100.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
 #' and differential expression will not be performed for splits with fewer
-#' replicates. Defaults to 4.
+#' replicates. Defaults to 6.
 #' @param min_replicates_per_group A numeric value indicating the minimum number
 #' of distinct replicates represented within each of the two comparison groups.
-#' Pseudobulk expression and differential expression will not be performed for
-#' splits with fewer replicates. Defaults to 2.
+#' Pseudobulk and differential expression steps will not be performed for
+#' splits with fewer replicates. Defaults to 3.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
-#' of cells (within a split) with expression of a gene. Pseudobulk expression
-#' and differential expression will not be calculated for genes expressed in
-#' fewer cells. Defaults to 1.
+#' of cells (within a split) with expression of a gene. Pseudobulk and
+#' differential expression will not be calculated for genes expressed in
+#' fewer cells. Defaults to 10.
 #' @param min_prop_cells_per_feature A numeric value indicating the minimum
 #' proportion of cells (within a split) with expression of a gene. Pseudobulk
-#' expression and differential expression will not be calculated for genes
-#' expressed in fewer cells. Defaults to 0.
-#' @param de_method Which tool to use for differential expression. Permitted
-#' values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.
-#' @param de_test Which test to use for differential expression. Defaults to
-#' 'LRT'.
-#' @param p_adjust_method A string indicating which multiple comparison
-#' adjustment to use. For permitted values, see \code{stats::p.adjust}. Defaults
-#' to 'fdr' (Benjamini & Hochberg, 1995).
+#' and differential expression will not be calculated for genes
+#' expressed in fewer cells. Defaults to 0.1.
+#' @param force_balance A boolean indicating whether to force the two comparison
+#' groups to have the same sample size. Defaults to \code{FALSE}. If
+#' \code{TRUE}, the larger group will be randomly downsampled to the size of the
+#' smaller group.
 #' @param use_assay A character string indicating the assay to use in the
 #' provided object. Default = \code{NULL} will choose the current active assay
-#' for Seurat objects and the \code{counts} assay for SingleCellExperiment
-#' objects.
-#' @param use_layer For Seurat objects, a character string or vector indicating
-#' the layer — previously known as slot — to use in the provided object.
+#' for \code{Seurat} objects and the \code{counts} assay for
+#' \code{SingleCellExperiment} objects.
+#' @param use_layer For \code{Seurat} objects, a character string or vector
+#' indicating the layer—previously known as slot—to use in the provided object.
 #' Default = \code{NULL} will use the \code{counts} layer.
+#' @param random_seed A numerical value indicating the random seed to be used.
+#' Defaults to 1. Only relevant in this function when parameter
+#' \code{force_balance = TRUE}.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
-#' @param verbose A boolean value indicating whether to use verbose output
+#' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
 #'
@@ -69,7 +90,8 @@
 #'   split}
 #'   \item{PB_values}{List of feature x replicate matri(ces) containing
 #'   pseudobulk values for each feature, one per split}
-#'   \item{group_key}{Dataframe record of group labels corresponding to each replicate}
+#'   \item{group_key}{Dataframe record of group labels corresponding to each
+#'   replicate}
 #'   \item{parameters}{Dataframe record of parameter values used}
 #'   }
 #'
@@ -79,19 +101,21 @@ runDE <- function(object,
                   replicate_labels,
                   group_labels,
                   split_labels = NULL,
-                  force_balance = FALSE,
                   reference_group = NULL,
                   use_cells = NULL,
-                  min_cells_per_split = 4,
-                  min_replicates_per_split = 4,
-                  min_replicates_per_group = 2,
-                  min_cells_per_feature = 1,
-                  min_prop_cells_per_feature = 0,
+                  pseudobulk = TRUE,
                   de_method = "edgeR",
                   de_test = "LRT",
                   p_adjust_method = "fdr",
+                  min_cells_per_split = 100,
+                  min_replicates_per_split = 6,
+                  min_replicates_per_group = 3,
+                  min_cells_per_feature = 10,
+                  min_prop_cells_per_feature = 0.1,
+                  force_balance = FALSE,
                   use_assay = NULL,
                   use_layer = NULL,
+                  random_seed = 1,
                   n_cores = NULL,
                   verbose = TRUE) {
 
@@ -99,44 +123,31 @@ runDE <- function(object,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(object, "object", "countCombinations")
+  .validInput(object, "object", "runDE")
   .validInput(replicate_labels, "replicate_labels", object)
   .validInput(group_labels, "group_labels", object)
   .validInput(split_labels, "split_labels", object)
   .validInput(use_cells, "use_cells", object)
+  .validInput(reference_group, "reference_group", list(object, group_labels, use_cells))
+  .validInput(pseudobulk, "pseudobulk")
+  .validInput(de_method, "de_method") ##
+  .validInput(de_test, "de_test", de_method) ##
+  .validInput(p_adjust_method, "p_adjust_method")
   .validInput(min_cells_per_split, "min_cells_per_split")
   .validInput(min_replicates_per_split, "min_replicates_per_split")
   .validInput(min_replicates_per_split, "min_replicates_per_group")
   .validInput(min_cells_per_feature, "min_cells_per_feature")
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature")
-  .validInput(de_method, "de_method")
-  .validInput(de_test, "de_test", de_method)
-  .validInput(p_adjust_method, "p_adjust_method")
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
+  .validInput(force_balance, "force_balance") ##
+  .validInput(use_assay, "use_assay", object) ##
+  .validInput(use_slot, "use_slot", list(object, use_assay)) ##
+  .validInput(random_seed, "random_seed") ##
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
 
   # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
-  }
-
-  # ensure each test works for that method
-  if (de_method == 'edgeR') {
-    if (!(de_test %in% c('LRT', 'QLF', 'exact'))) {
-      stop(paste0('edgeR does not take ', de_test, '.'))
-    }
-  } else if (de_method == 'DESeq2') {
-    if (!(de_test %in% c('LRT', 'Wald'))) {
-      stop(paste0('DESeq2 does not take ', de_test, '.'))
-    }
-  } else if (de_method == 'limma') {
-    if (!(de_test %in% c('voom'))) { # TODO: add in other tests if implemented
-      stop(paste0('limma does not take ', de_test, '.'))
-    }
-  } else {
-    stop(paste0(de_method, ' is not supported.'))
   }
 
   # Retrieve metadata
@@ -153,7 +164,6 @@ runDE <- function(object,
     stop("Input value '", group_labels,
          "' for parameter 'group_labels' must represent a cell metadata column that contains exactly 2 groups for the selected cells, please supply valid input!")
   }
-
 
   # ---------------------------------------------------------------------------
   # Calculate pseudobulk values
@@ -184,8 +194,25 @@ runDE <- function(object,
 
   rownames(group_key) <- group_key$replicate
 
-  if (force_balance && length(unique(table(group_key$group))) > 1) {
-    stop('Two groups are not balanced.')
+  if (force_balance) {
+    group_counts <- table(group_key$group)
+
+    if (length(group_counts) > 1) {
+      min_size <- min(group_counts)
+
+      # Downsample the bigger group to the same size
+      balanced_indices <- unlist(lapply(names(group_counts), function(grp) {
+        grp_indices <- which(group_key$group == grp)
+        if (length(grp_indices) > min_size) {
+          sample(grp_indices, min_size)
+        } else {
+          grp_indices
+        }
+      }))
+
+      # Subset group_key accordingly
+      group_key <- group_key[balanced_indices, , drop = FALSE]
+    }
   }
 
   target_list <- lapply(pb_list, FUN = function(i) {
