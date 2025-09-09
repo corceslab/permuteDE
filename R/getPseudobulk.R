@@ -1,41 +1,46 @@
 #' Calculate pseudobulk values
 #'
-#' This function will generate a set of pseudobulk expression matrices.
+#' This function will generate pseudobulk expression matri(ces) from a provided
+#' Seurat object, SingleCellExperiment object, or feature x cell matrix.
+#' Multiple pseudobulk matrices can be generated across different divisions of
+#' a dataset, such as cell types.
 #'
-#' This function was inspired by R package neurorestore/Libra
-#' (Squair et al. 2021).
+#' This function was inspired in part by R package neurorestore/Libra and some
+#' aspects are adapted therefrom (Squair et al. 2021).
 #'
-#' @param object A 'Seurat' or 'SingleCellExperiment' object.
-#' @param replicate_labels A character string or vector indicating the name of the
-#' column containing the replicate labels.
-#' @param split_labels A character string or vector indicating the name of a
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{matrix}. Data supplied as class \code{matrix} should be a
+#' feature x cell matrix.
+#' @param replicate_labels A string indicating the name of the
+#' metadata column containing the replicate labels or a character vector
+#' containing the replicate labels in order.
+#' @param split_labels A string indicating the name of a
 #' column by which to split the cells prior to pseudobulking and performing
-#' differential expression (e.g., cell types). Results will be returned for
-#' each unique value in the column indicated by 'split_labels'. Default =
-#' \code{NULL} will run pseudobulk differential expression on all cells
-#' together.
-#' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
-#' use all cells.
+#' differential expression (e.g., cell types). Alternately, a character vector
+#' containing the split labels for each cell in order. Results will be returned
+#' for each unique value indicated by \code{split_labels}. Default = \code{NULL}
+#' will generate a single pseudobulk matrix that includes all cells.
+#' @param use_cells A vector of cell names to subset the object to prior to
+#' subsequent pseudobulk steps. Default = \code{NULL} will use all cells.
 #' @param min_cells_per_split A numeric value indicating the minimum number of
-#' cells within one split. Pseudobulk expression will not be calculated for
-#' splits with fewer cells. Defaults to 100.
+#' cells within one split. Pseudobulk steps will not be performed for splits
+#' with fewer cells. Defaults to 100.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
-#' of distinct replicates represented within one split. Pseudobulk expression
-#' will not be calculated for splits with fewer replicates. Defaults to 6.
+#' of distinct replicates represented within one split. Pseudobulk steps
+#' will not be performed for splits with fewer replicates. Defaults to 6.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
 #' of cells (within a split) with expression of a gene. Pseudobulk expression
-#' and differential expression will not be calculated for genes expressed in
-#' fewer cells. Defaults to 10.
+#' will not be calculated for genes expressed in fewer cells. Defaults to 10.
 #' @param min_prop_cells_per_feature A numeric value indicating the minimum
 #' proportion of cells (within a split) with expression of a gene. Pseudobulk
-#' expression and differential expression will not be calculated for genes
-#' expressed in fewer cells. Defaults to 0.1.
-#' @param use_assay A character string indicating the assay to use in the
+#' expression will not be calculated for genes expressed in fewer cells.
+#' Defaults to 0.1.
+#' @param use_assay A string indicating the assay to use in the
 #' provided object. Default = \code{NULL} will choose the current active assay
-#' for Seurat objects and the \code{counts} assay for SingleCellExperiment
-#' objects.
-#' @param use_layer For Seurat objects, a character string or vector indicating
-#' the layer — previously known as slot — to use in the provided object.
+#' for \code{Seurat} objects and the \code{counts} assay for
+#' \code{SingleCellExperiment} objects.
+#' @param use_layer For \code{Seurat} objects, a string or vector
+#' indicating the layer—previously known as slot—to use in the provided object.
 #' Default = \code{NULL} will use the \code{counts} layer.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
@@ -44,7 +49,7 @@
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
 #'
-#' @return Returns a list with one pseudobulk (gene x replicate) matrix per
+#' @return Returns a list with one pseudobulk (feature x replicate) matrix per
 #' split.
 #'
 #' @export
@@ -66,14 +71,14 @@ getPseudobulk <- function(object,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(object, "object", "countCombinations")
-  .validInput(replicate_labels, "replicate_labels", object)
+  .validInput(object, "object", "getPseudobulk")
+  .validInput(replicate_labels, "replicate_labels", list(object, "generate"))
   .validInput(split_labels, "split_labels", object)
-  .validInput(use_cells, "use_cells", object)
-  .validInput(min_cells_per_split, "min_cells_per_split")
-  .validInput(min_replicates_per_split, "min_replicates_per_split")
-  .validInput(min_cells_per_feature, "min_cells_per_feature")
-  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature")
+  .validInput(use_cells, "use_cells", list(object, "generate"))
+  .validInput(min_cells_per_split, "min_cells_per_split", "generate")
+  .validInput(min_replicates_per_split, "min_replicates_per_split", "generate")
+  .validInput(min_cells_per_feature, "min_cells_per_feature", "generate")
+  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", "generate")
   .validInput(use_assay, "use_assay", object)
   .validInput(use_slot, "use_slot", list(object, use_assay))
   .validInput(n_cores, "n_cores")
@@ -92,15 +97,34 @@ getPseudobulk <- function(object,
   if (is.null(use_cells)) {
     use_cells <- .getCellIDs(object)
   }
-  replicates <- .retrieveData(object = object,
-                              type = "cell_metadata",
-                              name = replicate_labels,
-                              use_cells = use_cells)
+  # Replicate labels
+  if (length(replicate_labels) == 1) {
+    replicates <- .retrieveData(object = object,
+                                type = "cell_metadata",
+                                name = replicate_labels,
+                                use_cells = use_cells)
+  } else {
+    replicates <- replicate_labels
+    # Check length
+    target_length <- length(use_cells)
+    if (length(replicates) != target_length) {
+      stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied cells.")
+    }
+  }
+  # Split labels
   if (!is.null(split_labels)) {
-    splits <- .retrieveData(object = object,
-                            type = "cell_metadata",
-                            name = split_labels,
-                            use_cells = use_cells)
+    if (length(split_labels) == 1) {
+      splits <- .retrieveData(object = object,
+                              type = "cell_metadata",
+                              name = split_labels,
+                              use_cells = use_cells)
+    } else {
+      splits <- split_labels
+      # Check length
+      if (length(splits) != length(replicates)) {
+        stop("When a vector is provided for 'split_labels', it must be the same length and in the same order as the supplied cells.")
+      }
+    }
   } else {
     splits <- rep("all", length(replicates))
   }

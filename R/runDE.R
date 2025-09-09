@@ -9,8 +9,8 @@
 #' rank-sum test. Alternately, users may skip pseudobulking and run cell-level
 #' differential expression (not recommended in most cases).
 #'
-#' This function was inspired by R package neurorestore/Libra and some aspects
-#' are adapted therefrom (Squair et al. 2021).
+#' This function was inspired in part by R package neurorestore/Libra and some
+#' aspects are adapted therefrom (Squair et al. 2021).
 #'
 #' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
 #' or \code{matrix}. Data supplied as class \code{matrix} may be either a
@@ -164,12 +164,12 @@ runDE <- function(object,
     set.seed(random_seed)
   }
 
+  # Retrieve metadata
   # Set cells to use
   if (is.null(use_cells) & pseudobulk != "supplied") {
     use_cells <- .getCellIDs(object)
   }
 
-  # Retrieve metadata
   # Replicate labels
   if (pseudobulk == "none") {
     replicates <- use_cells

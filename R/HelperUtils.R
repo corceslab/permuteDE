@@ -10,7 +10,6 @@
 #' @name name A string under which data are stored
 #' @use_cells (Optional) A string vector of cell names to subset
 .retrieveData <- function(object, type, name, use_cells = NULL) {
-
   if (methods::is(object, "Seurat")) {
     # for a Seurat object
     if (type == "cell_metadata") {
@@ -22,7 +21,6 @@
       output_data <- object@colData[if (is.null(use_cells)) TRUE else use_cells, name]
     }
   }
-  # TODO: may extend beyond 'cell_metadata'; refine as needed.
   return(output_data)
 }
 
