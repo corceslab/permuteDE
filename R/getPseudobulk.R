@@ -133,23 +133,26 @@ getPseudobulk <- function(object,
     message("Skipped ", nrow(filter_table) - n_splits, " split label",
             ifelse((nrow(filter_table) - n_splits) == 1, "", "s"),
             " due to insufficient cells/replicates: ",
-            paste0(rownames(filter_table)[!(rownames(filter_table) %in% unique(splits))],
+            paste0(setdiff(rownames(filter_table), unique(splits)),
                    collapse = ", "))
   }
 
   # Create list of gene x replicate pseudobulk matrices, one per split
   pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
     split_s <- splits == s
-
     keep_genes_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
-
     prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
     keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
-
     keep_genes <- which(keep_genes_count & keep_genes_prop)
-
     model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
     pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
+
+    # Warn if excluded genes are >10% of all genes
+    prop_genes_excluded <- 1 - (length(keep_genes)/nrow(count_matrix) )
+    if (prop_genes_excluded > 0.1) {
+      message("Warning: Excluded ", round(prop_genes_excluded*100, 2),"% of genes in split ", s)
+    }
+
     return(pb_mat)
   }, mc.cores = n_cores)
   names(pb_list) <- keep_splits

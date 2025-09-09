@@ -16,33 +16,45 @@
   # object
   if (name == "object") {
     # Only allowed to be NULL for function countCombinations()
-    # Otherwise, must be of type Seurat, SingleCellExperiment, or matrix
-    if (any(other != "countCombinations", !is.null(input)) &
-        length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment", "matrix"))) < 1) {
-      stop("Input value for '", name, "' is not one of classes Seurat, SingleCellExperiment, or matrix. Please supply valid input!")
-    }
-    # If object is of type matrix, must have row names
-    if ("matrix" %in% methods::is(input) & is.null(rownames(input))) {
-      stop("When input value for '", name, "' is of class matrix, row names cannot be NULL. Please set row names to feature names.")
+    if (any(other != "countCombinations", !is.null(input))) {
+      # Otherwise, must be of type Seurat, SingleCellExperiment, or matrix
+      if (length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment", "matrix"))) < 1) {
+        stop("Input value for '", name, "' is not one of classes 'Seurat', 'SingleCellExperiment', or 'matrix'. Please supply valid input!")
+      }
+      # If object is of type matrix, must have row names
+      if ("matrix" %in% methods::is(input) & is.null(rownames(input))) {
+        stop("When input value for '", name, "' is of class 'matrix', row names cannot be NULL. Please set row names to feature names.")
+      }
     }
   }
 
-  # replicate_labels, group_labels, split_labels, message
-  if (name %in% c("replicate_labels", "group_labels", "split_labels", "message")) {
+  # replicate_labels, group_labels, split_labels
+  if (name %in% c("replicate_labels", "group_labels", "split_labels")) {
     # If not NULL
     if (!is.null(input)) {
       # Should be of class "character"
-      if (!methods::is(input, "character") | length(input) != 1) {
-        stop("Input value for '", name, "' must be a single value of class 'character', please supply valid input!")
+      if (!methods::is(input, "character")) {
+        stop("Input value for '", name, "' must be of class 'character', please supply valid input!")
       }
-      # Must be present in metadata of provided object
-      if (methods::is(other, "Seurat")) {
-        if (!(input %in% colnames(other@meta.data))) {
-          stop("Input value for '", name, "' must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
+      # replicate_labels are not used for cell-level tests
+      if (name == "replicate_labels") {
+        if (other[[2]] == "none") {
+          stop("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'. Please supply valid input!")
         }
-      } else if (methods::is(other, "SingleCellExperiment")) {
-        if (!(input %in% colnames(other@colData))) {
-          stop("Input value for '", name, "' must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+      }
+      # If single value, must be a column name
+      if (length(input) == 1) {
+        # Must be present in metadata of provided object
+        if (methods::is(other[[1]], "Seurat")) {
+          if (!(input %in% colnames(other[[1]]@meta.data))) {
+            stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
+          }
+        } else if (methods::is(other[[1]], "SingleCellExperiment")) {
+          if (!(input %in% colnames(other[[1]]@colData))) {
+            stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+          }
+        } else if (methods::is(other[[1]], "matrix")) {
+          stop("When input to parameter 'object' is of class 'matrix', input value for '", name, "' cannot be a single value, it must be a vector.")
         }
       }
     }
@@ -51,17 +63,21 @@
   # use_cells
   if (name == "use_cells") {
     # If not NULL & object is not NULL
-    if (!is.null(input) & (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment"))) {
-      cell_ids <- colnames(other)
-      if (length(intersect(input, cell_ids)) != length(input)) {
-        stop("Not all provided cells are present in the provided object, please supply valid input!")
+    if (!is.null(input) & !is.null(other[[1]])) {
+      if (other[[2]] == "supplied") {
+        warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
+      } else {
+        cell_ids <- colnames(other[[1]])
+        if (length(intersect(input, cell_ids)) != length(input)) {
+          stop("Not all provided cells are present in the provided object, please supply valid input!")
+        }
       }
     }
   }
 
   # Single positive integer
-  # n_replicates, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, random_seed
-  if (name %in% c("min_cells_per_split", "min_replicates_per_split", "min_replicates_per_group",
+  # n_replicates, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, min_cells_per_feature, random_seed
+  if (name %in% c("min_cells_per_split", "min_replicates_per_split", "min_replicates_per_group", "min_cells_per_feature",
                   "n_replicates", "n_group1",
                   "n_combinations", "n_iterations",
                   "random_seed", "n_cores")) {
@@ -81,12 +97,24 @@
           stop("Input value for '", name, "' must be less than input value for 'n_replicates'. Please supply valid input!")
         }
       }
+      # min_cells_per_split, min_cells_per_feature are not applicable when pre-computed pseudobulk matrix is supplied by the user
+      if (name %in% c("min_cells_per_split", "min_cells_per_feature")) {
+        if (other == "supplied") {
+          warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
+        }
+      }
+      # min_replicates_per_split is not applicable when doing cell-level tests
+      if (name %in% c("min_replicates_per_split")) {
+        if (other == "none") {
+          warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
+        }
+      }
     }
   }
 
   # Single non-negative integer
-  # min_cells_per_feature, min_DE
-  if (name %in% c("min_cells_per_feature", "min_DE")) {
+  # min_DE
+  if (name %in% c("min_DE")) {
     # Should be of class 'numeric', must be a single value
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
@@ -98,11 +126,17 @@
   }
 
   # Single Boolean value
-  # pseudobulk, return_all, verbose
-  if (name %in% c("pseudobulk", "return_all", "verbose")) {
+  # force_balance, return_all, verbose
+  if (name %in% c("force_balance", "return_all", "verbose")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
+    }
+    # force_balance is not applicable for cell-level tests
+    if (name %in% c("force_balance")) {
+      if (other == "none" & input == TRUE) {
+        stop("Parameter '", name, "' cannot be set to '", input, "' when parameter 'pseudobulk' is set to 'none'. Please supply valid input!")
+      }
     }
   }
 
@@ -113,6 +147,8 @@
       # Only relevant for Seurat and SingleCellExperiment objects
       if (is.null(other)) {
         warning("Input value for '", name, "' is not used when 'object' is NULL.")
+      } else if (methods::is(other, "matrix")) {
+        warning("Input value for '", name, "' is not used when 'object' is of class 'matrix'.")
       } else if (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment")) {
         # Should be of class 'character'
         if (!methods::is(input, "character") | length(input) != 1) {
@@ -169,8 +205,8 @@
       stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
     }
     # Must be among permitted values
-    if (!(input %in% c("edgeR", "DESeq2", "limma"))) {
-      stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma"), collapse = ", "), "), please supply valid input!")
+    if (!(input %in% c("edgeR", "DESeq2", "limma", "wilcox"))) {
+      stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma", "wilcox"), collapse = ", "), "), please supply valid input!")
     }
   }
 
@@ -190,8 +226,12 @@
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("LRT", "Wald"), collapse = ", "), "), please supply valid input!")
       }
     } else if (other == "limma") {
-      if (!(input %in% c("trend", "voom"))) {
-        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("trend", "voom"), collapse = ", "), "), please supply valid input!")
+      if (!(input %in% c("voom"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("voom"), collapse = ", "), "), please supply valid input!")
+      }
+    } else if (other == "wilcox") {
+      if (!(input %in% c("standard", "correlation-adjusted"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("standard", "correlation-adjusted"), collapse = ", "), "), please supply valid input!")
       }
     }
   }
@@ -233,6 +273,12 @@
     if (input > 1) {
       stop("Input value for '", name, "' cannot be greater than 1. Please supply valid input!")
     }
+    # min_prop_cells_per_feature is not applicable when pre-computed pseudobulk matrix is supplied by the user
+    if (name %in% c("min_prop_cells_per_feature")) {
+      if (other == "supplied") {
+        warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
+      }
+    }
   }
 
   # use_splits
@@ -261,4 +307,23 @@
     }
   }
 
+  # pseudobulk
+  if (name == "pseudobulk") {
+    # Should be of class 'character'
+    if (!methods::is(input, "character") | length(input) != 1) {
+      stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+    }
+    # Must be among permitted values
+    if (!(input %in% c("generate", "supplied", "none"))) {
+      stop("Input for '", name, "' must be among permitted values (", paste0(c("generate", "supplied", "none"), collapse = ", "), "), please supply valid input!")
+    }
+    # Issue warning for cell-level tests
+    if (!(input == "none")) {
+      warning("Cell-level tests are not recommended in most cases, proceed with caution.")
+    }
+    # If supplied, object cannot be Seurat or SingleCellExperiment
+    if (input == "supplied" & length(intersect(methods::is(other), c("Seurat", "SingleCellExperiment"))) > 0) {
+      stop("When input for '", name, "' is '", input, "', parameter 'object' must be of class 'matrix'. Please supply valid input!")
+    }
+  }
 }
