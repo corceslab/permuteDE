@@ -2,19 +2,30 @@
 #'
 #' Given two groups of replicates, this function calculates the number of unique
 #' ways to divide the replicates into two groups while preserving group sizes.
-#' The formula is: C = n!/(k!(n-k)!). The input takes two forms: (1) replicate
-#' and group column names; (2) total number of replicates (n) and the number of
-#' replicates in one group (k)(doesn't matter which).
+#' The formula is: C = n!/(k!(n-k)!). (see base function \code{choose})
 #'
-#' (see base function \code{choose})
+#' Users may provide three alternate types of input:
 #'
-#' @param object A 'Seurat' or 'SingleCellExperiment' object.
-#' @param replicate_label A string or character vector indicating the column
-#' containing replicate labels. Defaults to \code{NULL}.
-#' @param group_label A string or character vector indicating the column
-#' containing two comparison group labels. Defaults to \code{NULL}.
-#' @param use_cells A vector of cell names to subset. Defaults to \code{NULL},
-#' which includes all cells.
+#' (1) A vector of replicate labels and a vector of group labels (in order)
+#'
+#' (2) The total number of replicates (n) and the number of
+#' replicates in one group (k) (doesn't matter which group).
+#'
+#' (3) Column names indicating replicate and group metadata columns in a
+#' provided 'Seurat' or 'SingleCellExperiment' object.
+#'
+#' @param object An optional 'Seurat' or 'SingleCellExperiment' object. If
+#' \code{NULL}, \code{countCombinations} will expect either (1) vector input to
+#' parameters \code{replicate_label} and \code{group_label} or (2) numeric input
+#' to parameters \code{n_replicates} and \code{n_group1}.
+#' @param replicate_label A string indicating the name of the
+#' metadata column containing the replicate labels or a character vector
+#' containing the replicate labels in order.
+#' @param group_labels A string indicating the name of the
+#' column containing the two comparison group labels or a character vector
+#' containing the comparison labels in order.
+#' @param use_cells A vector of cell names to subset prior to calculating
+#' possible group comibinations. Default = \code{NULL} will use all cells.
 #' @param n_replicates A numeric value indicating the total number of replicates.
 #' Defaults to \code{NULL}.
 #' @param n_group1 A numeric value indicating the number of replicates in one
@@ -37,9 +48,9 @@ countCombinations <- function(object = NULL,
   # ---------------------------------------------------------------------------
 
   .validInput(object, "object", "countCombinations")
-  .validInput(replicate_labels, "replicate_labels", object)
+  .validInput(replicate_labels, "replicate_labels", list(object, "not applicable"))
   .validInput(group_labels, "group_labels", object)
-  .validInput(use_cells, "use_cells", object)
+  .validInput(use_cells, "use_cells", list(object, "not applicable"))
   .validInput(n_replicates, "n_replicates")
   .validInput(n_group1, "n_group1", n_replicates)
 
@@ -54,8 +65,8 @@ countCombinations <- function(object = NULL,
     }
   } else {
     # use 'object', 'replicate_labels', 'group_labels'
-    if (any(is.null(object), is.null(replicate_labels), is.null(group_labels))) {
-      stop("If not using 'n_replicates' and 'n_group1', input must be provided to 'object', 'replicate_labels', and 'group_labels'.")
+    if (any(is.null(replicate_labels), is.null(group_labels))) {
+      stop("If not using 'n_replicates' and 'n_group1', input must be provided to 'replicate_labels' and 'group_labels'.")
     }
     if (!is.null(n_replicates)) {
       warning("Input for 'n_replicates' was not used.")
@@ -65,14 +76,30 @@ countCombinations <- function(object = NULL,
     }
 
     # retrieve metadata
-    replicates <- .retrieveData(object = object,
-                             type = "cell_metadata",
-                             name = replicate_labels,
-                             use_cells = use_cells)
-    groups <- .retrieveData(object = object,
-                            type = "cell_metadata",
-                            name = group_labels,
-                            use_cells = use_cells)
+
+    if (length(replicate_labels) != length(group_labels)) {
+      stop("Input to parameters 'replicate_labels' and 'group_labels' must be of the same length. Please supply valid input!")
+    }
+
+    if (length(replicate_labels) == 1) {
+      if (is.null(object)) {
+        stop("When input for 'replicate_labels' and 'group_labels' are single values, input must be provided to parameter 'object'.")
+      }
+      replicates <- .retrieveData(object = object,
+                                  type = "cell_metadata",
+                                  name = replicate_labels,
+                                  use_cells = use_cells)
+      groups <- .retrieveData(object = object,
+                              type = "cell_metadata",
+                              name = group_labels,
+                              use_cells = use_cells)
+    } else {
+      if (!is.null(object)) {
+        warning("When input for 'replicate_labels' and 'group_labels' are vectors, input to parameter 'object' is not used.")
+      }
+      replicates <- replicate_labels
+      groups <- group_labels
+    }
 
     # count unique replicates and unique replicates in one group
     n_replicates <- dplyr::n_distinct(replicates)
