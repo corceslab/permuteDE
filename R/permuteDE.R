@@ -4,43 +4,51 @@
 #' the given set of replicates and performing pseudobulk differential expression
 #' between those permuted groups. The metric used by the permutation test is the
 #' number of significantly differentially expressed features for a given
-#' significance level 'alpha'.
+#' significance level \code{alpha} and log fold change threshold
+#' \code{lfc_threshold}.
 #'
 #' As input, this function requires the output from function \code{runDE}
-#' containing the pseudobulk values for each feature and the differential
-#' expression results for the true group labels.
+#' containing the pseudobulk (or cell-level) values for each feature and the
+#' differential expression results for the true group labels.
 #'
-#' Permutation is performed at the replicate level, rather than the cell level,
-#' and is performed without replacement, such that each iteration is a unique
-#' permutation of the group labels.
+#' Permutation is always performed at the replicate level, rather than the cell
+#' level, and is performed without replacement, such that each iteration is a
+#' unique permutation of the group labels.
 #'
-#' Notably, this permutation test is not performed to identify the true
-#' differentially expressed features, but rather to assess how many false
-#' positive significant differentially expressed features can be expected by
-#' chance, and to characterize the log fold change and significance observed for
-#' such false positives.
+#' Notably, this permutation test does not pass judgment on any individual gene,
+#' rather, it is intended to assess how many false positive significant
+#' differentially expressed features can be expected by chance. In addition, it
+#' can be used to characterize the log fold change and significance observed for
+#' such false positives to help users prioritize reliable DE results.
 #'
 #' @param input Output from function 'runDE' containing differential expression
 #' results, pseudobulk values, and parameters used.
 #' @param alpha A numeric value indicating the significance level used for
 #' permutation test comparisons of the number of differentially expressed
 #' features. Defaults to 0.05.
-#' @param lfc_threshold A numeric value indicating the log2 Fold Change level 
-#' used to define statistically significant genes.
+#' @param lfc_threshold A numeric value indicating the minimum absolute value
+#' log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
+#' 0 to disregard log fold change when counting hits.
 #' @param n_iterations A numeric value indicating the number of iterations run
-#' for the permutation test. Defaults to 1000.
+#' for the permutation test. Defaults to 1000. Computational time increases
+#' approximately linearly with the number of iterations.
 #' @param use_splits A vector containing the names of splits to use. Defaults to
-#' \code{NULL}.
+#' \code{NULL}, which will try all splits.
 #' @param min_DE A numeric value indicating the minimum number of
 #' differentially expressed features between the true group labels for a split,
 #' below which permutations will not be run. Defaults to 2. Set to 0 to run
 #' permutation test for all splits, regardless of the true number of DEGs.
+#' @param return_all A Boolean value indicating whether to store and return all
+#' DE results (log fold changes and p-values per gene per split) for every
+#' single permutation. Defaults = \code{FALSE} will return only high-level
+#' permutation test results. Note that setting this to \code{TRUE} will
+#' substantially increase the size of the returned output.
 #' @param random_seed A numeric value indicating the random seed to be used.
 #' Defaults to 1.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
-#' @param verbose A boolean value indicating whether to use verbose output
+#' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
 #'
@@ -49,6 +57,8 @@
 #'   results by split}
 #'   \item{permutation_summary}{Dataframe containing the permutation DE summary
 #'   metrics by split}
+#'   \item{permutation_all_DE_results}{If parameter 'return_all' is TRUE,
+#'   dataframe DE results for each feature, by split, for each iteration}}
 #'   \item{parameters}{Dataframe record of parameter values used}
 #'   }
 #'
@@ -60,6 +70,7 @@ permuteDE <- function(input,
                       n_iterations = 1000,
                       use_splits = NULL,
                       min_DE = 2,
+                      return_all = FALSE,
                       random_seed = 1,
                       n_cores = NULL,
                       verbose = TRUE) {
@@ -70,31 +81,36 @@ permuteDE <- function(input,
 
   .validInput(input, "input")
   .validInput(alpha, "alpha")
+  .validInput(lfc_threshold, "lfc_threshold")
   .validInput(n_iterations, "n_iterations")
-  .validInput(return_all, "return_all")
   .validInput(use_splits, "use_splits", input)
   .validInput(min_de, "min_de")
+  .validInput(return_all, "return_all")
   .validInput(random_seed, "random_seed")
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
 
-  # Set defaults & fetch values
+  # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
   }
+
+  # ---------------------------------------------------------------------------
+  # Set up
+  # ---------------------------------------------------------------------------
+
+  # Fetch values
   if (is.null(use_splits)) {
     use_splits <- names(input$PB_values)
   }
 
-  # Filter out additional splits based on true DE values
-  true_DE_values <- input$DE_results %>%
-    dplyr::group_by(split) %>%
+  # Calculate true number of DE features
+  true_DE_values <- input$DE_results |>
+    dplyr::group_by(split) |>
     dplyr::summarise(
-      n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold, na.rm = TRUE),
-      .groups = "drop"
-    )
-  
-  # remove splits with fewer than the minimum number of DE features
+      n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold, na.rm = TRUE))
+
+  # Remove splits with fewer than the minimum number of DE features
   use_splits <- intersect(use_splits,
                           dplyr::filter(true_DE_values, n_sig >= min_DE)$split)
   remove_splits <- dplyr::filter(true_DE_values, n_sig < min_DE)$split
@@ -131,6 +147,14 @@ permuteDE <- function(input,
                                          true_n_sig = NULL,
                                          p_n_sig = NULL,
                                          n_iterations = NULL)
+  if (return_all == TRUE) {
+    permutation_DE_results_all <- data.frame(gene = NULL,
+                                             lfc = NULL,
+                                             pvalue = NULL,
+                                             padj = NULL,
+                                             permutation = NULL,
+                                             split = NULL)
+  }
 
   # For each split
   for (s in 1:n_splits) {
@@ -183,15 +207,20 @@ permuteDE <- function(input,
                                                                                                      targets = targets_i,
                                                                                                      design = design_i,
                                                                                                      de_test = de_test))
-                                                         de_results_i <- de_results_i %>%
-                                                           dplyr::mutate(padj = stats::p.adjust(pvalue, method = padj_method)) %>%
-                                                           dplyr::summarise(n_sig = sum(padj < alpha),
-                                                                            min_lfc = min(lfc),
-                                                                            max_lfc = max(lfc)) %>%
-                                                           data.frame() %>%
-                                                           dplyr::mutate(permutation = i,
-                                                                         split = current_split) %>%
-                                                           dplyr::select(split, permutation, n_sig, min_lfc, max_lfc)
+                                                         de_results_i <- de_results_i |>
+                                                           dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
+                                                                         permutation = i,
+                                                                         split = current_split) |>
+                                                           dplyr::arrange(padj)
+                                                         if (return_all != TRUE) {
+                                                           de_results_i <- de_results_i |>
+                                                             dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
+                                                             dplyr::summarise(n_sig = n(),
+                                                                              min_lfc_sig = min(lfc),
+                                                                              max_lfc_sig = max(lfc)) %>%
+                                                             data.frame() %>%
+                                                             dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
+                                                         }
                                                        } else {
                                                          de_results_i <- NULL
                                                        }
@@ -199,11 +228,27 @@ permuteDE <- function(input,
                                                      },
                                                      mc.cores = n_cores,
                                                      mc.set.seed = TRUE)
-      permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) %>% data.frame()
-      # If true labels were not removed, remove one random set of labels so total number includes true set
-      if (nrow(permutation_DE_results_s) == current_n_iterations + 1) {
+
+      if (return_all == TRUE) {
+        permutation_DE_results_s_all <- do.call(rbind, permutation_DE_results_list) %>% data.frame()
+        permutation_DE_results_s <- permutation_DE_results_all |>
+          dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
+          dplyr::group_by(split, permutation) |>
+          dplyr::summarise(n_sig = n(),
+                           min_lfc_sig = min(lfc),
+                           max_lfc_sig = max(lfc)) %>%
+          data.frame() %>%
+          dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
+      } else {
+        permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) %>% data.frame()
+      }
+
+      # If true labels were among random permutations, they were then skipped, leaving n_iterations - 1
+      # If not, remove one random set of labels, leaving n_iterations - 1
+      if (nrow(permutation_DE_results_s) == current_n_iterations) {
         permutation_DE_results_s <- permutation_DE_results_s[-nrow(permutation_DE_results_s),]
       }
+
       # Conduct permutation test
       true_n_sig <- dplyr::filter(true_DE_values, split == current_split)$n_sig
 
@@ -215,29 +260,43 @@ permuteDE <- function(input,
       # Add to overall results
       permutation_DE_results <- rbind(permutation_DE_results, permutation_DE_results_s)
       permutation_test_results <- rbind(permutation_test_results, permutation_test_results_s)
-      
+      if (return_all == TRUE) {
+        permutation_DE_results_all <- rbind(permutation_DE_results_all, permutation_DE_results_s_all)
+      }
+
     } else {
       # Progress
       if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
                            " : Skipping split ", current_split, ", ", dplyr::n_distinct(true_groups), " group(s) present.")
     }
   }
-  
+
   # ---------------------------------------------------------------------------
   # Wrap up
   # ---------------------------------------------------------------------------
 
   parameter_list <- list("alpha" = alpha,
+                         "lfc_threshold" = lfc_threshold,
                          "n_iterations" = n_iterations,
                          "use_splits" = use_splits,
                          "min_DE" = min_DE,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "padj_method" = padj_method,
-                         "random_seed" = random_seed)
+                         "return_all" = return_all,
+                         "random_seed" = random_seed,
+                         "n_cores" = n_cores)
 
   # Return
-  return(list("permutation_test_results" = permutation_test_results,
-              "permutation_DE_results" = permutation_DE_results,
-              "parameters" = parameter_list))
+  if (return_all == TRUE) {
+    return(list("permutation_test_results" = permutation_test_results,
+                "permutation_DE_results" = permutation_DE_results,
+                "permutation_DE_results_all" = permutation_DE_results_all,
+                "parameters" = parameter_list))
+  } else {
+    return(list("permutation_test_results" = permutation_test_results,
+                "permutation_DE_results" = permutation_DE_results,
+                "parameters" = parameter_list))
+  }
+
 }

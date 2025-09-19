@@ -92,8 +92,12 @@
 #' @return Returns a list containing the following elements: \describe{
 #'   \item{DE_results}{Dataframe containing DE results for each feature, by
 #'   split}
-#'   \item{PB_values}{List of feature x replicate matri(ces) containing
-#'   pseudobulk values for each feature, one per split}
+#'   \item{PB_values}{If using pseudobulk data, a list of feature x replicate
+#'   matri(ces) containing pseudobulk values for each feature, one matrix per
+#'   split}
+#'   \item{cell_values}{Alternately, if using cell-level data, a list of feature x
+#'   cell matri(ces) containing counts for each feature, one matrix per
+#'   split}
 #'   \item{group_key}{Dataframe record of group labels corresponding to each
 #'   replicate}
 #'   \item{parameters}{Dataframe record of parameter values used}

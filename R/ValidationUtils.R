@@ -255,9 +255,10 @@
       stop("Parameter '", name, "' must be a list, please supply valid input!")
     }
     # Must have expected elements with set names
-    if (!identical(names(input), c("DE_results", "PB_values",  "group_key", "parameters"))) {
+    if (!identical(names(input), c("DE_results", "PB_values",  "group_key", "parameters")) |
+        !identical(names(input), c("DE_results", "cell_values",  "group_key", "parameters"))) {
       stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with four named elements ",
-           "('DE_results', 'PB_values', 'group_key', and 'parameters'). Please supply valid input!")
+           "('DE_results', 'PB_values', 'group_key', and 'parameters') for pseudobulk tests or ('DE_results', 'cell_values', 'group_key', and 'parameters') for cell-level tests. Please supply valid input!")
     }
   }
 
@@ -335,5 +336,15 @@
     }
   }
 
+  # lfc_threshold
+  if (name == "lfc_threshold") {
+    # Single non-negative number
+    if (!methods::is(input, "numeric") | length(input) != 1) {
+      stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
+    }
+    if (input < 0) {
+      stop("Input value for '", name, "' cannot be negative. Please supply valid input!")
+    }
+  }
 
 }
