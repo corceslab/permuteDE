@@ -15,8 +15,8 @@
 
   # object
   if (name == "object") {
-    # Only allowed to be NULL for function countCombinations()
-    if (any(other != "countCombinations", !is.null(input))) {
+    # Only allowed to be NULL for functions countCombinations and getCombinations
+    if (any(!(other %in% c("countCombinations", "getCombinations")), !is.null(input))) {
       # Otherwise, must be of type Seurat, SingleCellExperiment, or matrix
       if (length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment", "matrix"))) < 1) {
         stop("Input value for '", name, "' is not one of classes 'Seurat', 'SingleCellExperiment', or 'matrix'. Please supply valid input!")
@@ -326,4 +326,14 @@
       stop("When input for '", name, "' is '", input, "', parameter 'object' must be of class 'matrix'. Please supply valid input!")
     }
   }
+
+  # message
+  if (name == "message") {
+    # Should be of class 'character'
+    if (!methods::is(input, "character") | length(input) != 1) {
+      stop("Input for '", name, "' must be a single value of class 'character'. This parameter is intended for internal use, we recommend leaving it as the default value.")
+    }
+  }
+
+
 }

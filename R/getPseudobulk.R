@@ -45,7 +45,7 @@
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
-#' @param verbose A boolean value indicating whether to use verbose output
+#' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
 #'

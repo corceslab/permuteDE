@@ -4,7 +4,7 @@
 #' ways to divide the replicates into two groups while preserving group sizes.
 #' The formula is: C = n!/(k!(n-k)!). (see base function \code{choose})
 #'
-#' Users may provide three alternate types of input:
+#' Users may provide input in three ways:
 #'
 #' (1) A vector of replicate labels and a vector of group labels (in order)
 #'
@@ -26,8 +26,8 @@
 #' containing the comparison labels in order.
 #' @param use_cells A vector of cell names to subset prior to calculating
 #' possible group comibinations. Default = \code{NULL} will use all cells.
-#' @param n_replicates A numeric value indicating the total number of replicates.
-#' Defaults to \code{NULL}.
+#' @param n_replicates A numeric value indicating the total number of
+#' replicates. Defaults to \code{NULL}.
 #' @param n_group1 A numeric value indicating the number of replicates in one
 #' group (doesn't matter which). Defaults to \code{NULL}.
 #'
