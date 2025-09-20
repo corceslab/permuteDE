@@ -123,6 +123,12 @@ permuteDE <- function(input,
   }
 
   n_splits <- length(use_splits)
+
+  # Stop if no splits pass min_DE threshold
+  if (n_splits == 0) {
+    stop("No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
+  }
+
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
   padj_method <- input$parameters$p_adjust_method
