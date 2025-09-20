@@ -45,7 +45,7 @@
 #' @param de_test Which test to use for differential expression analysis.
 #' Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
 #' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("voom"),
-#' "wilcox" ("standard", "correlation-adjusted"). Defaults to "LRT".
+#' "wilcox" ("presto"). Defaults to "LRT".
 #' @param p_adjust_method A string indicating which multiple comparison
 #' adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
 #' Defaults to "fdr" (Benjamini & Hochberg, 1995).
@@ -349,6 +349,14 @@ runDE <- function(object,
   # Remove NULL elements
   matrix_list <- matrix_list[lengths(matrix_list) > 0]
 
+  # Create corresponding list of replicates/groups
+  target_list <- lapply(matrix_list, FUN = function(i) {
+    replicates_i <- colnames(i)
+    groups_i <- group_key[replicates_i, c("replicate", "group")]
+    return(groups_i)
+  })
+  names(target_list) <- names(matrix_list)
+
   # ---------------------------------------------------------------------------
   # Perform pseudobulk differential expression
   # ---------------------------------------------------------------------------
@@ -377,7 +385,7 @@ runDE <- function(object,
                                                                                            de_test = de_test),
                                                                       wilcox = .runDE.wilcox(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
-                                                                                             design = design_i,
+                                                                                             pseudobulk = pseudobulk,
                                                                                              de_test = de_test))
                                                de_results_i <- de_results_i |>
                                                  dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
@@ -554,12 +562,25 @@ runDE <- function(object,
 #
 # mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
 # targets -- A dataframe containing sample to group key
-# design -- A model.matrix design object
+# pseudobulk -- Pseudobulk handling, indicates whether data needs normalization
 # de_test -- Which test to use for differential expression
 
 .runDE.wilcox <- function(mat,
                           targets,
-                          design,
-                          de_test = "standard") {
-  # TODO
+                          pseudobulk,
+                          de_test = "presto") {
+
+  ### TODO: Insert CPM or log normalization ###
+
+  # Run Wilcox rank sum test
+  wilcox_results <- presto::wilcoxauc(X = mat,
+                                      y = targets$group)
+
+  wilcox_results <- wilcox_results |>
+    dplyr::transmute(gene = feature,
+                     lfc = logFC,
+                     pvalue = pval)
+  rownames(wilcox_results) <- NULL
+
+  return(wilcox_results)
 }

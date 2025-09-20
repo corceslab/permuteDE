@@ -230,8 +230,8 @@
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("voom"), collapse = ", "), "), please supply valid input!")
       }
     } else if (other == "wilcox") {
-      if (!(input %in% c("standard", "correlation-adjusted"))) {
-        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("standard", "correlation-adjusted"), collapse = ", "), "), please supply valid input!")
+      if (!(input %in% c("presto"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("presto"), collapse = ", "), "), please supply valid input!")
       }
     }
   }
