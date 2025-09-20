@@ -58,7 +58,7 @@
 #'   \item{permutation_summary}{Dataframe containing the permutation DE summary
 #'   metrics by split}
 #'   \item{permutation_all_DE_results}{If parameter 'return_all' is TRUE,
-#'   dataframe DE results for each feature, by split, for each iteration}}
+#'   dataframe DE results for each feature, by split, for each iteration}
 #'   \item{parameters}{Dataframe record of parameter values used}
 #'   }
 #'
@@ -132,6 +132,7 @@ permuteDE <- function(input,
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
   padj_method <- input$parameters$p_adjust_method
+  pseudobulk <- input$parameters$pseudobulk
 
   # ---------------------------------------------------------------------------
   # Compute permuted DE results
@@ -202,17 +203,22 @@ permuteDE <- function(input,
                                                          design_i <- stats::model.matrix(~ group, data = targets_i)
                                                          # Run DE
                                                          de_results_i <- switch(de_method,
-                                                                                edgeR = .runDE.edgeR(pseudobulk = current_pb,
-                                                                                                     targets = targets_i,
+                                                                                edgeR = .runDE.edgeR(mat = matrix_list[[i]],
+                                                                                                     targets = target_list[[i]],
                                                                                                      design = design_i,
                                                                                                      de_test = de_test),
-                                                                                DESeq2 = .runDE.DESeq2(pseudobulk = current_pb,
-                                                                                                       targets = targets_i,
+                                                                                DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
+                                                                                                       targets = target_list[[i]],
+                                                                                                       design = design_i,
                                                                                                        de_test = de_test),
-                                                                                limma = .runDE.limma(pseudobulk = current_pb,
-                                                                                                     targets = targets_i,
+                                                                                limma = .runDE.limma(mat = matrix_list[[i]],
+                                                                                                     targets = target_list[[i]],
                                                                                                      design = design_i,
-                                                                                                     de_test = de_test))
+                                                                                                     de_test = de_test),
+                                                                                wilcox = .runDE.wilcox(mat = matrix_list[[i]],
+                                                                                                       targets = target_list[[i]],
+                                                                                                       pseudobulk = pseudobulk,
+                                                                                                       de_test = de_test))
                                                          de_results_i <- de_results_i |>
                                                            dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                                                                          permutation = i,
@@ -221,7 +227,7 @@ permuteDE <- function(input,
                                                          if (return_all != TRUE) {
                                                            de_results_i <- de_results_i |>
                                                              dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
-                                                             dplyr::summarise(n_sig = n(),
+                                                             dplyr::summarise(n_sig = dplyr::n(),
                                                                               min_lfc_sig = min(lfc),
                                                                               max_lfc_sig = max(lfc)) |>
                                                              data.frame() |>
@@ -240,7 +246,7 @@ permuteDE <- function(input,
         permutation_DE_results_s <- permutation_DE_results_all |>
           dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
           dplyr::group_by(split, permutation) |>
-          dplyr::summarise(n_sig = n(),
+          dplyr::summarise(n_sig = dplyr::n(),
                            min_lfc_sig = min(lfc),
                            max_lfc_sig = max(lfc)) |>
           data.frame() |>
@@ -289,6 +295,7 @@ permuteDE <- function(input,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "padj_method" = padj_method,
+                         "pseudobulk" = pseudobulk,
                          "return_all" = return_all,
                          "random_seed" = random_seed,
                          "n_cores" = n_cores)

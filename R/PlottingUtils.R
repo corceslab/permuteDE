@@ -32,34 +32,34 @@ theme_permuteDE <- function(color = "black",
                             axis_tick_length_mm = 1,
                             rotate_x_axis_text_90 = FALSE,
                             rotate_y_axis_text_90 = FALSE){
-  theme <- theme(
-    text = element_text(color = color, size = base_size),
-    axis.text = element_text(color = color, size = base_size),
-    axis.title = element_text(color = color, size = axis_title_size),
-    plot.title = element_text(color = color, size = plot_title_size),
-    plot.margin = unit(c(plot_margin_cm, plot_margin_cm, plot_margin_cm, plot_margin_cm), "cm"),
-    panel.background = element_rect(fill = "transparent", colour = NA),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_rect(fill = NA, color = color, size = (4/3) * base_rect_size),
-    axis.ticks.length = unit(axis_tick_length_mm, "mm"),
-    axis.ticks = element_line(color = color, size = (4/3) * base_line_size),
-    legend.key = element_rect(fill = "transparent", colour = NA),
-    legend.text = element_text(color = color, size = legend_text_size),
-    legend.background = element_rect(fill = "transparent"),
-    legend.box.background = element_rect(fill = "transparent"),
+  custom_theme <- ggplot2::theme(
+    text = ggplot2::element_text(color = color, size = base_size),
+    axis.text = ggplot2::element_text(color = color, size = base_size),
+    axis.title = ggplot2::element_text(color = color, size = axis_title_size),
+    plot.title = ggplot2::element_text(color = color, size = plot_title_size),
+    plot.margin = grid::unit(c(plot_margin_cm, plot_margin_cm, plot_margin_cm, plot_margin_cm), "cm"),
+    panel.background = ggplot2::element_rect(fill = "transparent", colour = NA),
+    panel.grid.major = ggplot2::element_blank(),
+    panel.grid.minor = ggplot2::element_blank(),
+    panel.border = ggplot2::element_rect(fill = NA, color = color, size = (4/3) * base_rect_size),
+    axis.ticks.length = grid::unit(axis_tick_length_mm, "mm"),
+    axis.ticks = ggplot2::element_line(color = color, size = (4/3) * base_line_size),
+    legend.key = ggplot2::element_rect(fill = "transparent", colour = NA),
+    legend.text = ggplot2::element_text(color = color, size = legend_text_size),
+    legend.background = ggplot2::element_rect(fill = "transparent"),
+    legend.box.background = ggplot2::element_rect(fill = "transparent"),
     legend.position = legend_position,
-    strip.text = element_text(size = base_size, color="black"),
-    plot.background = element_rect(fill = "transparent", color = NA)
+    strip.text = ggplot2::element_text(size = base_size, color="black"),
+    plot.background = ggplot2::element_rect(fill = "transparent", color = NA)
   )
 
   if(rotate_x_axis_text_90){
-    theme <- theme %+replace% theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    custom_theme <- custom_theme + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))
   }
   if(rotate_y_axis_text_90){
-    theme <- theme %+replace% theme(axis.text.y = element_text(angle = 90, vjust = 1))
+    custom_theme <- custom_theme + ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90, vjust = 1))
   }
-  return(theme)
+  return(custom_theme)
 }
 
 #' Generate volcano plots from differential expression results
@@ -137,7 +137,7 @@ getVolcanos <- function(runDE_output,
       col = c("grey30", "grey30", "royalblue", significant_color)
     ) +
       theme_permuteDE() +
-      theme(legend.position = 'none')
+      ggplot2::theme(legend.position = 'none')
   })
 
   names(volcano_list) <- names(split_results)
@@ -158,8 +158,6 @@ getVolcanos <- function(runDE_output,
 #' @export
 
 getHistograms <- function(permuteDE_result, title = NULL) {
-  library(ggplot2)
-  library(stringr)
   permutation_DE_results <- permuteDE_result$permutation_DE_results
   permutation_test_results <- permuteDE_result$permutation_test_results
   all_splits <- unique(permutation_DE_results$split)
@@ -174,13 +172,13 @@ getHistograms <- function(permuteDE_result, title = NULL) {
     label_x <- min(df_test$true_n_sig + 5, x_max * 0.95)
 
 
-    ggPlotHistogram(df_perm$n_sig, xlabel = 'Number of DE genes',
+    .plotHistogram(df_perm$n_sig, xlabel = 'Number of DE genes',
                     histAlpha = 0.5, vline = df_test$true_n_sig) +
-      geom_vline(xintercept = df_test$true_n_sig,
+      ggplot2::geom_vline(xintercept = df_test$true_n_sig,
                  color = 'red',
                  linewidth = 1,
                  linetype = 'solid') +
-      annotate(
+      ggplot2::annotate(
         "label",
         x = label_x,
         y = Inf,
@@ -194,9 +192,9 @@ getHistograms <- function(permuteDE_result, title = NULL) {
         fontface = "bold",
         label.size = 0.3
       ) +
-      labs(
+      ggplot2::labs(
         title = if (is.null(title)) {
-          str_wrap(
+          stringr::str_wrap(
             paste0(
               'Distribution of # DE genes across ',
               n_iterations, ' Iterations in ', split_id
@@ -245,32 +243,32 @@ getHistograms <- function(permuteDE_result, title = NULL) {
 
   df <- data.frame(y = x)
 
-  p <- ggplot(df, aes(y)) +
-    geom_histogram(bins = bins, fill = histFill, color = histColor, size = size, alpha = histAlpha)
+  p <- ggplot2::ggplot(df, ggplot2::aes(y)) +
+    ggplot2::geom_histogram(bins = bins, fill = histFill, color = histColor, size = size, alpha = histAlpha)
 
   if (addDensity) {
     p <- p +
-      geom_density(aes(y = ..count..), fill = densityFill, color = NA, alpha = densityAlpha, size = size) +
-      stat_density(aes(y = ..count..), color = densityColor, geom = "line", size = size)
+      ggplot2::geom_density(ggplot2::aes(y = ..count..), fill = densityFill, color = NA, alpha = densityAlpha, size = size) +
+      ggplot2::stat_density(ggplot2::aes(y = ..count..), color = densityColor, geom = "line", size = size)
   }
 
   if (!is.null(vline)) {
-    p <- p + geom_vline(xintercept = vline, color = vlineColor, linewidth = vlineWidth, linetype = vlineType)
+    p <- p + ggplot2::geom_vline(xintercept = vline, color = vlineColor, linewidth = vlineWidth, linetype = vlineType)
   }
 
   p <- p +
-    themeCorcesRegular(base_size = baseSize) +
-    xlab(xlabel) + ylab(ylabel)
+    theme_permuteDE(base_size = baseSize) +
+    ggplot2::xlab(xlabel) + ggplot2::ylab(ylabel)
 
   # Include vline in xlim computation
   xlim_raw <- range(c(df$y, vline), na.rm = TRUE)
-  xlim <- extendrange(xlim_raw, f = 0.1)
+  xlim <- grDevices::extendrange(xlim_raw, f = 0.1)
 
-  data <- ggplot_build(p)$data[[1]]
+  data <- ggplot2::ggplot_build(p)$data[[1]]
   ylim <- c(0, max(data$y, na.rm = TRUE) * 1.1)
   ratioXY <- ratioYX * diff(xlim) / diff(ylim)
 
-  p <- p + coord_equal(ratio = ratioXY, xlim = xlim, ylim = ylim, expand = FALSE)
+  p <- p + ggplot2::coord_equal(ratio = ratioXY, xlim = xlim, ylim = ylim, expand = FALSE)
 
   return(p)
 }

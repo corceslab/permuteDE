@@ -3,12 +3,12 @@
 # ---------------------------------------------------------------------------
 
 
-#' Retrieve data from an object
-#'
-#' @param object A 'Seurat' or 'SingleCellExperiment' object
-#' @param type A string indicating data type to retrieve
-#' @name name A string under which data are stored
-#' @use_cells (Optional) A string vector of cell names to subset
+# Retrieve data from an object
+#
+# object A 'Seurat' or 'SingleCellExperiment' object
+# type A string indicating data type to retrieve
+# name A string under which data are stored
+# use_cells (Optional) A string vector of cell names to subset
 .retrieveData <- function(object, type, name, use_cells = NULL) {
   if (methods::is(object, "Seurat")) {
     # for a Seurat object

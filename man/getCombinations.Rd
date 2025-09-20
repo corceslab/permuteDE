@@ -18,22 +18,27 @@ getCombinations(
 )
 }
 \arguments{
-\item{object}{An object of class 'Seurat' or 'SingleCellExperiment'.}
+\item{object}{An optional 'Seurat' or 'SingleCellExperiment' object. If
+\code{NULL}, \code{countCombinations} will expect either (1) vector input to
+parameters \code{replicate_label} and \code{group_label} or (2) numeric input
+to parameters \code{n_replicates} and \code{n_group1}.}
 
-\item{replicate_labels}{A character string or vector indicating the name of the
-column containing the replicate labels. Defaults to \code{NULL}.}
+\item{replicate_labels}{A string indicating the name of the
+metadata column containing the replicate labels or a character vector
+containing the replicate labels in order.}
 
-\item{group_labels}{A character string or vector indicating the name of the
-column containing the two comparison group labels. Defaults to \code{NULL}.}
+\item{group_labels}{A string indicating the name of the
+column containing the two comparison group labels or a character vector
+containing the comparison labels in order.}
 
-\item{use_cells}{A vector of cell names subset to. Default = \code{NULL} will
-use all cells.}
+\item{use_cells}{A vector of cell names to subset prior to calculating
+possible group comibinations. Default = \code{NULL} will use all cells.}
 
-\item{n_replicates}{A numeric value indicating the total number of replicates.
-Defaults to \code{NULL}.}
+\item{n_replicates}{A numeric value indicating the total number of
+replicates. Defaults to \code{NULL}.}
 
-\item{n_group1}{A numeric value indicating the number of replicates that belong
-to one of the two groups (doesn't matter which). Defaults to \code{NULL}.}
+\item{n_group1}{A numeric value indicating the number of replicates in one
+group (doesn't matter which). Defaults to \code{NULL}.}
 
 \item{n_combinations}{A numeric value indicating the number of combinations
 to generate. Defaults to 1000.}
@@ -44,7 +49,7 @@ to generate. Defaults to 1000.}
 \item{random_seed}{A numeric value indicating the random seed to be used.
 Defaults to 1.}
 
-\item{verbose}{A boolean value indicating whether to use verbose output
+\item{verbose}{A Boolean value indicating whether to use verbose output
 during the execution of this function. Defaults to \code{TRUE}.
 Can be set to \code{FALSE} for a cleaner output.}
 }
@@ -53,8 +58,17 @@ Returns a matrix where each column contains a combination of index
 values indicating which replicates to assign to the first group.
 }
 \description{
-For a set of replicates that belong to two groups, this function will generate
-a set of randomized group combinations. The input should be either the replicate
-and group column names from an object's metadata, or simply the total number
-of replicates (n) and the number of replicates in one of the two groups (k).
+For a set of replicates that belong to two groups, this function will
+generate a set of randomized group combinations.
+}
+\details{
+Users may provide input in three ways:
+
+(1) A vector of replicate labels and a vector of group labels (in order)
+
+(2) The total number of replicates (n) and the number of
+replicates in one group (k) (doesn't matter which group).
+
+(3) Column names indicating replicate and group metadata columns in a
+provided 'Seurat' or 'SingleCellExperiment' object.
 }

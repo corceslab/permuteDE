@@ -2,98 +2,127 @@
 % Please edit documentation in R/runDE.R
 \name{runDE}
 \alias{runDE}
-\title{Run pseudobulk differential expression}
+\title{Run differential expression to compare two groups}
 \usage{
 runDE(
   object,
-  replicate_labels,
+  replicate_labels = NULL,
   group_labels,
   split_labels = NULL,
-  force_balance = FALSE,
   reference_group = NULL,
   use_cells = NULL,
-  min_cells_per_split = 4,
-  min_replicates_per_split = 4,
-  min_replicates_per_group = 2,
-  min_cells_per_feature = 1,
+  pseudobulk = "generate",
   de_method = "edgeR",
   de_test = "LRT",
   p_adjust_method = "fdr",
+  min_cells_per_split = 100,
+  min_replicates_per_split = 6,
+  min_replicates_per_group = 3,
+  min_cells_per_feature = 10,
+  min_prop_cells_per_feature = 0.1,
+  force_balance = FALSE,
   use_assay = NULL,
   use_layer = NULL,
+  random_seed = 1,
   n_cores = NULL,
   verbose = TRUE
 )
 }
 \arguments{
-\item{object}{An object of class 'Seurat' or 'SingleCellExperiment'.}
+\item{object}{An object of class \code{Seurat}, \code{SingleCellExperiment},
+or \code{matrix}. Data supplied as class \code{matrix} may be either a
+feature x cell matrix or a pre-computed pseudobulk feature x replicate
+matrix.}
 
-\item{replicate_labels}{A character string or vector indicating the name of the
-column containing the replicate labels.}
+\item{replicate_labels}{A string indicating the name of the
+metadata column containing the replicate labels or a character vector
+containing the replicate labels in order.}
 
-\item{group_labels}{A character string or vector indicating the name of the
-column containing the two comparison group labels.}
+\item{group_labels}{A string indicating the name of the
+column containing the two comparison group labels or a character vector
+containing the comparison labels in order.}
 
-\item{split_labels}{A character string or vector indicating the name of a
+\item{split_labels}{A string indicating the name of a
 column by which to split the cells prior to pseudobulking and performing
-differential expression (e.g., cell types). Results will be returned for
-each unique value in the column indicated by 'split_labels'. Default =
-\code{NULL} will run pseudobulk differential expression on all cells
-together.}
+differential expression (e.g., cell types). Alternately, a character vector
+containing the split labels for each cell in order. Results will be returned
+for each unique value indicated by \code{split_labels}. Default = \code{NULL}
+will run pseudobulk differential expression on all cells together.}
 
-\item{force_balance}{A boolean indicating if two groups have equal sample size.
-Default to \code{FALSE}. If TRUE, and the two groups have unequal sample sizes,
-the larger group will be randomly downsampled to match the size of the smaller group.}
+\item{reference_group}{A string specifying the reference group. Defaults to
+\code{NULL}, in which case the first value alphabetically is used as the
+reference.}
 
-\item{reference_group}{A string specifying the reference group. Default to
-\code{NULL}, in which case the first value in the group column is used as the reference.}
+\item{use_cells}{A vector of cell names to subset the object to prior to
+subsequent pseudobulk and differential expression steps. Default =
+\code{NULL} will use all cells.}
 
-\item{use_cells}{A vector of cell names subset to. Default = \code{NULL} will
-use all cells.}
+\item{pseudobulk}{A string indicating pseudobulk handling. Permitted values
+are: "generate" (pseudobulk matrices will be generated), "supplied"
+(pseudobulk matrix was supplied by the user to parameter \code{object}), or
+"none" (pseudobulking will not be used, cell-level differential expression
+analysis will be run). Defaults to "generate".}
+
+\item{de_method}{Which tool to use for differential expression analysis.
+Permitted values are "edgeR", "DESeq2", "limma", and "wilcox" (indicating the
+Wilcoxon rank sum test). Defaults to "edgeR".}
+
+\item{de_test}{Which test to use for differential expression analysis.
+Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
+"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("voom"),
+"wilcox" ("presto"). Defaults to "LRT".}
+
+\item{p_adjust_method}{A string indicating which multiple comparison
+adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
+Defaults to "fdr" (Benjamini & Hochberg, 1995).}
 
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
-cells within one split. Pseudobulk expression and differential expression
-will not be performed for splits with fewer cells. Defaults to 4.}
+cells within one split. Pseudobulk and differential expression steps will not
+be performed for splits with fewer cells. Defaults to 100.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk expression
 and differential expression will not be performed for splits with fewer
-replicates. Defaults to 4.}
+replicates. Defaults to 6.}
 
 \item{min_replicates_per_group}{A numeric value indicating the minimum number
 of distinct replicates represented within each of the two comparison groups.
-Pseudobulk expression and differential expression will not be performed for
-splits with fewer replicates. Defaults to 2.}
+Pseudobulk and differential expression steps will not be performed for
+splits with fewer replicates. Defaults to 3.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
-of cells (within a split) with expression of a gene. Pseudobulk expression
-and differential expression will not be calculated for genes with fewer
-cells. Defaults to 1.}
+of cells (within a split) with expression of a gene. Pseudobulk and
+differential expression will not be calculated for genes expressed in
+fewer cells. Defaults to 10.}
 
-\item{de_method}{Which tool to use for differential expression. Permitted
-values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.}
+\item{min_prop_cells_per_feature}{A numeric value indicating the minimum
+proportion of cells (within a split) with expression of a gene. Pseudobulk
+and differential expression will not be calculated for genes
+expressed in fewer cells. Defaults to 0.1.}
 
-\item{de_test}{Which test to use for differential expression. Defaults to
-'LRT'.}
+\item{force_balance}{A boolean indicating whether to force the two comparison
+groups to have the same sample size. Defaults to \code{FALSE}. If
+\code{TRUE}, the larger group will be randomly downsampled to the size of the
+smaller group.}
 
-\item{p_adjust_method}{A string indicating which multiple comparison
-adjustment to use. For permitted values, see \code{stats::p.adjust}. Defaults
-to 'fdr' (Benjamini & Hochberg, 1995).}
-
-\item{use_assay}{A character string indicating the assay to use in the
+\item{use_assay}{A string indicating the assay to use in the
 provided object. Default = \code{NULL} will choose the current active assay
-for Seurat objects and the \code{counts} assay for SingleCellExperiment
-objects.}
+for \code{Seurat} objects and the \code{counts} assay for
+\code{SingleCellExperiment} objects.}
 
-\item{use_layer}{For Seurat objects, a character string or vector indicating
-the layer — previously known as slot — to use in the provided object.
+\item{use_layer}{For \code{Seurat} objects, a string or vector
+indicating the layer—previously known as slot—to use in the provided object.
 Default = \code{NULL} will use the \code{counts} layer.}
+
+\item{random_seed}{A numerical value indicating the random seed to be used.
+Defaults to 1. Only relevant in this function when parameter
+\code{force_balance = TRUE}.}
 
 \item{n_cores}{A numeric value indicating the number of cores to use for
 parallelization. Default = \code{NULL} will use the number of available cores
 minus 2.}
 
-\item{verbose}{A boolean value indicating whether to use verbose output
+\item{verbose}{A Boolean value indicating whether to use verbose output
 during the execution of this function. Defaults to \code{TRUE}.
 Can be set to \code{FALSE} for a cleaner output.}
 }
@@ -101,18 +130,28 @@ Can be set to \code{FALSE} for a cleaner output.}
 Returns a list containing the following elements: \describe{
 \item{DE_results}{Dataframe containing DE results for each feature, by
 split}
-\item{PB_values}{List of feature x replicate matri(ces) containing
-pseudobulk values for each feature, one per split}
-\item{group_key}{Dataframe record of group labels corresponding to each replicate}
+\item{PB_values}{If using pseudobulk data, a list of feature x replicate
+matri(ces) containing pseudobulk values for each feature, one matrix per
+split}
+\item{cell_values}{Alternately, if using cell-level data, a list of feature x
+cell matri(ces) containing counts for each feature, one matrix per
+split}
+\item{group_key}{Dataframe record of group labels corresponding to each
+replicate}
 \item{parameters}{Dataframe record of parameter values used}
 }
 }
 \description{
-Generate pseudobulk matri(ces) and run pseudobulk differential expression
-between two groups for each using existing tools: \code{edgeR},
-\code{DESeq2}, or \code{limma}.
+This function identifies differentially expressed features between two groups
+using indicated differential expression analysis methods.
 }
 \details{
-This function was inspired by R package neurorestore/Libra and some aspects
-are adapted therefrom (Squair et al. 2021).
+By default, pseudobulk matri(ces) are generated or supplied by the user, then
+used to run pseudobulk differential expression. The following existing tools
+are supported: \code{edgeR}, \code{DESeq2}, \code{limma}, and the Wilcoxon
+rank-sum test. Alternately, users may skip pseudobulking and run cell-level
+differential expression (not recommended in most cases).
+
+This function was inspired in part by R package neurorestore/Libra and some
+aspects are adapted therefrom (Squair et al. 2021).
 }

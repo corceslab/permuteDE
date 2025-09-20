@@ -9,9 +9,10 @@ getPseudobulk(
   replicate_labels,
   split_labels = NULL,
   use_cells = NULL,
-  min_cells_per_split = 1,
-  min_replicates_per_split = 1,
-  min_cells_per_feature = 0,
+  min_cells_per_split = 100,
+  min_replicates_per_split = 6,
+  min_cells_per_feature = 10,
+  min_prop_cells_per_feature = 0,
   use_assay = NULL,
   use_layer = NULL,
   n_cores = NULL,
@@ -19,58 +20,69 @@ getPseudobulk(
 )
 }
 \arguments{
-\item{object}{A 'Seurat' or 'SingleCellExperiment' object.}
+\item{object}{An object of class \code{Seurat}, \code{SingleCellExperiment},
+or \code{matrix}. Data supplied as class \code{matrix} should be a
+feature x cell matrix.}
 
-\item{replicate_labels}{A character string or vector indicating the name of the
-column containing the replicate labels.}
+\item{replicate_labels}{A string indicating the name of the
+metadata column containing the replicate labels or a character vector
+containing the replicate labels in order.}
 
-\item{split_labels}{A character string or vector indicating the name of a
+\item{split_labels}{A string indicating the name of a
 column by which to split the cells prior to pseudobulking and performing
-differential expression (e.g., cell types). Results will be returned for
-each unique value in the column indicated by 'split_labels'. Default =
-\code{NULL} will run pseudobulk differential expression on all cells
-together.}
+differential expression (e.g., cell types). Alternately, a character vector
+containing the split labels for each cell in order. Results will be returned
+for each unique value indicated by \code{split_labels}. Default = \code{NULL}
+will generate a single pseudobulk matrix that includes all cells.}
 
-\item{use_cells}{A vector of cell names subset to. Default = \code{NULL} will
-use all cells.}
+\item{use_cells}{A vector of cell names to subset the object to prior to
+subsequent pseudobulk steps. Default = \code{NULL} will use all cells.}
 
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
-cells within one split. Pseudobulk expression will not be calculated for
-splits with fewer cells. Defaults to 1.}
+cells within one split. Pseudobulk steps will not be performed for splits
+with fewer cells. Defaults to 100.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
-of distinct replicates represented within one split. Pseudobulk expression
-will not be calculated for splits with fewer replicates. Defaults to 1.}
+of distinct replicates represented within one split. Pseudobulk steps
+will not be performed for splits with fewer replicates. Defaults to 6.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
 of cells (within a split) with expression of a gene. Pseudobulk expression
-will not be calculated for genes with fewer cells. Defaults to 0.}
+will not be calculated for genes expressed in fewer cells. Defaults to 10.}
 
-\item{use_assay}{A character string indicating the assay to use in the
+\item{min_prop_cells_per_feature}{A numeric value indicating the minimum
+proportion of cells (within a split) with expression of a gene. Pseudobulk
+expression will not be calculated for genes expressed in fewer cells.
+Defaults to 0.1.}
+
+\item{use_assay}{A string indicating the assay to use in the
 provided object. Default = \code{NULL} will choose the current active assay
-for Seurat objects and the \code{counts} assay for SingleCellExperiment
-objects.}
+for \code{Seurat} objects and the \code{counts} assay for
+\code{SingleCellExperiment} objects.}
 
-\item{use_layer}{For Seurat objects, a character string or vector indicating
-the layer — previously known as slot — to use in the provided object.
+\item{use_layer}{For \code{Seurat} objects, a string or vector
+indicating the layer—previously known as slot—to use in the provided object.
 Default = \code{NULL} will use the \code{counts} layer.}
 
 \item{n_cores}{A numeric value indicating the number of cores to use for
 parallelization. Default = \code{NULL} will use the number of available cores
 minus 2.}
 
-\item{verbose}{A boolean value indicating whether to use verbose output
+\item{verbose}{A Boolean value indicating whether to use verbose output
 during the execution of this function. Defaults to \code{TRUE}.
 Can be set to \code{FALSE} for a cleaner output.}
 }
 \value{
-Returns a list with one pseudobulk (gene x replicate) matrix per
+Returns a list with one pseudobulk (feature x replicate) matrix per
 split.
 }
 \description{
-This function will generate a set of pseudobulk expression matrices.
+This function will generate pseudobulk expression matri(ces) from a provided
+Seurat object, SingleCellExperiment object, or feature x cell matrix.
+Multiple pseudobulk matrices can be generated across different divisions of
+a dataset, such as cell types.
 }
 \details{
-This function was inspired by R package neurorestore/Libra
-(Squair et al. 2021).
+This function was inspired in part by R package neurorestore/Libra and some
+aspects are adapted therefrom (Squair et al. 2021).
 }

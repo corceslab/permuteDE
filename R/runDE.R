@@ -284,7 +284,7 @@ runDE <- function(object,
                 paste0(setdiff(unique(split_labels), names(matrix_list)),
                        collapse = ", "))
       }
-    } else if (pseudobulk = "none") {
+    } else if (pseudobulk == "none") {
       keep_indices <- split_indices[lengths(split_indices) >= min_cells_per_split]
       n_splits <- length(keep_indices)
       # Extract matrix
@@ -367,7 +367,7 @@ runDE <- function(object,
                                              n_groups <- dplyr::n_distinct(target_list[[i]]$group)
                                              if (n_groups == 2) {
                                                group_factor <- factor(target_list[[i]]$group)
-                                               group_factor <- relevel(group_factor, ref = reference_group)
+                                               group_factor <- stats::relevel(group_factor, ref = reference_group)
                                                target_list[[i]]$group <- group_factor
 
                                                design_i <- stats::model.matrix(~ group, data = target_list[[i]])
@@ -378,6 +378,7 @@ runDE <- function(object,
                                                                                            de_test = de_test),
                                                                       DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
+                                                                                             design = design_i,
                                                                                              de_test = de_test),
                                                                       limma = .runDE.limma(mat = matrix_list[[i]],
                                                                                            targets = target_list[[i]],
@@ -506,16 +507,19 @@ runDE <- function(object,
 
   # Run DESeq
   if (de_test == "LRT") {
-    reduced_design <- model.matrix(~ 1, data = targets)
+    reduced_design <- stats::model.matrix(~ 1, data = targets)
     dds <- DESeq2::DESeq(dds, test = "LRT", reduced = reduced_design)
   } else if (de_test == "Wald") {
     dds <- DESeq2::DESeq(dds, test = "Wald")
   }
 
   DESeq2_results <- DESeq2::results(dds) |>
-    as.data.frame() |>
-    rename(lfc = log2FoldChange) |>
-    rownames_to_column(var = "gene")
+    data.frame()
+  DESeq2_results <- DESeq2_results |>
+    dplyr::transmute(gene = rownames(DESeq2_results),
+                     lfc = log2FoldChange,
+                     pvalue = pvalue)
+  rownames(DESeq2_results) <- NULL
 
   return(DESeq2_results)
 }
@@ -548,12 +552,14 @@ runDE <- function(object,
     # usual limma pipelines for differential expression
     fit <- limma::lmFit(v, design)
     fit <- limma::eBayes(fit)
+
     limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
-      rownames_to_column(var = "gene") |>
-      rename(
-        lfc = logFC,
-        pvalue = P.Value
-      )
+      data.frame()
+    limma_results <- limma_results |>
+      dplyr::transmute(gene = rownames(limma_results),
+                       lfc = logFC,
+                       pvalue = P.Value)
+    rownames(limma_results) <- NULL
   }
   return(limma_results)
 }

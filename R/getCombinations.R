@@ -17,7 +17,7 @@
 #' \code{NULL}, \code{countCombinations} will expect either (1) vector input to
 #' parameters \code{replicate_label} and \code{group_label} or (2) numeric input
 #' to parameters \code{n_replicates} and \code{n_group1}.
-#' @param replicate_label A string indicating the name of the
+#' @param replicate_labels A string indicating the name of the
 #' metadata column containing the replicate labels or a character vector
 #' containing the replicate labels in order.
 #' @param group_labels A string indicating the name of the
