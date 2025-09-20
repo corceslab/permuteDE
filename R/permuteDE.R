@@ -217,8 +217,8 @@ permuteDE <- function(input,
                                                              dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
                                                              dplyr::summarise(n_sig = n(),
                                                                               min_lfc_sig = min(lfc),
-                                                                              max_lfc_sig = max(lfc)) %>%
-                                                             data.frame() %>%
+                                                                              max_lfc_sig = max(lfc)) |>
+                                                             data.frame() |>
                                                              dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
                                                          }
                                                        } else {
@@ -230,17 +230,17 @@ permuteDE <- function(input,
                                                      mc.set.seed = TRUE)
 
       if (return_all == TRUE) {
-        permutation_DE_results_s_all <- do.call(rbind, permutation_DE_results_list) %>% data.frame()
+        permutation_DE_results_s_all <- do.call(rbind, permutation_DE_results_list) |> data.frame()
         permutation_DE_results_s <- permutation_DE_results_all |>
           dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
           dplyr::group_by(split, permutation) |>
           dplyr::summarise(n_sig = n(),
                            min_lfc_sig = min(lfc),
-                           max_lfc_sig = max(lfc)) %>%
-          data.frame() %>%
+                           max_lfc_sig = max(lfc)) |>
+          data.frame() |>
           dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
       } else {
-        permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) %>% data.frame()
+        permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
       }
 
       # If true labels were among random permutations, they were then skipped, leaving n_iterations - 1
