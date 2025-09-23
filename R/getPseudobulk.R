@@ -12,8 +12,9 @@
 #' or \code{matrix}. Data supplied as class \code{matrix} should be a
 #' feature x cell matrix.
 #' @param replicate_labels A string indicating the name of the
-#' metadata column containing the replicate labels or a character vector
-#' containing the replicate labels in order.
+#' metadata column containing the biological replicate labels or a character
+#' vector containing the biological replicate labels in order. The biological
+#' replicate labels are used to construct/define the pseudobulks.
 #' @param split_labels A string indicating the name of a
 #' column by which to split the cells prior to pseudobulking and performing
 #' differential expression (e.g., cell types). Alternately, a character vector
@@ -61,7 +62,7 @@ getPseudobulk <- function(object,
                           min_cells_per_split = 100,
                           min_replicates_per_split = 6,
                           min_cells_per_feature = 10,
-                          min_prop_cells_per_feature = 0,
+                          min_prop_cells_per_feature = 0.1,
                           use_assay = NULL,
                           use_layer = NULL,
                           n_cores = NULL,

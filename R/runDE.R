@@ -17,8 +17,12 @@
 #' feature x cell matrix or a pre-computed pseudobulk feature x replicate
 #' matrix.
 #' @param replicate_labels A string indicating the name of the
-#' metadata column containing the replicate labels or a character vector
-#' containing the replicate labels in order.
+#' metadata column containing the biological replicate labels or a character
+#' vector containing the biological replicate labels in order. For pseudobulk DE
+#' analysis, the biological replicate labels are used to construct/define the
+#' pseudobulks. For cell-level DE analysis, the biological replicate labels are
+#' not used in this function, but will be passed on to function permuteDE so
+#' that the permutation of group labels keeps replicates intact.
 #' @param group_labels A string indicating the name of the
 #' column containing the two comparison group labels or a character vector
 #' containing the comparison labels in order.
@@ -175,29 +179,39 @@ runDE <- function(object,
   }
 
   # Replicate labels
-  if (pseudobulk == "none") {
-    replicates <- use_cells
-  } else if (length(replicate_labels) == 1) {
-    replicates <- .retrieveData(object = object,
-                                type = "cell_metadata",
-                                name = replicate_labels,
-                                use_cells = use_cells)
-  } else {
-    replicates <- replicate_labels
-    # Check length
-    if (!is.null(use_cells) & pseudobulk != "supplied") {
-      target_length <- length(use_cells)
+  store_replicates <- NULL
+  if (!is.null(replicate_labels)) {
+    if (length(replicate_labels) == 1) {
+      replicates <- .retrieveData(object = object,
+                                  type = "cell_metadata",
+                                  name = replicate_labels,
+                                  use_cells = use_cells)
     } else {
-      target_length <- ncol(object)
-    }
-    if (length(replicates) != target_length) {
-      if (pseudobulk == "supplied") {
-        stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
+      replicates <- replicate_labels
+      # Check length
+      if (!is.null(use_cells) & pseudobulk != "supplied") {
+        target_length <- length(use_cells)
       } else {
-        stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied cells.")
+        target_length <- ncol(object)
+      }
+      if (length(replicates) != target_length) {
+        if (pseudobulk == "supplied") {
+          stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
+        } else {
+          stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied cells.")
+        }
       }
     }
+    if (pseudobulk == "none") {
+      # Store biological replicates for use later if output is passed to permuteDE
+      store_replicates <- replicates
+      replicates <- use_cells
+      names(store_replicates) <- replicates
+    }
+  } else if (pseudobulk == "none") {
+    replicates <- use_cells
   }
+
   # Group labels
   if (length(group_labels) == 1) {
     groups <- .retrieveData(object = object,
@@ -218,8 +232,7 @@ runDE <- function(object,
 
   # There must be exactly two comparison groups
   if (dplyr::n_distinct(groups) != 2) {
-    stop("Input value '", group_labels,
-         "' for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
+    stop("Input value for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
   }
 
   # Reference group
@@ -427,6 +440,7 @@ runDE <- function(object,
                          "force_balance" = force_balance,
                          "use_assay" = use_assay,
                          "use_layer" = use_layer,
+                         "store_replicates" = store_replicates,
                          "random_seed" = random_seed,
                          "n_cores" = n_cores)
 

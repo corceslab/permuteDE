@@ -100,8 +100,18 @@ permuteDE <- function(input,
   # ---------------------------------------------------------------------------
 
   # Fetch values
+  de_method <- input$parameters$de_method
+  de_test <- input$parameters$de_test
+  padj_method <- input$parameters$p_adjust_method
+  pseudobulk <- input$parameters$pseudobulk
+  store_replicates <- input$parameters$store_replicates
+
   if (is.null(use_splits)) {
-    use_splits <- names(input$PB_values)
+    if (pseudobulk == "none") {
+      use_splits <- names(input$cell_values)
+    } else {
+      use_splits <- names(input$PB_values)
+    }
   }
 
   # Calculate true number of DE features
@@ -128,11 +138,6 @@ permuteDE <- function(input,
   if (n_splits == 0) {
     stop("No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
   }
-
-  de_method <- input$parameters$de_method
-  de_test <- input$parameters$de_test
-  padj_method <- input$parameters$p_adjust_method
-  pseudobulk <- input$parameters$pseudobulk
 
   # ---------------------------------------------------------------------------
   # Compute permuted DE results
@@ -167,24 +172,65 @@ permuteDE <- function(input,
   for (s in 1:n_splits) {
     # Extract relevant values
     current_split <- use_splits[s]
-    current_pb <- input$PB_values[[current_split]]
-    current_replicates <- colnames(current_pb)
-    n_replicates <- length(current_replicates)
-    true_groups <- input$group_key[current_replicates, "group"]
+    if (pseudobulk == "none" & !is.null(stored_replicates)) {
+      # If cell-level but permuting biological replicates
+      # Grab feature x cell matrix
+      current_mat <- input$cell_values[[current_split]]
+      current_replicates <- colnames(current_mat)
+      # Subset biological replicates to current matrix
+      current_stored_replicates <- stored_replicates[current_replicates]
+      n_replicates <- length(current_stored_replicates)
+      true_groups <- input$group_key[current_replicates, "group"]
+      replicate_set <- unique(current_stored_replicates)
+    } else {
+      # Grab matrix and get values directly from there
+      if (pseudobulk == "none") {
+        current_mat <- input$cell_values[[current_split]]
+      } else {
+        current_mat <- input$PB_values[[current_split]]
+      }
+      current_replicates <- colnames(current_mat)
+      n_replicates <- length(current_replicates)
+      true_groups <- input$group_key[current_replicates, "group"]
+    }
     # Proceed if there are two groups present
     if (dplyr::n_distinct(true_groups) == 2) {
       # Set remaining values
       group1 <- sort(unique(true_groups))[1]
       group2 <- sort(unique(true_groups))[2]
-      n_group1 <- sum(true_groups == group1)
+      if (pseudobulk == "none" & !is.null(stored_replicates)) {
+        # If cell-level but permuting biological replicates
+        n_group1 <- dplyr::n_distinct(current_stored_replicates[true_groups == group1])
+      } else {
+        n_group1 <- sum(true_groups == group1)
+      }
       # Compute a set of permuted group labels
-      permuted_group_labels <- getCombinations(n_replicates = n_replicates,
-                                               n_group1 = n_group1,
-                                               n_combinations = n_iterations,
-                                               message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
-                                               random_seed = random_seed,
-                                               verbose = TRUE)
-      current_n_iterations <- ncol(permuted_group_labels)
+      permuted_group_indices <- getCombinations(n_replicates = n_replicates,
+                                                n_group1 = n_group1,
+                                                n_combinations = n_iterations,
+                                                message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
+                                                random_seed = random_seed,
+                                                verbose = TRUE)
+      current_n_iterations <- ncol(permuted_group_indices)
+      # If cell-level but permuting biological replicates, convert permuted group indices for each replicate into cell indices
+      if (pseudobulk == "none" & !is.null(stored_replicates)) {
+        new_permuted_group_indices <- apply(permuted_group_indices, 2,
+                                            FUN = function(i) {
+                                              # Which replicates are in these indices
+                                              replicates_i <- replicate_set[i]
+                                              # Which cell indices belong to these replicates
+                                              current_cell_indices <- current_stored_replicates %in% replicates_i
+                                              return(current_cell_indices)
+                                            })
+        # Convert to matrix (make lengths match by padding w/ NA)
+        max_group_indices <- max(lengths(new_permuted_group_indices))
+        new_permuted_group_indices <- lapply(new_permuted_group_indices,
+                                             FUN = function(i) {
+                                               length(i) <- max_group_indices
+                                               return(i)
+                                               })
+        permuted_group_indices <- do.call(cbind, new_permuted_group_indices)
+      }
       # Progress
       if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
                            " : Running ", current_n_iterations, " permutations for split ", current_split,
@@ -195,7 +241,7 @@ permuteDE <- function(input,
                                                        # Create target dataframe with permuted group labels
                                                        targets_i <- data.frame(replicate = current_replicates,
                                                                                group = group2)
-                                                       targets_i[permuted_group_labels[,i], "group"] <- group1
+                                                       targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- group1
                                                        rownames(targets_i) <- targets_i$replicate
                                                        # Skip if true groups
                                                        if (!identical(targets_i$group, true_groups)) {
@@ -203,20 +249,20 @@ permuteDE <- function(input,
                                                          design_i <- stats::model.matrix(~ group, data = targets_i)
                                                          # Run DE
                                                          de_results_i <- switch(de_method,
-                                                                                edgeR = .runDE.edgeR(mat = matrix_list[[i]],
-                                                                                                     targets = target_list[[i]],
+                                                                                edgeR = .runDE.edgeR(mat = current_mat,
+                                                                                                     targets = targets_i,
                                                                                                      design = design_i,
                                                                                                      de_test = de_test),
-                                                                                DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
-                                                                                                       targets = target_list[[i]],
+                                                                                DESeq2 = .runDE.DESeq2(mat = current_mat,
+                                                                                                       targets = targets_i,
                                                                                                        design = design_i,
                                                                                                        de_test = de_test),
-                                                                                limma = .runDE.limma(mat = matrix_list[[i]],
-                                                                                                     targets = target_list[[i]],
+                                                                                limma = .runDE.limma(mat = current_mat,
+                                                                                                     targets = targets_i,
                                                                                                      design = design_i,
                                                                                                      de_test = de_test),
-                                                                                wilcox = .runDE.wilcox(mat = matrix_list[[i]],
-                                                                                                       targets = target_list[[i]],
+                                                                                wilcox = .runDE.wilcox(mat = current_mat,
+                                                                                                       targets = targets_i,
                                                                                                        pseudobulk = pseudobulk,
                                                                                                        de_test = de_test))
                                                          de_results_i <- de_results_i |>

@@ -18,8 +18,8 @@
 #' parameters \code{replicate_label} and \code{group_label} or (2) numeric input
 #' to parameters \code{n_replicates} and \code{n_group1}.
 #' @param replicate_labels A string indicating the name of the
-#' metadata column containing the replicate labels or a character vector
-#' containing the replicate labels in order.
+#' metadata column containing the biological replicate labels or a character
+#' vector containing the biological replicate labels in order.
 #' @param group_labels A string indicating the name of the
 #' column containing the two comparison group labels or a character vector
 #' containing the comparison labels in order.
@@ -117,8 +117,7 @@ getCombinations <- function(object = NULL,
     }
     # Check that there are exactly two groups present
     if (dplyr::n_distinct(groups) != 2) {
-      stop("Input value '", group_labels,
-           "' for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
+      stop("Input value for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
     }
     # Count unique replicates and unique replicates in one group
     n_replicates <- dplyr::n_distinct(replicates)

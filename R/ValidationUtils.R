@@ -62,6 +62,8 @@
       if (name == "replicate_labels") {
         if (other[[2]] %in% c("generate", "supplied")) {
           stop("Input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
+        } else if (other[[2]] == "none") {
+          warning("If the output of this function is intended to be passed to function 'permuteDE', input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
         }
       }
     }
