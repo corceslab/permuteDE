@@ -172,15 +172,20 @@ getPseudobulk <- function(object,
     model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
     pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
 
-    # Warn if excluded genes are >10% of all genes
-    prop_genes_excluded <- 1 - (length(keep_genes)/nrow(count_matrix) )
-    if (prop_genes_excluded > 0.1) {
-      message("Warning: Excluded ", round(prop_genes_excluded*100, 2),"% of genes in split ", s)
-    }
-
     return(pb_mat)
   }, mc.cores = n_cores)
   names(pb_list) <- keep_splits
+
+  # Check % excluded genes
+  if (verbose) {
+    percent_excluded_genes <- lapply(pb_list,
+                                     FUN = function(s) {
+                                       1 - (nrow(s)/nrow(count_matrix))
+                                     }) |>
+      unlist()
+    message("Excluded between ", round(min(percent_excluded_genes)*100, 2),"% and ", round(max(percent_excluded_genes)*100, 2),"% of genes in each split.")
+    message("Highest % of genes were excluded in split ", names(pb_list)[which(percent_excluded_genes == max(percent_excluded_genes))], ".")
+  }
 
   # Return list
   return(pb_list)
