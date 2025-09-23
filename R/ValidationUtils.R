@@ -40,10 +40,6 @@
       if (name == "replicate_labels") {
         if (other[[2]] == "none") {
           stop("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'. Please supply valid input!")
-        } else {
-          if (is.null(input)) {
-            stop("Input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
-          }
         }
       }
       # If single value, must be a column name
@@ -59,6 +55,13 @@
           }
         } else if (methods::is(other[[1]], "matrix")) {
           stop("When input to parameter 'object' is of class 'matrix', input value for '", name, "' cannot be a single value, it must be a vector.")
+        }
+      }
+    } else {
+      # replicate_labels are required for pseudobulk tests
+      if (name == "replicate_labels") {
+        if (other[[2]] %in% c("generate", "supplied")) {
+          stop("Input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
         }
       }
     }
@@ -323,7 +326,7 @@
       stop("Input for '", name, "' must be among permitted values (", paste0(c("generate", "supplied", "none"), collapse = ", "), "), please supply valid input!")
     }
     # Issue warning for cell-level tests
-    if (!(input == "none")) {
+    if (input == "none") {
       warning("Cell-level tests are not recommended in most cases, proceed with caution.")
     }
     # If supplied, object cannot be Seurat or SingleCellExperiment
