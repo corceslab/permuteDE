@@ -144,13 +144,6 @@ getPseudobulk <- function(object,
   # Pseudobulk
   # ---------------------------------------------------------------------------
 
-  # Extract matrix
-  count_matrix <- .getMatrix(object = object,
-                             use_assay = use_assay,
-                             use_layer = use_layer,
-                             use_cells = use_cells,
-                             verbose = verbose)
-
   # Progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Generating ", n_splits,
                        " pseudobulk ", ifelse(n_splits == 1, "matrix..", "matrices.."))
@@ -162,29 +155,44 @@ getPseudobulk <- function(object,
                    collapse = ", "))
   }
 
-  # Create list of gene x replicate pseudobulk matrices, one per split
-  pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
-    split_s <- splits == s
-    keep_genes_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
-    prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
-    keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
-    keep_genes <- which(keep_genes_count & keep_genes_prop)
-    model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
-    pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
+  if (n_splits > 0) {
+    # Extract matrix
+    count_matrix <- .getMatrix(object = object,
+                               use_assay = use_assay,
+                               use_layer = use_layer,
+                               use_cells = use_cells,
+                               verbose = verbose)
+    # Create list of gene x replicate pseudobulk matrices, one per split
+    pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
+      split_s <- splits == s
+      keep_genes_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
+      prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
+      keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
+      keep_genes <- which(keep_genes_count & keep_genes_prop)
+      model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
+      pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
 
-    return(pb_mat)
-  }, mc.cores = n_cores)
-  names(pb_list) <- keep_splits
+      return(pb_mat)
+    }, mc.cores = n_cores)
+    names(pb_list) <- keep_splits
 
-  # Check % excluded genes
-  if (verbose) {
-    percent_excluded_genes <- lapply(pb_list,
-                                     FUN = function(s) {
-                                       1 - (nrow(s)/nrow(count_matrix))
-                                     }) |>
-      unlist()
-    message("Excluded between ", round(min(percent_excluded_genes)*100, 2),"% and ", round(max(percent_excluded_genes)*100, 2),"% of genes in each split.")
-    message("Highest % of genes were excluded in split ", names(pb_list)[which(percent_excluded_genes == max(percent_excluded_genes))], ".")
+    # Check % excluded genes
+    if (verbose) {
+      if (length(pb_list) > 1) {
+        percent_excluded_genes <- lapply(pb_list,
+                                         FUN = function(s) {
+                                           1 - (nrow(s)/nrow(count_matrix))
+                                         }) |>
+          unlist()
+        message("Excluded between ", round(min(percent_excluded_genes)*100, 2),"% and ", round(max(percent_excluded_genes)*100, 2),"% of genes in each split.")
+        message("Highest % of genes were excluded in split ", names(pb_list)[which(percent_excluded_genes == max(percent_excluded_genes))], ".")
+      } else {
+        percent_excluded_genes <- 1 - (nrow(pb_list[[1]])/nrow(count_matrix))
+        message("Excluded ", round(percent_excluded_genes*100, 2),"% of genes in split '", names(pb_list)[1], "'.")
+      }
+    }
+  } else {
+    pb_list <- NULL
   }
 
   # Return list
