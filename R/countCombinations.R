@@ -75,8 +75,7 @@ countCombinations <- function(object = NULL,
       warning("Input for 'n_group1' was not used.")
     }
 
-    # retrieve metadata
-
+    # Retrieve metadata
     if (length(replicate_labels) != length(group_labels)) {
       stop("Input to parameters 'replicate_labels' and 'group_labels' must be of the same length. Please supply valid input!")
     }
@@ -100,13 +99,17 @@ countCombinations <- function(object = NULL,
       replicates <- replicate_labels
       groups <- group_labels
     }
-
-    # count unique replicates and unique replicates in one group
+    # Check that there are exactly two groups present
+    if (dplyr::n_distinct(groups) != 2) {
+      stop("Input value '", group_labels,
+           "' for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
+    }
+    # Count unique replicates and unique replicates in one group
     n_replicates <- dplyr::n_distinct(replicates)
     n_group1 <- dplyr::n_distinct(replicates[groups == groups[1]])
   }
 
-  # calculate combination
+  # Calculate number of combinations
   n_combinations <- choose(n_replicates, n_group1)
 
   return(n_combinations)
