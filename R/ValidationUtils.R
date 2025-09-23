@@ -40,6 +40,10 @@
       if (name == "replicate_labels") {
         if (other[[2]] == "none") {
           stop("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'. Please supply valid input!")
+        } else {
+          if (is.null(input)) {
+            stop("Input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
+          }
         }
       }
       # If single value, must be a column name
