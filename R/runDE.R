@@ -104,7 +104,7 @@
 #'   split}
 #'   \item{group_key}{Dataframe record of group labels corresponding to each
 #'   replicate}
-#'   \item{parameters}{Dataframe record of parameter values used}
+#'   \item{parameters}{List recording parameter values used}
 #'   }
 #'
 #' @export
@@ -257,16 +257,17 @@ runDE <- function(object,
   if (pseudobulk == "generate") {
     # Generate pseudobulk matri(ces)
     # Returns a list containing one pseudobulk matrix (gene x replicate) per split
-    matrix_list <- getPseudobulk(object = object,
-                                 replicate_labels = replicate_labels,
-                                 split_labels = split_labels,
-                                 use_cells = use_cells,
-                                 min_cells_per_split = min_cells_per_split,
-                                 min_replicates_per_split = min_replicates_per_split,
-                                 min_cells_per_feature = min_cells_per_feature,
-                                 min_prop_cells_per_feature = min_prop_cells_per_feature,
-                                 n_cores = n_cores,
-                                 verbose = verbose)
+    pseudobulk_output <- getPseudobulk(object = object,
+                                       replicate_labels = replicate_labels,
+                                       split_labels = split_labels,
+                                       use_cells = use_cells,
+                                       min_cells_per_split = min_cells_per_split,
+                                       min_replicates_per_split = min_replicates_per_split,
+                                       min_cells_per_feature = min_cells_per_feature,
+                                       min_prop_cells_per_feature = min_prop_cells_per_feature,
+                                       n_cores = n_cores,
+                                       verbose = verbose)
+    matrix_list <- pseudobulk_output[["PB_values"]]
   } else {
     # If necessary, separate the supplied pseudobulk matrix by split
     # Returns a list containing one pseudobulk matrix (gene x replicate) per split

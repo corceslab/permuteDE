@@ -30,11 +30,11 @@
 #' of distinct replicates represented within one split. Pseudobulk steps
 #' will not be performed for splits with fewer replicates. Defaults to 6.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
-#' of cells (within a split) with expression of a gene. Pseudobulk expression
+#' of cells (within a split) with expression of a feature. Pseudobulk expression
 #' will not be calculated for genes expressed in fewer cells. Defaults to 10.
 #' @param min_prop_cells_per_feature A numeric value indicating the minimum
-#' proportion of cells (within a split) with expression of a gene. Pseudobulk
-#' expression will not be calculated for genes expressed in fewer cells.
+#' proportion of cells (within a split) with expression of a feature. Pseudobulk
+#' expression will not be calculated for features expressed in fewer cells.
 #' Defaults to 0.1.
 #' @param use_assay A string indicating the assay to use in the
 #' provided object. Default = \code{NULL} will choose the current active assay
@@ -50,9 +50,12 @@
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
 #'
-#' @return Returns a list with one pseudobulk (feature x replicate) matrix per
-#' split.
-#'
+#' @return Returns a list containing the following elements: \describe{
+#'   \item{PB_values}{A list of feature x replicate matri(ces) containing
+#'   pseudobulk values for each feature, one matrix per split}
+#'   \item{metadata}{Dataframe record of quality control metrics for each split}
+#'   \item{parameters}{List recording parameter values used}
+#'   }
 #' @export
 #'
 getPseudobulk <- function(object,
@@ -162,39 +165,100 @@ getPseudobulk <- function(object,
                                use_layer = use_layer,
                                use_cells = use_cells,
                                verbose = verbose)
-    # Create list of gene x replicate pseudobulk matrices, one per split
-    pb_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
+    # Create list of feature x replicate pseudobulk matrices, one per split
+    pb_output <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
       split_s <- splits == s
-      keep_genes_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
+      keep_features_count <- Matrix::rowSums(count_matrix[, split_s, drop = FALSE] > 0) >= min_cells_per_feature
       prop_nonzero <- Matrix::rowMeans((count_matrix[, split_s, drop = FALSE] > 0))
-      keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
-      keep_genes <- which(keep_genes_count & keep_genes_prop)
+      keep_features_prop <- prop_nonzero >= min_prop_cells_per_feature
+      keep_features <- which(keep_features_count & keep_features_prop)
       model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
-      pb_mat <- count_matrix[keep_genes, split_s, drop = FALSE] %*% model_mat
+      pb_mat <- count_matrix[keep_features, split_s, drop = FALSE] %*% model_mat
 
-      return(pb_mat)
+      # Metadata values
+      n_features_excluded <- nrow(count_matrix)-nrow(pb_mat)
+      percent_features_excluded <- n_features_excluded/nrow(count_matrix)
+      if (n_features_excluded > 0) {
+        pb_mat_excluded <- count_matrix[!keep_features, split_s, drop = FALSE]
+        n_reads_excluded <- sum(pb_mat_excluded)
+        percent_reads_excluded <- n_reads_excluded/(n_reads_excluded + sum(pb_mat))
+      } else {
+        n_reads_excluded <- 0
+        percent_reads_excluded <- 0
+      }
+      return(list("pb_mat" = pb_mat,
+                  "n_features_excluded" = n_features_excluded,
+                  "percent_features_excluded" = percent_features_excluded,
+                  "n_reads_excluded" = n_reads_excluded,
+                  "percent_reads_excluded" = percent_reads_excluded))
     }, mc.cores = n_cores)
+
+    pb_list <- do.call(rbind, pb_output)[, "pb_mat"]
     names(pb_list) <- keep_splits
 
-    # Check % excluded genes
+    # Metadata values
+    n_features_excluded <- unlist(do.call(rbind, pb_output)[, "n_features_excluded"])
+    percent_features_excluded <- unlist(do.call(rbind, pb_output)[, "percent_features_excluded"])
+    n_reads_excluded <- unlist(do.call(rbind, pb_output)[, "n_reads_excluded"])
+    percent_reads_excluded <- unlist(do.call(rbind, pb_output)[, "percent_reads_excluded"])
+    metadata_values <- data.frame(split = keep_splits,
+                                  n_features_excluded = n_features_excluded,
+                                  percent_features_excluded = percent_features_excluded,
+                                  n_reads_excluded = n_reads_excluded,
+                                  percent_reads_excluded = percent_reads_excluded)
+
+    # Report metadata values
     if (verbose) {
       if (length(pb_list) > 1) {
-        percent_excluded_genes <- lapply(pb_list,
-                                         FUN = function(s) {
-                                           1 - (nrow(s)/nrow(count_matrix))
-                                         }) |>
-          unlist()
-        message("Excluded between ", round(min(percent_excluded_genes)*100, 2),"% and ", round(max(percent_excluded_genes)*100, 2),"% of genes in each split.")
-        message("Highest % of genes were excluded in split ", names(pb_list)[which(percent_excluded_genes == max(percent_excluded_genes))], ".")
+        # Number of features
+        message("Excluded between ", round(min(metadata_values$percent_features_excluded, na.rm = TRUE)*100, 2), "% (",
+                metadata_values$n_features_excluded[metadata_values$percent_features_excluded == min(metadata_values$percent_features_excluded, na.rm = TRUE)],
+                " features) and ", round(max(metadata_values$percent_features_excluded)*100, 2),"% (",
+                metadata_values$n_features_excluded[metadata_values$percent_features_excluded == max(metadata_values$percent_features_excluded, na.rm = TRUE)],
+                " features) of features in each split.")
+        message("Highest % of features were excluded in split '",
+                metadata_values$split[metadata_values$percent_features_excluded == max(metadata_values$percent_features_excluded, na.rm = TRUE)], "'.")
+        # Number of reads
+        message("Excluded between ", round(min(metadata_values$percent_reads_excluded, na.rm = TRUE)*100, 2), "% (",
+                metadata_values$n_reads_excluded[metadata_values$percent_reads_excluded == min(metadata_values$percent_reads_excluded, na.rm = TRUE)],
+                " reads) and ", round(max(metadata_values$percent_reads_excluded)*100, 2),"% (",
+                metadata_values$n_reads_excluded[metadata_values$percent_reads_excluded == max(metadata_values$percent_reads_excluded, na.rm = TRUE)],
+                " reads) of reads in each split.")
+        message("Highest % of reads were excluded in split '",
+                metadata_values$split[metadata_values$percent_reads_excluded == max(metadata_values$percent_reads_excluded, na.rm = TRUE)], "'.")
       } else {
-        percent_excluded_genes <- 1 - (nrow(pb_list[[1]])/nrow(count_matrix))
-        message("Excluded ", round(percent_excluded_genes*100, 2),"% of genes in split '", names(pb_list)[1], "'.")
+        # Number of features
+        message("Excluded ", round(metadata_values$percent_features_excluded[1]*100, 2),"% of features (",
+                metadata_values$n_features_excluded[1],
+                " features) in split '", names(pb_list)[1], "'.")
+        # Number of reads
+        message("Excluded ", round(metadata_values$percent_reads_excluded[1]*100, 2),"% of reads (",
+                metadata_values$n_reads_excluded[1],
+                " reads) in split '", names(pb_list)[1], "'.")
       }
     }
   } else {
     pb_list <- NULL
+    metadata_values <- NULL
   }
 
-  # Return list
-  return(pb_list)
+  # ---------------------------------------------------------------------------
+  # Wrap up
+  # ---------------------------------------------------------------------------
+
+  parameter_list <- list("replicate_labels" = replicate_labels,
+                         "split_labels" = split_labels,
+                         "use_cells" = use_cells,
+                         "min_cells_per_split" = min_cells_per_split,
+                         "min_replicates_per_split" = min_replicates_per_split,
+                         "min_cells_per_feature" = min_cells_per_feature,
+                         "min_prop_cells_per_feature" = min_prop_cells_per_feature,
+                         "use_assay" = use_assay,
+                         "use_layer" = use_layer,
+                         "n_cores" = n_cores)
+
+  # Return output
+  return(list("PB_values" = pb_list,
+              "metadata" = metadata_values,
+              "parameters" = parameter_list))
 }
