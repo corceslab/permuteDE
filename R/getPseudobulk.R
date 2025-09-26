@@ -174,23 +174,23 @@ getPseudobulk <- function(object,
 
       # Metadata values
       n_features_excluded <- nrow(count_matrix)-nrow(pb_mat)
-      percent_features_excluded <- n_features_excluded/nrow(count_matrix)
+      prop_features_excluded <- n_features_excluded/nrow(count_matrix)
       n_reads <- sum(pb_mat)
       if (n_features_excluded > 0) {
         n_reads_pre <- sum(count_matrix[, split_s])
         n_reads_excluded <- n_reads_pre - n_reads
-        percent_reads_excluded <- n_reads_excluded/n_reads_pre
+        prop_reads_excluded <- n_reads_excluded/n_reads_pre
       } else {
         n_reads_excluded <- 0
-        percent_reads_excluded <- 0
+        prop_reads_excluded <- 0
       }
       return(list("pb_mat" = pb_mat,
                   "n_features" = nrow(pb_mat),
                   "n_features_excluded" = n_features_excluded,
-                  "percent_features_excluded" = percent_features_excluded,
+                  "prop_features_excluded" = prop_features_excluded,
                   "n_reads" = n_reads,
                   "n_reads_excluded" = n_reads_excluded,
-                  "percent_reads_excluded" = percent_reads_excluded))
+                  "prop_reads_excluded" = prop_reads_excluded))
     }, mc.cores = n_cores)
 
     pb_list <- do.call(rbind, pb_output)[, "pb_mat"]
@@ -199,44 +199,64 @@ getPseudobulk <- function(object,
     # Metadata values
     n_features <- unlist(do.call(rbind, pb_output)[, "n_features"])
     n_features_excluded <- unlist(do.call(rbind, pb_output)[, "n_features_excluded"])
-    percent_features_excluded <- unlist(do.call(rbind, pb_output)[, "percent_features_excluded"])
+    prop_features_excluded <- unlist(do.call(rbind, pb_output)[, "prop_features_excluded"])
     n_reads <- unlist(do.call(rbind, pb_output)[, "n_reads"])
     n_reads_excluded <- unlist(do.call(rbind, pb_output)[, "n_reads_excluded"])
-    percent_reads_excluded <- unlist(do.call(rbind, pb_output)[, "percent_reads_excluded"])
+    prop_reads_excluded <- unlist(do.call(rbind, pb_output)[, "prop_reads_excluded"])
     metadata_values <- data.frame(split = keep_splits,
                                   n_features = n_features,
                                   n_features_excluded = n_features_excluded,
-                                  percent_features_excluded = percent_features_excluded,
+                                  prop_features_excluded = prop_features_excluded,
                                   n_reads = n_reads,
                                   n_reads_excluded = n_reads_excluded,
-                                  percent_reads_excluded = percent_reads_excluded)
+                                  prop_reads_excluded = prop_reads_excluded)
 
     # Report metadata values
     if (verbose) {
       if (length(pb_list) > 1) {
         # Number of features
-        message("Excluded between ", round(min(metadata_values$percent_features_excluded, na.rm = TRUE)*100, 2), "% (",
-                metadata_values$n_features_excluded[metadata_values$percent_features_excluded == min(metadata_values$percent_features_excluded, na.rm = TRUE)],
-                " features) and ", round(max(metadata_values$percent_features_excluded)*100, 2),"% (",
-                metadata_values$n_features_excluded[metadata_values$percent_features_excluded == max(metadata_values$percent_features_excluded, na.rm = TRUE)],
-                " features) of features in each split.")
-        message("Highest % of features were excluded in split '",
-                metadata_values$split[metadata_values$percent_features_excluded == max(metadata_values$percent_features_excluded, na.rm = TRUE)], "'.")
+        if (min(metadata_values$prop_features_excluded, na.rm = TRUE) == max(metadata_values$prop_features_excluded, na.rm = TRUE)) {
+          message("Excluded ", round(min(metadata_values$prop_features_excluded, na.rm = TRUE)*100, 2), "% of features (",
+                  metadata_values$n_features_excluded[metadata_values$prop_features_excluded == min(metadata_values$prop_features_excluded, na.rm = TRUE)][1],
+                  " features) in each split.")
+        } else {
+          message("Excluded between ", round(min(metadata_values$prop_features_excluded, na.rm = TRUE)*100, 2), "% (",
+                  metadata_values$n_features_excluded[metadata_values$prop_features_excluded == min(metadata_values$prop_features_excluded, na.rm = TRUE)][1],
+                  " features) and ", round(max(metadata_values$prop_features_excluded)*100, 2),"% (",
+                  metadata_values$n_features_excluded[metadata_values$prop_features_excluded == max(metadata_values$prop_features_excluded, na.rm = TRUE)][1],
+                  " features) of features in each split.")
+          if (length(metadata_values$split[metadata_values$prop_features_excluded == max(metadata_values$prop_features_excluded, na.rm = TRUE)]) == 1) {
+            message("Highest % of features were excluded in split '",
+                    metadata_values$split[metadata_values$prop_features_excluded == max(metadata_values$prop_features_excluded, na.rm = TRUE)], "'.")
+          } else {
+            message("Highest % of features were excluded in splits: ",
+                    paste0(metadata_values$split[metadata_values$prop_features_excluded == max(metadata_values$prop_features_excluded, na.rm = TRUE)], collapse = ", "), ".")
+          }
+        }
         # Number of reads
-        message("Excluded between ", round(min(metadata_values$percent_reads_excluded, na.rm = TRUE)*100, 2), "% (",
-                metadata_values$n_reads_excluded[metadata_values$percent_reads_excluded == min(metadata_values$percent_reads_excluded, na.rm = TRUE)],
-                " reads) and ", round(max(metadata_values$percent_reads_excluded)*100, 2),"% (",
-                metadata_values$n_reads_excluded[metadata_values$percent_reads_excluded == max(metadata_values$percent_reads_excluded, na.rm = TRUE)],
-                " reads) of reads in each split.")
-        message("Highest % of reads were excluded in split '",
-                metadata_values$split[metadata_values$percent_reads_excluded == max(metadata_values$percent_reads_excluded, na.rm = TRUE)], "'.")
+        if (min(metadata_values$prop_reads_excluded, na.rm = TRUE) == max(metadata_values$prop_reads_excluded, na.rm = TRUE)) {
+          message("Excluded ", round(min(metadata_values$prop_reads_excluded, na.rm = TRUE)*100, 2), "% of reads in each split.")
+        } else {
+          message("Excluded between ", round(min(metadata_values$prop_reads_excluded, na.rm = TRUE)*100, 2), "% (",
+                  metadata_values$n_reads_excluded[metadata_values$prop_reads_excluded == min(metadata_values$prop_reads_excluded, na.rm = TRUE)][1],
+                  " reads) and ", round(max(metadata_values$prop_reads_excluded)*100, 2),"% (",
+                  metadata_values$n_reads_excluded[metadata_values$prop_reads_excluded == max(metadata_values$prop_reads_excluded, na.rm = TRUE)][1],
+                  " reads) of reads in each split.")
+          if (length(metadata_values$split[metadata_values$prop_reads_excluded == max(metadata_values$prop_reads_excluded, na.rm = TRUE)]) == 1) {
+            message("Highest % of reads were excluded in split '",
+                    metadata_values$split[metadata_values$prop_reads_excluded == max(metadata_values$prop_reads_excluded, na.rm = TRUE)], "'.")
+          } else {
+            message("Highest % of reads were excluded in splits: ",
+                    paste0(metadata_values$split[metadata_values$prop_reads_excluded == max(metadata_values$prop_reads_excluded, na.rm = TRUE)], collapse = ", "), ".")
+          }
+        }
       } else {
         # Number of features
-        message("Excluded ", round(metadata_values$percent_features_excluded[1]*100, 2),"% of features (",
+        message("Excluded ", round(metadata_values$prop_features_excluded[1]*100, 2),"% of features (",
                 metadata_values$n_features_excluded[1],
                 " features) in split '", names(pb_list)[1], "'.")
         # Number of reads
-        message("Excluded ", round(metadata_values$percent_reads_excluded[1]*100, 2),"% of reads (",
+        message("Excluded ", round(metadata_values$prop_reads_excluded[1]*100, 2),"% of reads (",
                 metadata_values$n_reads_excluded[1],
                 " reads) in split '", names(pb_list)[1], "'.")
       }
