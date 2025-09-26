@@ -9,13 +9,12 @@
 #' rank-sum test. Alternately, users may skip pseudobulking and run cell-level
 #' differential expression (not recommended in most cases).
 #'
-#' This function was inspired in part by R package neurorestore/Libra and some
-#' aspects are adapted therefrom (Squair et al. 2021).
-#'
 #' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
 #' or \code{matrix}. Data supplied as class \code{matrix} may be either a
 #' feature x cell matrix or a pre-computed pseudobulk feature x replicate
-#' matrix.
+#' matrix. Note that raw counts are expected, and the normalization method
+#' applied during differential expression analysis differs across the methods
+#' and tests.
 #' @param replicate_labels A string indicating the name of the
 #' metadata column containing the biological replicate labels or a character
 #' vector containing the biological replicate labels in order. For pseudobulk DE
@@ -44,12 +43,16 @@
 #' "none" (pseudobulking will not be used, cell-level differential expression
 #' analysis will be run). Defaults to "generate".
 #' @param de_method Which tool to use for differential expression analysis.
-#' Permitted values are "edgeR", "DESeq2", "limma", and "wilcox" (indicating the
-#' Wilcoxon rank sum test). Defaults to "edgeR".
+#' Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
+#' "edgeR".
 #' @param de_test Which test to use for differential expression analysis.
 #' Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
-#' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("voom"),
-#' "wilcox" ("presto"). Defaults to "LRT".
+#' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom"),
+#' "presto" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".
+#' @param de_params A list of lists containing additional parameters to be
+#' passed to specific DE functions. The name of each element must be the
+#' specific DE function to which those parameters are passed. Defaults to an
+#' empty list.
 #' @param p_adjust_method A string indicating which multiple comparison
 #' adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
 #' Defaults to "fdr" (Benjamini & Hochberg, 1995).
@@ -104,6 +107,7 @@
 #'   split}
 #'   \item{group_key}{Dataframe record of group labels corresponding to each
 #'   replicate}
+#'   \item{metadata}{List recording characteristics of the data and runtime}
 #'   \item{parameters}{List recording parameter values used}
 #'   }
 #'
@@ -118,6 +122,7 @@ runDE <- function(object,
                   pseudobulk = "generate",
                   de_method = "edgeR",
                   de_test = "LRT",
+                  de_params = list(),
                   p_adjust_method = "fdr",
                   min_cells_per_split = 100,
                   min_replicates_per_split = 6,
@@ -135,6 +140,8 @@ runDE <- function(object,
   # Check input validity
   # ---------------------------------------------------------------------------
 
+  time1 <- Sys.time()
+
   .validInput(object, "object", "runDE")
   .validInput(pseudobulk, "pseudobulk", object)
   .validInput(replicate_labels, "replicate_labels", list(object, pseudobulk))
@@ -144,6 +151,7 @@ runDE <- function(object,
   .validInput(reference_group, "reference_group", list(object, group_labels, use_cells))
   .validInput(de_method, "de_method")
   .validInput(de_test, "de_test", de_method)
+  .validInput(de_params, "de_params", list(de_method, de_test))
   .validInput(p_adjust_method, "p_adjust_method")
   .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
   .validInput(min_replicates_per_split, "min_replicates_per_split", pseudobulk)
@@ -254,6 +262,8 @@ runDE <- function(object,
   # Obtain matrices for DE
   # ---------------------------------------------------------------------------
 
+  time2 <- Sys.time()
+
   if (pseudobulk == "generate") {
     # Generate pseudobulk matri(ces)
     # Returns a list containing one pseudobulk matrix (gene x replicate) per split
@@ -268,6 +278,7 @@ runDE <- function(object,
                                        n_cores = n_cores,
                                        verbose = verbose)
     matrix_list <- pseudobulk_output[["PB_values"]]
+    pseudobulk_metadata <- pseudobulk_output[["metadata"]]
   } else {
     # If necessary, separate the supplied pseudobulk matrix by split
     # Returns a list containing one pseudobulk matrix (gene x replicate) per split
@@ -375,6 +386,12 @@ runDE <- function(object,
   # Perform pseudobulk differential expression
   # ---------------------------------------------------------------------------
 
+  time3 <- Sys.time()
+
+  # Progress
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),
+                       ifelse(length(matrix_list) == 1, " matrix..", " matrices.."))
+
   # for each item in pb_list
   de_results_list <- pbmcapply::pbmclapply(seq_len(length(matrix_list)),
                                            FUN = function(i) {
@@ -389,19 +406,22 @@ runDE <- function(object,
                                                                       edgeR = .runDE.edgeR(mat = matrix_list[[i]],
                                                                                            targets = target_list[[i]],
                                                                                            design = design_i,
-                                                                                           de_test = de_test),
+                                                                                           de_test = de_test,
+                                                                                           de_params = de_params),
                                                                       DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
                                                                                              design = design_i,
-                                                                                             de_test = de_test),
+                                                                                             de_test = de_test,
+                                                                                             de_params = de_params),
                                                                       limma = .runDE.limma(mat = matrix_list[[i]],
                                                                                            targets = target_list[[i]],
                                                                                            design = design_i,
-                                                                                           de_test = de_test),
+                                                                                           de_test = de_test,
+                                                                                           de_params = de_params),
                                                                       wilcox = .runDE.wilcox(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
-                                                                                             pseudobulk = pseudobulk,
-                                                                                             de_test = de_test))
+                                                                                             de_test = de_test,
+                                                                                             de_params = de_params))
                                                de_results_i <- de_results_i |>
                                                  dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                                                                split = names(pb_list)[i]) |>
@@ -425,6 +445,23 @@ runDE <- function(object,
   # Wrap up
   # ---------------------------------------------------------------------------
 
+  time4 <- Sys.time()
+
+  # Metadata
+  if (pseudobulk == "generate") {
+    metadata_list <- list("PB_metadata" = pseudobulk_metadata,
+                          "time" = data.frame(total = difftime(time4, time1, units = "secs"),
+                                              step1_setup = difftime(time2, time1, units = "secs"),
+                                              step2_get_matrices = difftime(time3, time2, units = "secs"),
+                                              step3_DE = difftime(time4, time3, units = "secs")))
+  } else {
+    metadata_list <- list("time" = data.frame(total = difftime(time4, time1, units = "secs"),
+                                              step1_setup = difftime(time2, time1, units = "secs"),
+                                              step2_get_matrices = difftime(time3, time2, units = "secs"),
+                                              step3_DE = difftime(time4, time3, units = "secs")))
+  }
+
+  # Parameters
   parameter_list <- list("replicate_labels" = replicate_labels,
                          "group_labels" = group_labels,
                          "split_labels" = split_labels,
@@ -432,6 +469,7 @@ runDE <- function(object,
                          "pseudobulk" = pseudobulk,
                          "de_method" = de_method,
                          "de_test" = de_test,
+                         "de_params" = de_params,
                          "p_adjust_method" = p_adjust_method,
                          "min_cells_per_split" = min_cells_per_split,
                          "min_replicates_per_split" = min_replicates_per_split,
@@ -450,11 +488,13 @@ runDE <- function(object,
     return(list("DE_results" = de_results,
                 "cell_values" = matrix_list,
                 "group_key" = group_key,
+                "metadata" = metadata,
                 "parameters" = parameter_list))
   } else {
     return(list("DE_results" = de_results,
                 "PB_values" = matrix_list,
                 "group_key" = group_key,
+                "metadata" = metadata,
                 "parameters" = parameter_list))
   }
 }
@@ -466,24 +506,42 @@ runDE <- function(object,
 # targets -- A dataframe containing sample to group key
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass
 
 .runDE.edgeR <- function(mat,
                          targets,
                          design,
-                         de_test = "LRT") {
+                         de_test = "LRT",
+                         de_params = list()) {
   tryCatch({
-    y <- edgeR::DGEList(counts = mat, group = targets$group) |>
-      edgeR::calcNormFactors(method = 'TMM') |>
-      edgeR::estimateDisp(design)
-
+    # Normalization
+    dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                          "group" = targets$group),
+                                     de_params[["DGEList"]]))
+    dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
+                                             de_params[["calcNormFactors"]]))
+    y <- do.call(edgeR::estimateDisp, c(list("y" = dge,
+                                             "design" = design),
+                                        de_params[["estimateDisp"]]))
+    # Run test
     fit <- switch(de_test,
-                  QLF = edgeR::glmQLFit(y, design),
-                  LRT = edgeR::glmFit(y, design = design),
-                  exact = edgeR::exactTest(y))
+                  QLF = do.call(edgeR::glmQLFit, c(list("y" = dge,
+                                                        "design" = design),
+                                                   de_params[["glmQLFit"]])),
+                  LRT = do.call(edgeR::glmFit, c(list("y" = dge,
+                                                      "design" = design),
+                                                 de_params[["glmFit"]])),
+                  exact = do.call(edgeR::exactTest, c(list("object" = dge),
+                                                      de_params[["exactTest"]])))
     test <- switch(de_test,
-                   QLF = edgeR::glmQLFTest(fit, coef = 2),
-                   LRT = edgeR::glmLRT(fit, coef = 2),
+                   QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit,
+                                                           "coef" = 2),
+                                                    de_params[["glmQLFTest"]])),
+                   LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit,
+                                                       "coef" = 2),
+                                                  de_params[["glmLRT"]])),
                    exact = fit)
+    # Compile results
     edgeR_results <- edgeR::topTags(object = test,
                                     n = Inf,
                                     adjust.method = "none") |>
@@ -507,11 +565,13 @@ runDE <- function(object,
 # targets -- A dataframe containing sample to group key (splits to keep)
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass
 
 .runDE.DESeq2 <- function(mat,
                           targets,
                           design,
-                          de_test = "LRT") {
+                          de_test = "LRT",
+                          de_params = list()) {
 
   # Construct DESeq2 dataset
   dds <- DESeq2::DESeqDataSetFromMatrix(
@@ -523,9 +583,14 @@ runDE <- function(object,
   # Run DESeq
   if (de_test == "LRT") {
     reduced_design <- stats::model.matrix(~ 1, data = targets)
-    dds <- DESeq2::DESeq(dds, test = "LRT", reduced = reduced_design)
+    dds <- do.call(DESeq2::DESeq, c(list("object" = dds,
+                                         "test" = "LRT",
+                                         "reduced" = reduced_design),
+                                    de_params[["DESeq"]]))
   } else if (de_test == "Wald") {
-    dds <- DESeq2::DESeq(dds, test = "Wald")
+    dds <- do.call(DESeq2::DESeq, c(list("object" = dds,
+                                         "test" = "Wald"),
+                                    de_params[["DESeq"]]))
   }
 
   DESeq2_results <- DESeq2::results(dds) |>
@@ -545,37 +610,47 @@ runDE <- function(object,
 # targets -- A dataframe containing sample to group key
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass
 
 .runDE.limma <- function(mat,
                          targets,
                          design,
-                         de_test = "voom") {
+                         de_test = "voom",
+                         de_params = list()) {
 
-  # voom
-  if (de_test == 'voom') {
-    # create a DGE list
-    dge <- edgeR::DGEList(counts = mat)
-    # remove rows that consistently have zero or very low counts
-    keep <- edgeR::filterByExpr(dge, design)
-    dge <- dge[keep,,keep.lib.sizes=FALSE]
-    # apply TMM normalization
-    dge <- edgeR::calcNormFactors(dge)
-
-    # apply voom transformation
-    v <- limma::voom(dge, design, plot = TRUE)
-
-    # usual limma pipelines for differential expression
-    fit <- limma::lmFit(v, design)
-    fit <- limma::eBayes(fit)
-
-    limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
-      data.frame()
-    limma_results <- limma_results |>
-      dplyr::transmute(gene = rownames(limma_results),
-                       lfc = logFC,
-                       pvalue = P.Value)
-    rownames(limma_results) <- NULL
+  # Create a DGE list
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat),
+                                   de_params[["DGEList"]]))
+  # Apply TMM normalization
+  dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
+                                           de_params[["calcNormFactors"]]))
+  # Transform
+  if (de_test == "trend") {
+    # Apply logCPM
+    transformed_dge <- do.call(edgeR::cpm, c(list("y" = dge,
+                                                  "log" = TRUE),
+                                             de_params[["cpm"]]))
+  } else if (de_test == "voom") {
+    # Apply voom transformation
+    transformed_dge <- do.call(limma::voom, c(list("counts" = dge,
+                                     "design" = design),
+                                de_params[["voom"]]))
   }
+  # limma DE
+  fit <- do.call(limma::lmFit, c(list("object" = transformed_dge,
+                                      "design" = design),
+                                 de_params[["lmFit"]]))
+  fit <- do.call(limma::eBayes, c(list("fit" = fit),
+                                  de_params[["eBayes"]]))
+
+  limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
+    data.frame()
+  limma_results <- limma_results |>
+    dplyr::transmute(gene = rownames(limma_results),
+                     lfc = logFC,
+                     pvalue = P.Value)
+  rownames(limma_results) <- NULL
+
   return(limma_results)
 }
 
@@ -583,19 +658,26 @@ runDE <- function(object,
 #
 # mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
 # targets -- A dataframe containing sample to group key
-# pseudobulk -- Pseudobulk handling, indicates whether data needs normalization
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass to cpm and/or wilcoxauc
 
 .runDE.wilcox <- function(mat,
                           targets,
-                          pseudobulk,
-                          de_test = "presto") {
-
-  ### TODO: Insert CPM or log normalization ###
-
-  # Run Wilcox rank sum test
-  wilcox_results <- presto::wilcoxauc(X = mat,
-                                      y = targets$group)
+                          de_test = "wilcox_cpm",
+                          de_params = list()) {
+  # Normalization
+  if (de_test == "wilcox_cpm") {
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat),
+                                     de_params[["cpm"]]))
+  } else if (de_test == "wilcox_log_cpm") {
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "log" = TRUE),
+                                     de_params[["cpm"]]))
+  }
+  # Run Wilcoxon rank sum test
+  wilcox_results <- do.call(presto::wilcoxauc, c(list("X" = cpm_mat,
+                                                      "y" = targets$group),
+                                                 de_params[["wilcoxauc"]]))
 
   wilcox_results <- wilcox_results |>
     dplyr::transmute(gene = feature,

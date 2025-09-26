@@ -5,9 +5,6 @@
 #' Multiple pseudobulk matrices can be generated across different divisions of
 #' a dataset, such as cell types.
 #'
-#' This function was inspired in part by R package neurorestore/Libra and some
-#' aspects are adapted therefrom (Squair et al. 2021).
-#'
 #' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
 #' or \code{matrix}. Data supplied as class \code{matrix} should be a
 #' feature x cell matrix.
@@ -178,17 +175,20 @@ getPseudobulk <- function(object,
       # Metadata values
       n_features_excluded <- nrow(count_matrix)-nrow(pb_mat)
       percent_features_excluded <- n_features_excluded/nrow(count_matrix)
+      n_reads <- sum(pb_mat)
       if (n_features_excluded > 0) {
-        pb_mat_excluded <- count_matrix[!keep_features, split_s, drop = FALSE]
-        n_reads_excluded <- sum(pb_mat_excluded)
-        percent_reads_excluded <- n_reads_excluded/(n_reads_excluded + sum(pb_mat))
+        n_reads_pre <- sum(count_matrix[, split_s])
+        n_reads_excluded <- n_reads_pre - n_reads
+        percent_reads_excluded <- n_reads_excluded/n_reads_pre
       } else {
         n_reads_excluded <- 0
         percent_reads_excluded <- 0
       }
       return(list("pb_mat" = pb_mat,
+                  "n_features" = nrow(pb_mat),
                   "n_features_excluded" = n_features_excluded,
                   "percent_features_excluded" = percent_features_excluded,
+                  "n_reads" = n_reads,
                   "n_reads_excluded" = n_reads_excluded,
                   "percent_reads_excluded" = percent_reads_excluded))
     }, mc.cores = n_cores)
@@ -197,13 +197,17 @@ getPseudobulk <- function(object,
     names(pb_list) <- keep_splits
 
     # Metadata values
+    n_features <- unlist(do.call(rbind, pb_output)[, "n_features"])
     n_features_excluded <- unlist(do.call(rbind, pb_output)[, "n_features_excluded"])
     percent_features_excluded <- unlist(do.call(rbind, pb_output)[, "percent_features_excluded"])
+    n_reads <- unlist(do.call(rbind, pb_output)[, "n_reads"])
     n_reads_excluded <- unlist(do.call(rbind, pb_output)[, "n_reads_excluded"])
     percent_reads_excluded <- unlist(do.call(rbind, pb_output)[, "percent_reads_excluded"])
     metadata_values <- data.frame(split = keep_splits,
+                                  n_features = n_features,
                                   n_features_excluded = n_features_excluded,
                                   percent_features_excluded = percent_features_excluded,
+                                  n_reads = n_reads,
                                   n_reads_excluded = n_reads_excluded,
                                   percent_reads_excluded = percent_reads_excluded)
 

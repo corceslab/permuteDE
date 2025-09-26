@@ -20,8 +20,8 @@ parameters \code{replicate_label} and \code{group_label} or (2) numeric input
 to parameters \code{n_replicates} and \code{n_group1}.}
 
 \item{replicate_labels}{A string indicating the name of the
-metadata column containing the replicate labels or a character vector
-containing the replicate labels in order.}
+metadata column containing the biological replicate labels or a character
+vector containing the biological replicate labels in order.}
 
 \item{group_labels}{A string indicating the name of the
 column containing the two comparison group labels or a character vector

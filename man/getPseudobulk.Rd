@@ -12,7 +12,7 @@ getPseudobulk(
   min_cells_per_split = 100,
   min_replicates_per_split = 6,
   min_cells_per_feature = 10,
-  min_prop_cells_per_feature = 0,
+  min_prop_cells_per_feature = 0.1,
   use_assay = NULL,
   use_layer = NULL,
   n_cores = NULL,
@@ -25,8 +25,9 @@ or \code{matrix}. Data supplied as class \code{matrix} should be a
 feature x cell matrix.}
 
 \item{replicate_labels}{A string indicating the name of the
-metadata column containing the replicate labels or a character vector
-containing the replicate labels in order.}
+metadata column containing the biological replicate labels or a character
+vector containing the biological replicate labels in order. The biological
+replicate labels are used to construct/define the pseudobulks.}
 
 \item{split_labels}{A string indicating the name of a
 column by which to split the cells prior to pseudobulking and performing
@@ -47,12 +48,12 @@ of distinct replicates represented within one split. Pseudobulk steps
 will not be performed for splits with fewer replicates. Defaults to 6.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
-of cells (within a split) with expression of a gene. Pseudobulk expression
+of cells (within a split) with expression of a feature. Pseudobulk expression
 will not be calculated for genes expressed in fewer cells. Defaults to 10.}
 
 \item{min_prop_cells_per_feature}{A numeric value indicating the minimum
-proportion of cells (within a split) with expression of a gene. Pseudobulk
-expression will not be calculated for genes expressed in fewer cells.
+proportion of cells (within a split) with expression of a feature. Pseudobulk
+expression will not be calculated for features expressed in fewer cells.
 Defaults to 0.1.}
 
 \item{use_assay}{A string indicating the assay to use in the
@@ -73,16 +74,16 @@ during the execution of this function. Defaults to \code{TRUE}.
 Can be set to \code{FALSE} for a cleaner output.}
 }
 \value{
-Returns a list with one pseudobulk (feature x replicate) matrix per
-split.
+Returns a list containing the following elements: \describe{
+\item{PB_values}{A list of feature x replicate matri(ces) containing
+pseudobulk values for each feature, one matrix per split}
+\item{metadata}{Dataframe record of quality control metrics for each split}
+\item{parameters}{List recording parameter values used}
+}
 }
 \description{
 This function will generate pseudobulk expression matri(ces) from a provided
 Seurat object, SingleCellExperiment object, or feature x cell matrix.
 Multiple pseudobulk matrices can be generated across different divisions of
 a dataset, such as cell types.
-}
-\details{
-This function was inspired in part by R package neurorestore/Libra and some
-aspects are adapted therefrom (Squair et al. 2021).
 }

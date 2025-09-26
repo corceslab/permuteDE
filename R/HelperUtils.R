@@ -2,7 +2,6 @@
 # Helper Functions
 # ---------------------------------------------------------------------------
 
-
 # Retrieve data from an object
 #
 # object A 'Seurat' or 'SingleCellExperiment' object
@@ -279,4 +278,3 @@
   use_matrix <- use_matrix[use_features, use_cells]
   return(use_matrix)
 }
-

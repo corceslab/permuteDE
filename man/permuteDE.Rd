@@ -66,7 +66,8 @@ results by split}
 metrics by split}
 \item{permutation_all_DE_results}{If parameter 'return_all' is TRUE,
 dataframe DE results for each feature, by split, for each iteration}
-\item{parameters}{Dataframe record of parameter values used}
+\item{metadata}{List recording characteristics of the data and runtime}
+\item{parameters}{List recording parameter values used}
 }
 }
 \description{

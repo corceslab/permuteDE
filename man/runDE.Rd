@@ -14,6 +14,7 @@ runDE(
   pseudobulk = "generate",
   de_method = "edgeR",
   de_test = "LRT",
+  de_params = list(),
   p_adjust_method = "fdr",
   min_cells_per_split = 100,
   min_replicates_per_split = 6,
@@ -32,11 +33,17 @@ runDE(
 \item{object}{An object of class \code{Seurat}, \code{SingleCellExperiment},
 or \code{matrix}. Data supplied as class \code{matrix} may be either a
 feature x cell matrix or a pre-computed pseudobulk feature x replicate
-matrix.}
+matrix. Note that raw counts are expected, and the normalization method
+applied during differential expression analysis differs across the methods
+and tests.}
 
 \item{replicate_labels}{A string indicating the name of the
-metadata column containing the replicate labels or a character vector
-containing the replicate labels in order.}
+metadata column containing the biological replicate labels or a character
+vector containing the biological replicate labels in order. For pseudobulk DE
+analysis, the biological replicate labels are used to construct/define the
+pseudobulks. For cell-level DE analysis, the biological replicate labels are
+not used in this function, but will be passed on to function permuteDE so
+that the permutation of group labels keeps replicates intact.}
 
 \item{group_labels}{A string indicating the name of the
 column containing the two comparison group labels or a character vector
@@ -64,13 +71,18 @@ are: "generate" (pseudobulk matrices will be generated), "supplied"
 analysis will be run). Defaults to "generate".}
 
 \item{de_method}{Which tool to use for differential expression analysis.
-Permitted values are "edgeR", "DESeq2", "limma", and "wilcox" (indicating the
-Wilcoxon rank sum test). Defaults to "edgeR".}
+Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
+"edgeR".}
 
 \item{de_test}{Which test to use for differential expression analysis.
 Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
-"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("voom"),
-"wilcox" ("presto"). Defaults to "LRT".}
+"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom"),
+"presto" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".}
+
+\item{de_params}{A list of lists containing additional parameters to be
+passed to specific DE functions. The name of each element must be the
+specific DE function to which those parameters are passed. Defaults to an
+empty list.}
 
 \item{p_adjust_method}{A string indicating which multiple comparison
 adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
@@ -138,7 +150,8 @@ cell matri(ces) containing counts for each feature, one matrix per
 split}
 \item{group_key}{Dataframe record of group labels corresponding to each
 replicate}
-\item{parameters}{Dataframe record of parameter values used}
+\item{metadata}{List recording characteristics of the data and runtime}
+\item{parameters}{List recording parameter values used}
 }
 }
 \description{
@@ -151,7 +164,4 @@ used to run pseudobulk differential expression. The following existing tools
 are supported: \code{edgeR}, \code{DESeq2}, \code{limma}, and the Wilcoxon
 rank-sum test. Alternately, users may skip pseudobulking and run cell-level
 differential expression (not recommended in most cases).
-
-This function was inspired in part by R package neurorestore/Libra and some
-aspects are adapted therefrom (Squair et al. 2021).
 }

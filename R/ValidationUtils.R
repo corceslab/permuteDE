@@ -214,8 +214,8 @@
       stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
     }
     # Must be among permitted values
-    if (!(input %in% c("edgeR", "DESeq2", "limma", "wilcox"))) {
-      stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma", "wilcox"), collapse = ", "), "), please supply valid input!")
+    if (!(input %in% c("edgeR", "DESeq2", "limma", "presto"))) {
+      stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma", "presto"), collapse = ", "), "), please supply valid input!")
     }
   }
 
@@ -235,12 +235,12 @@
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("LRT", "Wald"), collapse = ", "), "), please supply valid input!")
       }
     } else if (other == "limma") {
-      if (!(input %in% c("voom"))) {
-        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("voom"), collapse = ", "), "), please supply valid input!")
+      if (!(input %in% c("trend", "voom"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("trend", "voom"), collapse = ", "), "), please supply valid input!")
       }
-    } else if (other == "wilcox") {
-      if (!(input %in% c("presto"))) {
-        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("presto"), collapse = ", "), "), please supply valid input!")
+    } else if (other == "presto") {
+      if (!(input %in% c("wilcox_cpm", "wilcox_log_cpm"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("wilcox_cpm", "wilcox_log_cpm"), collapse = ", "), "), please supply valid input!")
       }
     }
   }
@@ -341,7 +341,8 @@
   if (name == "message") {
     # Should be of class 'character'
     if (!methods::is(input, "character") | length(input) != 1) {
-      stop("Input for '", name, "' must be a single value of class 'character'. This parameter is intended for internal use, we recommend leaving it as the default value.")
+      stop("Input for '", name, "' must be a single value of class 'character'.",
+           " This parameter is intended for internal use, we recommend leaving it as the default value.")
     }
   }
 
@@ -356,4 +357,40 @@
     }
   }
 
+  # de_params
+  if (name == "de_params") {
+    # Check that it is a list
+    if (!methods::is(input, "list")) {
+      stop("Input value for '", name, "' is not of class 'list', please supply valid input!")
+    }
+    # Check whether it is empty
+    if (length(input) > 0) {
+      # Allowed functions to pass parameters to depends on selected DE method/test
+      if (other[[1]] == "edgeR") {
+        if (other[[2]] == "LRT") {
+          allowed_functions <- c("DGEList", "calcNormFactors", "estimateDisp", "glmQLFit", "glmQLFTest")
+        } else if (other[[2]] == "QLF") {
+          allowed_functions <- c("DGEList", "calcNormFactors", "estimateDisp", "glmFit", "glmLRT")
+        } else if (other[[2]] == "exact") {
+          allowed_functions <- c("DGEList", "calcNormFactors", "estimateDisp", "exactTest")
+        }
+      } else if (other[[1]] == "DESeq2") {
+        allowed_functions <- c("DESeq")
+      } else if (other[[1]] == "limma") {
+        if (other[[2]] == "trend") {
+          allowed_functions <- c("DGEList", "calcNormFactors", "cpm", "lmFit", "eBayes")
+        } else if (other[[2]] == "voom") {
+          allowed_functions <- c("DGEList", "calcNormFactors", "voom", "lmFit", "eBayes")
+        }
+      } else if (other[[1]] == "presto") {
+        allowed_functions <- c("cpm", "wilcoxauc")
+      }
+      if (!all(names(input) %in% allowed_functions)) {
+        stop("When supplying additional parameters to '", name, "' for use",
+             " with '", de_method, ": ", de_test, "',",
+             " please provide a list of lists, where each secondary list is named according to",
+             " the allowed functions (", paste0(allowed_functions, collapse = ", "), ").")
+      }
+    }
+  }
 }

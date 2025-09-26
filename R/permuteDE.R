@@ -59,6 +59,7 @@
 #'   metrics by split}
 #'   \item{permutation_all_DE_results}{If parameter 'return_all' is TRUE,
 #'   dataframe DE results for each feature, by split, for each iteration}
+#'   \item{metadata}{List recording characteristics of the data and runtime}
 #'   \item{parameters}{List recording parameter values used}
 #'   }
 #'
@@ -78,6 +79,8 @@ permuteDE <- function(input,
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
+
+  time1 <- Sys.time()
 
   .validInput(input, "input")
   .validInput(alpha, "alpha")
@@ -105,6 +108,7 @@ permuteDE <- function(input,
   padj_method <- input$parameters$p_adjust_method
   pseudobulk <- input$parameters$pseudobulk
   store_replicates <- input$parameters$store_replicates
+  de_params <- input$parameters$de_params
 
   if (is.null(use_splits)) {
     if (pseudobulk == "none") {
@@ -142,6 +146,8 @@ permuteDE <- function(input,
   # ---------------------------------------------------------------------------
   # Compute permuted DE results
   # ---------------------------------------------------------------------------
+
+  time2 <- Sys.time()
 
   # Progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
@@ -252,19 +258,22 @@ permuteDE <- function(input,
                                                                                 edgeR = .runDE.edgeR(mat = current_mat,
                                                                                                      targets = targets_i,
                                                                                                      design = design_i,
-                                                                                                     de_test = de_test),
+                                                                                                     de_test = de_test,
+                                                                                                     de_params = de_params),
                                                                                 DESeq2 = .runDE.DESeq2(mat = current_mat,
                                                                                                        targets = targets_i,
                                                                                                        design = design_i,
-                                                                                                       de_test = de_test),
+                                                                                                       de_test = de_test,
+                                                                                                       de_params = de_params),
                                                                                 limma = .runDE.limma(mat = current_mat,
                                                                                                      targets = targets_i,
                                                                                                      design = design_i,
-                                                                                                     de_test = de_test),
+                                                                                                     de_test = de_test,
+                                                                                                     de_params = de_params),
                                                                                 wilcox = .runDE.wilcox(mat = current_mat,
                                                                                                        targets = targets_i,
-                                                                                                       pseudobulk = pseudobulk,
-                                                                                                       de_test = de_test))
+                                                                                                       de_test = de_test,
+                                                                                                       de_params = de_params))
                                                          de_results_i <- de_results_i |>
                                                            dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                                                                          permutation = i,
@@ -333,6 +342,13 @@ permuteDE <- function(input,
   # Wrap up
   # ---------------------------------------------------------------------------
 
+  time3 <- Sys.time()
+
+  # Metadata
+  metadata_list <- list("time" = data.frame(total = difftime(time3, time1, units = "secs"),
+                                              step1_setup = difftime(time2, time1, units = "secs"),
+                                              step2_permute = difftime(time3, time2, units = "secs")))
+
   parameter_list <- list("alpha" = alpha,
                          "lfc_threshold" = lfc_threshold,
                          "n_iterations" = n_iterations,
@@ -351,11 +367,12 @@ permuteDE <- function(input,
     return(list("permutation_test_results" = permutation_test_results,
                 "permutation_DE_results" = permutation_DE_results,
                 "permutation_DE_results_all" = permutation_DE_results_all,
+                "metadata" = metadata_list,
                 "parameters" = parameter_list))
   } else {
     return(list("permutation_test_results" = permutation_test_results,
                 "permutation_DE_results" = permutation_DE_results,
+                "metadata" = metadata_list,
                 "parameters" = parameter_list))
   }
-
 }
