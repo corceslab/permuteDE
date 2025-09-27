@@ -357,7 +357,7 @@ runDE <- function(object,
     current_groups <- group_key$group[match(current_replicates, group_key$replicate)]
     replicates_per_group <- table(current_groups)
     # Check whether either group is < min_replicates_per_group or only 1 group is present
-    if ((any(replicates_per_group) < min_replicates_per_group) | (length(replicates_per_group) < 2)) {
+    if (any(replicates_per_group < min_replicates_per_group) | (length(replicates_per_group) < 2)) {
       m <- NULL
     } else if (force_balance == TRUE) {
       # If force balancing, downsample larger group to match size of smaller group
@@ -372,7 +372,15 @@ runDE <- function(object,
     return(m)
   })
   # Remove NULL elements
+  pre_labels <- names(matrix_list)
   matrix_list <- matrix_list[lengths(matrix_list) > 0]
+  if (verbose & any(lengths(matrix_list) == 0)) {
+    message("Skipped ", sum(lengths(matrix_list) == 0), " split label",
+            ifelse((lengths(matrix_list) == 0) == 1, "", "s"),
+            " due to insufficient replicates per group: ",
+            paste0(setdiff(pre_labels, names(matrix_list)),
+                   collapse = ", "))
+  }
 
   # Create corresponding list of replicates/groups
   target_list <- lapply(matrix_list, FUN = function(i) {
