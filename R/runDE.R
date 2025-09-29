@@ -426,7 +426,7 @@ runDE <- function(object,
                                                                                            design = design_i,
                                                                                            de_test = de_test,
                                                                                            de_params = de_params),
-                                                                      wilcox = .runDE.wilcox(mat = matrix_list[[i]],
+                                                                      presto = .runDE.presto(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
                                                                                              de_test = de_test,
                                                                                              de_params = de_params))
@@ -662,14 +662,14 @@ runDE <- function(object,
   return(limma_results)
 }
 
-# Run Wilcoxon rank sum test differential expression ---------------------------
+# Run Wilcoxon rank sum test differential expression using presto ---------------------------
 #
 # mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
 # targets -- A dataframe containing sample to group key
 # de_test -- Which test to use for differential expression
 # de_params -- Additional parameters to pass to cpm and/or wilcoxauc
 
-.runDE.wilcox <- function(mat,
+.runDE.presto <- function(mat,
                           targets,
                           de_test = "wilcox_cpm",
                           de_params = list()) {
