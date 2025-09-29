@@ -496,13 +496,13 @@ runDE <- function(object,
     return(list("DE_results" = de_results,
                 "cell_values" = matrix_list,
                 "group_key" = group_key,
-                "metadata" = metadata,
+                "metadata" = metadata_list,
                 "parameters" = parameter_list))
   } else {
     return(list("DE_results" = de_results,
                 "PB_values" = matrix_list,
                 "group_key" = group_key,
-                "metadata" = metadata,
+                "metadata" = metadata_list,
                 "parameters" = parameter_list))
   }
 }
