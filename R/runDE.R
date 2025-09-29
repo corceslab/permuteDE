@@ -533,13 +533,13 @@ runDE <- function(object,
                                         de_params[["estimateDisp"]]))
     # Run test
     fit <- switch(de_test,
-                  QLF = do.call(edgeR::glmQLFit, c(list("y" = dge,
+                  QLF = do.call(edgeR::glmQLFit, c(list("y" = y,
                                                         "design" = design),
                                                    de_params[["glmQLFit"]])),
-                  LRT = do.call(edgeR::glmFit, c(list("y" = dge,
+                  LRT = do.call(edgeR::glmFit, c(list("y" = y,
                                                       "design" = design),
                                                  de_params[["glmFit"]])),
-                  exact = do.call(edgeR::exactTest, c(list("object" = dge),
+                  exact = do.call(edgeR::exactTest, c(list("object" = y),
                                                       de_params[["exactTest"]])))
     test <- switch(de_test,
                    QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit,
