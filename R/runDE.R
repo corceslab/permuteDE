@@ -400,7 +400,7 @@ runDE <- function(object,
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),
                        ifelse(length(matrix_list) == 1, " matrix..", " matrices.."))
 
-  # for each item in pb_list
+  # for each item in matrix_list
   de_results_list <- pbmcapply::pbmclapply(seq_len(length(matrix_list)),
                                            FUN = function(i) {
                                              n_groups <- dplyr::n_distinct(target_list[[i]]$group)
@@ -432,11 +432,11 @@ runDE <- function(object,
                                                                                              de_params = de_params))
                                                de_results_i <- de_results_i |>
                                                  dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
-                                                               split = names(pb_list)[i]) |>
+                                                               split = names(matrix_list)[i]) |>
                                                  dplyr::arrange(padj)
                                              } else {
                                                de_results_i <- NULL
-                                               if (verbose) message("Skipped split label ", names(pb_list)[i],
+                                               if (verbose) message("Skipped split label ", names(matrix_list)[i],
                                                                     ", only ", n_groups,
                                                                     " group (", unique(target_list[[i]]$group),
                                                                     ") present.")
