@@ -281,10 +281,11 @@ permuteDE <- function(input,
                                                            dplyr::arrange(padj)
                                                          if (return_all != TRUE) {
                                                            de_results_i <- de_results_i |>
-                                                             dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
-                                                             dplyr::summarise(n_sig = dplyr::n(),
-                                                                              min_lfc_sig = min(lfc),
-                                                                              max_lfc_sig = max(lfc)) |>
+                                                             dplyr::group_by(split, permutation) |>
+                                                             dplyr::summarise(
+                                                               n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+                                                               min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+                                                               max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA)) |>
                                                              data.frame() |>
                                                              dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
                                                          }
@@ -299,11 +300,11 @@ permuteDE <- function(input,
       if (return_all == TRUE) {
         permutation_DE_results_s_all <- do.call(rbind, permutation_DE_results_list) |> data.frame()
         permutation_DE_results_s <- permutation_DE_results_all |>
-          dplyr::filter(padj < alpha & abs(lfc) > lfc_threshold) |>
           dplyr::group_by(split, permutation) |>
-          dplyr::summarise(n_sig = dplyr::n(),
-                           min_lfc_sig = min(lfc),
-                           max_lfc_sig = max(lfc)) |>
+          dplyr::summarise(
+            n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+            min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+            max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA)) |>
           data.frame() |>
           dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
       } else {
