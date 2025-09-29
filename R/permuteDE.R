@@ -270,7 +270,7 @@ permuteDE <- function(input,
                                                                                                      design = design_i,
                                                                                                      de_test = de_test,
                                                                                                      de_params = de_params),
-                                                                                wilcox = .runDE.wilcox(mat = current_mat,
+                                                                                presto = .runDE.presto(mat = current_mat,
                                                                                                        targets = targets_i,
                                                                                                        de_test = de_test,
                                                                                                        de_params = de_params))
