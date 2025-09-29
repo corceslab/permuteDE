@@ -264,7 +264,7 @@
       stop("Parameter '", name, "' must be a list, please supply valid input!")
     }
     # Must have expected elements with set names
-    if (!identical(names(input), c("DE_results", "PB_values",  "group_key", "metadata", "parameters")) |
+    if (!identical(names(input), c("DE_results", "PB_values",  "group_key", "metadata", "parameters")) &
         !identical(names(input), c("DE_results", "cell_values",  "group_key", "metadata", "parameters"))) {
       stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with five named elements ",
            "('DE_results', 'PB_values' (or 'cell_values'), 'group_key', 'metadata', and 'parameters'). Please supply valid input!")
