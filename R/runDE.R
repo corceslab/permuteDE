@@ -187,7 +187,7 @@ runDE <- function(object,
   }
 
   # Replicate labels
-  store_replicates <- NULL
+  stored_replicates <- NULL
   if (!is.null(replicate_labels)) {
     if (length(replicate_labels) == 1) {
       replicates <- .retrieveData(object = object,
@@ -212,9 +212,9 @@ runDE <- function(object,
     }
     if (pseudobulk == "none") {
       # Store biological replicates for use later if output is passed to permuteDE
-      store_replicates <- replicates
+      stored_replicates <- replicates
       replicates <- use_cells
-      names(store_replicates) <- replicates
+      names(stored_replicates) <- replicates
     }
   } else if (pseudobulk == "none") {
     replicates <- use_cells
@@ -487,7 +487,7 @@ runDE <- function(object,
                          "force_balance" = force_balance,
                          "use_assay" = use_assay,
                          "use_layer" = use_layer,
-                         "store_replicates" = store_replicates,
+                         "stored_replicates" = stored_replicates,
                          "random_seed" = random_seed,
                          "n_cores" = n_cores)
 

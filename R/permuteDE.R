@@ -107,7 +107,7 @@ permuteDE <- function(input,
   de_test <- input$parameters$de_test
   padj_method <- input$parameters$p_adjust_method
   pseudobulk <- input$parameters$pseudobulk
-  store_replicates <- input$parameters$store_replicates
+  stored_replicates <- input$parameters$stored_replicates
   de_params <- input$parameters$de_params
 
   if (is.null(use_splits)) {
