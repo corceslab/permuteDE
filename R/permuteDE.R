@@ -105,7 +105,7 @@ permuteDE <- function(input,
   # Fetch values
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
-  padj_method <- input$parameters$p_adjust_method
+  p_adjust_method <- input$parameters$p_adjust_method
   pseudobulk <- input$parameters$pseudobulk
   stored_replicates <- input$parameters$stored_replicates
   de_params <- input$parameters$de_params
@@ -357,7 +357,7 @@ permuteDE <- function(input,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "de_params" = de_params,
-                         "padj_method" = padj_method,
+                         "p_adjust_method" = p_adjust_method,
                          "pseudobulk" = pseudobulk,
                          "return_all" = return_all,
                          "random_seed" = random_seed,
