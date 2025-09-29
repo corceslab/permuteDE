@@ -9,11 +9,133 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+collapse = TRUE,
+comment = "#>"
 )
 ```
 
-```{r setup}
+# Installation
+
+permuteDE is designed to be run on Unix-based operating systems such as macOS and linux.
+
+permuteDE installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by CHOIR:
+
+First, install remotes (for installing GitHub packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+```
+
+Then, install BiocManager (for installing bioconductor packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+```
+
+Then, install permuteDE:
+```{r, eval = FALSE}
+remotes::install_github("corceslab/permuteDE", ref="main", repos = BiocManager::repositories(), upgrade = "never")
+```
+
+------
+
+# Introduction
+
+This vignette provides a basic example of how to run permuteDE, a <QQQ>. permuteDE is applicable to <QQQ> and <QQQ> (see [Advanced Options](<LINK>)). Detailed parameter definitions are available under the [Functions](<LINK>) tab.
+
+permuteDE is based on the premise that <QQQ>. The use of permutation testing allows permuteDE to <QQQ>.
+
+permuteDE proceeds in two main steps. First, the user will <QQQ>. Then, <QQQ>.
+
+You’ll need the following packages installed to run this tutorial:
+```{r, message = FALSE, warning = FALSE}
+library(Seurat)
 library(permuteDE)
 ```
+
+### Example data
+
+To demonstrate how to run permuteDE on a single-cell RNA-seq dataset, we’ll use a small dataset consisting of <QQQ>, originating from an experiment by <QQQ> et al. (<QQQ>), and available through the <Bioconductor package> <QQQ>.
+
+```{r, message = FALSE, warning = FALSE}
+
+```
+
+### Pre-processing
+
+permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. <QQQ> see [Advanced Options](<LINK>)). Note that the exact pre-processing steps used are up to the user.
+
+This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](<LINK>). <QQQ>
+
+```{r, message = FALSE, warning = FALSE, results = FALSE}
+
+```
+
+------
+
+# Running permuteDE
+
+permuteDE proceeds in two main steps: 
+
+1. Function `runDE()` <QQQ>.
+2. Function `permuteDE()` <QQQ>.
+
+## Step-by-step:
+
+### Step 1: `runDE()`
+
+<QQQ>. permuteDE is highly parallelized, so efficiency greatly improves as `n_cores` is increased. <QQQ> using default parameter settings.
+
+```{r, message = TRUE, warning = FALSE, results = "hide"}
+
+```
+
+The output contains <QQQ>. 
+
+### Step 2: `permuteDE()`
+
+<QQQ>. This permutation test yields a p-value that <QQQ>. 
+
+```{r, message = TRUE, warning = FALSE, results = "hide"}
+
+```
+
+The output contains <QQQ>. 
+
+## Plot
+
+<QQQ>. 
+
+```{r}
+
+```
+
+------
+
+# Advanced Options
+
+## Input object types
+
+### Seurat
+
+For Seurat objects, the "RNA" assay is used if no input is provided for parameter `use_assay`. If no input is provided for parameter `use_slot`, the "counts" default slot (Seurat v4) or layer (Seurat v5) is used.
+
+Some Seurat v5 objects have multiple layers (e.g., "counts.1", "counts.2", "counts.2"..) with different subsets of cells stored under the same assay. Currently, permuteDE requires a single layer containing all cells in an assay. For these cases, please re-organize the Seurat object prior to running permuteDE.
+
+### SingleCellExperiment
+
+For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to "counts". Please ensure that the relevant assay matrix includes both row and column names.
+
+### Matrix input
+
+<QQQ>
+
+## permuteDE parameters
+
+### Significance level & multiple comparison correction
+
+The default significance level used by permuteDE is `alpha = 0.05` with multiple comparison correction (parameter `p_adjust_method`) using FDR = 0.05. By default, permuteDE also requires that significant DEGs have a |LFC| > 0.5 (parameter `lfc_threshold`).
+
+### Filters
+
+permuteDE uses various filters to reduce the number of DE comparisons:
+
+*  Parameter `<QQQ>` indicates the minimum <QQQ>. It defaults to <QQQ>.
