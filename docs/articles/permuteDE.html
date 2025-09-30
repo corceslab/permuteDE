@@ -7,12 +7,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="permuteDE">
 <title>permuteDE • permuteDE</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="permuteDE">
 <meta property="og:description" content="permuteDE">
+<meta property="og:image" content="/logo.png">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -80,7 +87,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>permuteDE</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>permuteDE</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/cathrinesant/permuteDE/blob/HEAD/vignettes/permuteDE.Rmd" class="external-link"><code>vignettes/permuteDE.Rmd</code></a></small>
@@ -97,7 +104,7 @@ as macOS and linux.</p>
 <p>permuteDE installation currently requires <code>remotes</code> and
 <code>BiocManager</code> for installation of GitHub and Bioconductor
 packages. Run the following commands to install the various dependencies
-used by CHOIR:</p>
+used by permuteDE:</p>
 <p>First, install remotes (for installing GitHub packages) if it isn’t
 already installed:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -114,69 +121,204 @@ it isn’t already installed:</p>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>This vignette provides a basic example of how to run permuteDE, a
-<qqq>. permuteDE is applicable to <qqq> and <qqq> (see <a href="LINK">Advanced Options</a>). Detailed parameter definitions are
-available under the <a href="LINK">Functions</a> tab.</qqq></qqq></qqq></p>
-<p>permuteDE is based on the premise that <qqq>. The use of permutation
-testing allows permuteDE to <qqq>.</qqq></qqq></p>
-<p>permuteDE proceeds in two main steps. First, the user will <qqq>.
-Then, <qqq>.</qqq></qqq></p>
+<p>This tutorial provides a basic example of how to run permuteDE, an R
+package intended to help users assess which differential expression
+comparisons can be trusted and which should be met with skepticism.</p>
+<p>permuteDE is applicable to any sequencing data suitable for
+differential expression analysis. It takes as input a Seurat object,
+SingleCellExperiment object, or matrix (see <a href="LINK">Advanced
+Options</a> for details about input object types). Detailed parameter
+definitions are available under the <a href="LINK">Functions</a>
+tab.</p>
+<p>Differential expression analyses are susceptible to false positives,
+and it can be difficult to prioritize the most robust results for
+further study. permuteDE is based on the premise that the differential
+expression results that are most likely to be validated in subsequent
+experiments come from comparisons that have a higher number of
+significant differentially expressed features than would be expected by
+chance. The use of permutation testing allows permuteDE to generate a
+distribution estimating how many false positive significant
+differentially expressed features occur by chance alone.</p>
+<p>permuteDE proceeds in two main steps. First, the user will use
+function <code><a href="../reference/runDE.html">runDE()</a></code> to run differential expression analysis
+using one of the several available methods. Second, these results are
+then passed to the <code><a href="../reference/permuteDE.html">permuteDE()</a></code> function, which performs the
+permutation test.</p>
 <p>You’ll need the following packages installed to run this
 tutorial:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/cathrinesant/permuteDE" class="external-link">permuteDE</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level4">
-<h4 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
-</h4>
-<p>To demonstrate how to run permuteDE on a single-cell RNA-seq dataset,
-we’ll use a small dataset consisting of <qqq>, originating from an
-experiment by <qqq> et al. (<qqq>), and available through the
-<bioconductor package><qqq>.</qqq></bioconductor></qqq></qqq></qqq></p>
-</div>
-<div class="section level4">
-<h4 id="pre-processing">Pre-processing<a class="anchor" aria-label="anchor" href="#pre-processing"></a>
+<h4 id="input-data">Input data<a class="anchor" aria-label="anchor" href="#input-data"></a>
 </h4>
 <p>permuteDE takes as input a Seurat, SingleCellExperiment, or matrix.
-<qqq> see <a href="LINK">Advanced Options</a>). Note that the exact
-pre-processing steps used are up to the user.</qqq></p>
-<p>This tutorial uses a Seurat object; for details related to other
-object types, see <a href="LINK">Advanced Options</a>. <qqq></qqq></p>
+If a matrix is provided, it may be either a cell-level matrix or a
+pre-generated pseudobulk matrix. This tutorial uses a Seurat object; for
+details related to other object types, see <a href="LINK">Advanced
+Options</a>. permuteDE expects raw counts, and normalization is
+performed during the differential expression analysis depending on the
+selected method.</p>
+<p>To demonstrate how to run permuteDE, we’ll use a small sample dataset
+consisting of mouse brain snRNA-seq data, stored as a Seurat object.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"sample_data"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
 <div class="section level2">
 <h2 id="running-permutede">Running permuteDE<a class="anchor" aria-label="anchor" href="#running-permutede"></a>
 </h2>
-<p>permuteDE proceeds in two main steps:</p>
-<ol style="list-style-type: decimal">
-<li>Function <code><a href="../reference/runDE.html">runDE()</a></code> <qqq>.</qqq>
-</li>
-<li>Function <code><a href="../reference/permuteDE.html">permuteDE()</a></code> <qqq>.</qqq>
-</li>
-</ol>
+<p>permuteDE proceeds in two main steps, each corresponding to a
+function: (1) <code><a href="../reference/runDE.html">runDE()</a></code> and (2) <code><a href="../reference/permuteDE.html">permuteDE()</a></code>.</p>
 <div class="section level3">
 <h3 id="step-by-step">Step-by-step:<a class="anchor" aria-label="anchor" href="#step-by-step"></a>
 </h3>
 <div class="section level4">
 <h4 id="step-1-runde">Step 1: <code>runDE()</code><a class="anchor" aria-label="anchor" href="#step-1-runde"></a>
 </h4>
-<p><qqq>. permuteDE is highly parallelized, so efficiency greatly
-improves as <code>n_cores</code> is increased. <qqq> using default
-parameter settings.</qqq></qqq></p>
-<p>The output contains <qqq>.</qqq></p>
+<p>Function <code><a href="../reference/runDE.html">runDE()</a></code> will run differential expression
+analysis to compare two groups.</p>
+<p>By default, <code><a href="../reference/runDE.html">runDE()</a></code> will generate pseudobulk matrices
+using the metadata provided to parameters <code>replicate_labels</code>
+(representing each biological replicate) and, optionally,
+<code>split_labels</code> (representing a further division of the data,
+often cell types). The pseudobulk matrices will be returned as part of
+the output of <code><a href="../reference/runDE.html">runDE()</a></code>, but they can also be extracted
+separately using function <code><a href="../reference/getPseudobulk.html">getPseudobulk()</a></code>.</p>
+<p>Alternately, users may opt to run cell-level tests instead of
+pseudobulk tests (set parameter <code>pseudobulk</code> to “none”) or to
+provide pre-generated pseudobulk matrices (set parameter
+<code>pseudobulk</code> to “supplied”). See <a href="LINK">Advanced
+Options</a> for more details.</p>
+<p>Function <code><a href="../reference/runDE.html">runDE()</a></code> allows the user to run several
+different methods of differential expression analysis, by adjusting
+parameters <code>de_method</code> and <code>de_test</code>:</p>
+<ul>
+<li>
+<code>edgeR</code>: “LRT”, “QLF”, “exact”</li>
+<li>
+<code>DESeq2</code>: “LRT”, “Wald”</li>
+<li>
+<code>limma</code>: “trend”, “voom”</li>
+<li>
+<code>presto</code>: “wilcox_cpm”, “wilcox_cpm_log”</li>
+</ul>
+<p>By default, <code><a href="../reference/runDE.html">runDE()</a></code> will run differential expression
+analysis using <code>edgeR</code> LRT. The precise execution of the
+differential expression analysis can be further adjusted using parameter
+<code>de_params</code> to pass further parameters to the selected
+method. This function is parallelized when multiple splits are assessed,
+so efficiency improves as <code>n_cores</code> is increased, up to the
+number of splits.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">runDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runDE.html">runDE</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">sample_data</span>,</span>
+<span>                      replicate_labels <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>                      group_labels <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
+<span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Generating 5 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; Excluded between 74.85% (1497 features) and 88.05% (1761 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features were excluded in split 'Oligodendrocytes'.</span></span>
+<span><span class="co">#&gt; Excluded between 25.38% (20320 reads) and 41.56% (17294 reads) of reads in each split.</span></span>
+<span><span class="co">#&gt; Highest % of reads were excluded in split 'Astrocytes'.</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Running DE on 5 matrices..</span></span></code></pre></div>
+<p>The output is a list containing the following elements: *
+<code>DE_results</code> Dataframe containing DE results for each
+feature, by split * <code>PB_values</code> If using pseudobulk data, a
+list of feature x replicate matri(ces) containing pseudobulk values for
+each feature, one matrix per split * <code>cell_values</code>
+Alternately, if using cell-level data, a list of feature x cell
+matri(ces) containing counts for each feature, one matrix per split *
+<code>group_key</code> Dataframe record of group labels corresponding to
+each replicate * <code>metadata</code> List recording characteristics of
+the data and runtime * <code>parameters</code> List recording parameter
+values used</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">runDE_output</span><span class="op">$</span><span class="va">DE_results</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     gene        lfc       pvalue        padj      split</span></span>
+<span><span class="co">#&gt; 1    App  2.0167834 9.591481e-06 0.002301955 Astrocytes</span></span>
+<span><span class="co">#&gt; 2 Dyrk1a -1.9616519 6.749865e-04 0.080998384 Astrocytes</span></span>
+<span><span class="co">#&gt; 3   Nnat  1.0397780 1.420917e-03 0.113673330 Astrocytes</span></span>
+<span><span class="co">#&gt; 4 Ube2g1  1.6691528 2.367652e-03 0.118452739 Astrocytes</span></span>
+<span><span class="co">#&gt; 5   Fth1  0.9574856 2.715762e-03 0.118452739 Astrocytes</span></span>
+<span><span class="co">#&gt; 6   Pcp4  1.5959082 2.961318e-03 0.118452739 Astrocytes</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="step-2-permutede">Step 2: <code>permuteDE()</code><a class="anchor" aria-label="anchor" href="#step-2-permutede"></a>
 </h4>
-<p><qqq>. This permutation test yields a p-value that <qqq>.</qqq></qqq></p>
-<p>The output contains <qqq>.</qqq></p>
+<p>Function <code><a href="../reference/permuteDE.html">permuteDE()</a></code> will take the output from function
+<code><a href="../reference/runDE.html">runDE()</a></code>, permute the group labels and rerun differential
+expression analysis in the same way across a number of iterations set by
+parameter <code>n_iterations</code> (the default is 1000). The
+parameters are inherited from the <code><a href="../reference/runDE.html">runDE()</a></code> function call.
+For each iteration, the number of significant differentially expressed
+features is counted, forming a distribution to which the “true” number
+of significantly differentially expressed features is compared using a
+permutation test. This permutation test yields a p-value that suggests
+the probability of observing a number of significant features greater
+than or equal to the one output by the <code><a href="../reference/runDE.html">runDE()</a></code> function if
+the two groups are not truly different.</p>
+<p>This function is highly parallelized, so efficiency greatly improves
+as <code>n_cores</code> is increased.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
+<span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Will skip 4 split labels due to insufficient differentially expressed features: Astrocytes, Microglia, Neurons, Oligodendrocytes</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Differential expression results for group WT vs. Tg across 1 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Generating 20 of 20 possible combinations for split OPCs (1/1)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 15:16:17 : Running 20 permutations for split OPCs (1/1)..</span></span></code></pre></div>
+<p>The output is a list containing the following elements: *
+<code>permutation_test_results</code> Dataframe containing the
+permutation test results by split * <code>permutation_summary</code>
+Dataframe containing the permutation DE summary metrics by split *
+<code>permutation_all_DE_results</code> If parameter
+<code>return_all</code> is <code>TRUE</code>, dataframe DE results for
+each feature, by split, for each iteration * <code>metadata</code> List
+recording characteristics of the data and runtime *
+<code>parameters</code> List recording parameter values used</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">runDE_output</span><span class="op">$</span><span class="va">permutation_test_results</span><span class="op">)</span></span>
+<span><span class="co">#&gt; NULL</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
 <h3 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
 </h3>
-<p><qqq>.</qqq></p>
+<p>permuteDE has several built-in plotting functions to help display the
+results from functions <code><a href="../reference/runDE.html">runDE()</a></code> and
+<code><a href="../reference/permuteDE.html">permuteDE()</a></code>.</p>
+<p>To generate volcano plots for each split assessed by
+<code><a href="../reference/runDE.html">runDE()</a></code> (or a single split) use function
+<code><a href="../reference/getVolcanos.html">getVolcanos()</a></code>.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#volcano_plots &lt;- getVolcanos(input = runDE_output)</span></span>
+<span><span class="co">#volcano_plots[["astrocytes"]]</span></span></code></pre></div>
+<p>To generate histograms for each permutation test (or a single split),
+use function <code><a href="../reference/getHistograms.html">getHistograms()</a></code>. These histograms display the
+distribution of the number of significant differentially expressed
+features in each iteration of the permutation test, and where the “true”
+results fall on this distribution.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#histogram_plots &lt;- getHistograms(input = permuteDE_output)</span></span>
+<span><span class="co">#histogram_plots[["astrocytes"]]</span></span></code></pre></div>
+<p>One way to summarise the results from permuteDE is to color a UMAP by
+the number of differentially expressed features in each split (in this
+case, cell type). In this plot, cell types are greyed out if the
+permutation test p-value was &gt; 0.05.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#plotUMAP(object = object,</span></span>
+<span><span class="co">#         input = permuteDE_output)</span></span></code></pre></div>
+<p>To plot the results for a single feature, use function
+<code>plotFeature()</code>. By default, this function will apply CPM
+normalization (using <code><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">edgeR::cpm()</a></code>), but this can be changed
+using the parameter <code>normalization_method</code>.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#plotFeature(input = runDE_output,</span></span>
+<span><span class="co">#            feature = "Mbp",</span></span>
+<span><span class="co">#            split = "astrocytes")</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -198,6 +340,11 @@ or layer (Seurat v5) is used.</p>
 the same assay. Currently, permuteDE requires a single layer containing
 all cells in an assay. For these cases, please re-organize the Seurat
 object prior to running permuteDE.</p>
+<p>For Seurat objects, the input to parameters
+<code>replicate_labels</code>, <code>group_labels</code>, and
+<code>split_labels</code> may be either a string indicating the name of
+the metadata column containing the labels or a character vector
+containing the labels in the same order as the cells.</p>
 </div>
 <div class="section level4">
 <h4 id="singlecellexperiment">SingleCellExperiment<a class="anchor" aria-label="anchor" href="#singlecellexperiment"></a>
@@ -206,11 +353,24 @@ object prior to running permuteDE.</p>
 parameter is needed. If not provided, it is set to “counts”. Please
 ensure that the relevant assay matrix includes both row and column
 names.</p>
+<p>For SingleCellExperiment objects, the input to parameters
+<code>replicate_labels</code>, <code>group_labels</code>, and
+<code>split_labels</code> may be either a string indicating the name of
+the metadata column containing the labels or a character vector
+containing the labels in the same order as the cells.</p>
 </div>
 <div class="section level4">
 <h4 id="matrix-input">Matrix input<a class="anchor" aria-label="anchor" href="#matrix-input"></a>
 </h4>
-<p><qqq></qqq></p>
+<p>For matrix inputs, the provided matrix may be either a cell-level
+matrix (feature x cell) or a pre-generated pseudobulk matrix (feature x
+replicate). All permuteDE functions expect raw counts.</p>
+<p>If a pre-generated pseudobulk matrix is provided, parameter
+<code>pseudobulk</code> must be set to “supplied”.</p>
+<p>For matrix inputs, the input to parameters
+<code>replicate_labels</code>, <code>group_labels</code>, and
+<code>split_labels</code> must be a character vector containing the
+labels in order, corresponding to each column of the matrix.</p>
 </div>
 </div>
 <div class="section level3">
@@ -220,9 +380,11 @@ names.</p>
 <h4 id="significance-level-multiple-comparison-correction">Significance level &amp; multiple comparison correction<a class="anchor" aria-label="anchor" href="#significance-level-multiple-comparison-correction"></a>
 </h4>
 <p>The default significance level used by permuteDE is
-<code>alpha = 0.05</code> with multiple comparison correction (parameter
-<code>p_adjust_method</code>) using FDR = 0.05. By default, permuteDE
-also requires that significant DEGs have a |LFC| &gt; 0.5 (parameter
+<code>alpha = 0.05</code> with multiple comparison correction using FDR
+= 0.05. The method of multiple comparisonn correction can be changed
+using parameter <code>p_adjust_method</code> (for permitted values, see
+<code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust.methods</a></code>). By default, permuteDE also
+requires that significant DEGs have a |LFC| &gt; 0.5 (parameter
 <code>lfc_threshold</code>).</p>
 </div>
 <div class="section level4">
@@ -231,10 +393,47 @@ also requires that significant DEGs have a |LFC| &gt; 0.5 (parameter
 <p>permuteDE uses various filters to reduce the number of DE
 comparisons:</p>
 <ul>
-<li>Parameter <code>&lt;QQQ&gt;</code> indicates the minimum <qqq>. It
-defaults to <qqq>.</qqq></qqq>
-</li>
+<li>Parameter <code>min_cells_per_split</code> indicates the minimum
+number of cells within one split. Defaults to 100.</li>
+<li>Parameter <code>min_replicates_per_split</code> indicates minimum
+number of distinct replicates represented within one split. Defaults to
+6.</li>
+<li>Parameter <code>min_replicates_per_group</code> indicates the
+minimum number of distinct replicates represented within each of the two
+comparison groups. Defaults to 3.</li>
+<li>Parameter <code>min_cells_per_feature</code> indicates the minimum
+number of cells (within a split) with expression of a gene. Defaults to
+10.</li>
+<li>Parameter <code>min_prop_cells_per_feature</code> indicates the
+minimum proportion of cells (within a split) with expression of a gene.
+Defaults to 0.1.</li>
 </ul>
+</div>
+<div class="section level4">
+<h4 id="pseudobulk-vs--cell-level-tests">Pseudobulk vs. cell-level tests<a class="anchor" aria-label="anchor" href="#pseudobulk-vs--cell-level-tests"></a>
+</h4>
+<p>We highly encourage users to use pseudobulk differential expression
+analysis, as it reduces the incidence of false positives. However,
+permuteDE is also compatible with cell-level tests. To run function
+<code><a href="../reference/runDE.html">runDE()</a></code> without pseudobulking, and treating the cells as
+the statistical sample size, set parameter <code>pseudobulk</code> to
+“none”. This works with any input object type, including cell x feature
+matrices. Please note that the size of the returned output will be
+substantially larger, since the cell x feature matrices will be returned
+as output so that they can be subsequently passed to function
+<code><a href="../reference/permuteDE.html">permuteDE()</a></code>.</p>
+<p>When running cell-level tests, we still recommend that users provide
+the biological replicate labels to function <code><a href="../reference/runDE.html">runDE()</a></code> using
+parameter <code>replicate_labels</code>. These labels are not used when
+running function <code><a href="../reference/runDE.html">runDE()</a></code> with parameter
+<code>pseudobulk = "none"</code>, but they are passed on to function
+<code><a href="../reference/permuteDE.html">permuteDE()</a></code>, such that when the group labels are permuted,
+cells from each biological replicate are not separated. In other words,
+the permutation occurs at the replicate level, even for cell-level
+tests.</p>
+<p>In the rare case when a user wants to permute cells regardless of the
+biological replicate, simply set <code>replicate_labels</code> equal to
+the cell IDs.</p>
 </div>
 </div>
 </div>
@@ -246,7 +445,7 @@ defaults to <qqq>.</qqq></qqq>
 
     <footer><div class="pkgdown-footer-left">
   <p></p>
-<p>Developed by Cathrine Sant.</p>
+<p>Developed by Cathrine Sant, James Guo.</p>
 </div>
 
 <div class="pkgdown-footer-right">

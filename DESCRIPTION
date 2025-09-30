@@ -2,8 +2,9 @@ Package: permuteDE
 Title: Permutation Testing for Differential Expression Analysis
 Version: 0.0.0.9000
 Authors@R: 
-    person("Cathrine", "Sant", , "cathrine.sant@gladstone.ucsf.edu", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-5821-9828"))
+  c(person("Cathrine", "Sant", , "cathrine.sant@gladstone.ucsf.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-5821-9828")),
+    person("James", "Guo", role = "aut"))
 Description: This package performs permutation testing for differential expression analysis by shuffling the group labels for a given set of replicates and then performing pseudobulk differential expression between those permuted groups. This can help to assess how many false positive significant differentially expressed features can be expected by chance. The metric used by the permutation test is the number of significantly differentially expressed features for the true group comparison vs. the comparisons that use permuted group labels.
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -28,3 +29,6 @@ Suggests:
 VignetteBuilder: knitr
 URL: https://github.com/cathrinesant/permuteDE
 BugReports: https://github.com/cathrinesant/permuteDE/issues
+Depends: 
+    R (>= 2.10)
+LazyData: true

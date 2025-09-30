@@ -18,7 +18,7 @@ comment = "#>"
 
 permuteDE is designed to be run on Unix-based operating systems such as macOS and linux.
 
-permuteDE installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by CHOIR:
+permuteDE installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by permuteDE:
 
 First, install remotes (for installing GitHub packages) if it isn’t already installed:
 ```{r, eval = FALSE}
@@ -39,11 +39,13 @@ remotes::install_github("corceslab/permuteDE", ref="main", repos = BiocManager::
 
 # Introduction
 
-This vignette provides a basic example of how to run permuteDE, a <QQQ>. permuteDE is applicable to <QQQ> and <QQQ> (see [Advanced Options](<LINK>)). Detailed parameter definitions are available under the [Functions](<LINK>) tab.
+This tutorial provides a basic example of how to run permuteDE, an R package intended to help users assess which differential expression comparisons can be trusted and which should be met with skepticism. 
 
-permuteDE is based on the premise that <QQQ>. The use of permutation testing allows permuteDE to <QQQ>.
+permuteDE is applicable to any sequencing data suitable for differential expression analysis. It takes as input a Seurat object, SingleCellExperiment object, or matrix (see [Advanced Options](<LINK>) for details about input object types). Detailed parameter definitions are available under the [Functions](<LINK>) tab.
 
-permuteDE proceeds in two main steps. First, the user will <QQQ>. Then, <QQQ>.
+Differential expression analyses are susceptible to false positives, and it can be difficult to prioritize the most robust results for further study. permuteDE is based on the premise that the differential expression results that are most likely to be validated in subsequent experiments come from comparisons that have a higher number of significant differentially expressed features than would be expected by chance. The use of permutation testing allows permuteDE to generate a distribution estimating how many false positive significant differentially expressed features occur by chance alone.
+
+permuteDE proceeds in two main steps. First, the user will use function `runDE()` to run differential expression analysis using one of the several available methods. Second, these results are then passed to the `permuteDE()` function, which performs the permutation test. 
 
 You’ll need the following packages installed to run this tutorial:
 ```{r, message = FALSE, warning = FALSE}
@@ -51,61 +53,115 @@ library(Seurat)
 library(permuteDE)
 ```
 
-### Example data
+### Input data
 
-To demonstrate how to run permuteDE on a single-cell RNA-seq dataset, we’ll use a small dataset consisting of <QQQ>, originating from an experiment by <QQQ> et al. (<QQQ>), and available through the <Bioconductor package> <QQQ>.
+permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. If a matrix is provided, it may be either a cell-level matrix or a pre-generated pseudobulk matrix. This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](<LINK>). permuteDE expects raw counts, and normalization is performed during the differential expression analysis depending on the selected method.
+
+To demonstrate how to run permuteDE, we’ll use a small sample dataset consisting of mouse brain snRNA-seq data, stored as a Seurat object.
 
 ```{r, message = FALSE, warning = FALSE}
-
-```
-
-### Pre-processing
-
-permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. <QQQ> see [Advanced Options](<LINK>)). Note that the exact pre-processing steps used are up to the user.
-
-This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](<LINK>). <QQQ>
-
-```{r, message = FALSE, warning = FALSE, results = FALSE}
-
+data("sample_data")
 ```
 
 ------
 
 # Running permuteDE
 
-permuteDE proceeds in two main steps: 
-
-1. Function `runDE()` <QQQ>.
-2. Function `permuteDE()` <QQQ>.
+permuteDE proceeds in two main steps, each corresponding to a function: (1) `runDE()` and (2) `permuteDE()`.
 
 ## Step-by-step:
 
 ### Step 1: `runDE()`
 
-<QQQ>. permuteDE is highly parallelized, so efficiency greatly improves as `n_cores` is increased. <QQQ> using default parameter settings.
+Function `runDE()` will run differential expression analysis to compare two groups.
+
+By default, `runDE()` will generate pseudobulk matrices using the metadata provided to parameters `replicate_labels` (representing each biological replicate) and, optionally, `split_labels` (representing a further division of the data, often cell types). The pseudobulk matrices will be returned as part of the output of `runDE()`, but they can also be extracted separately using function `getPseudobulk()`.
+
+Alternately, users may opt to run cell-level tests instead of pseudobulk tests (set parameter `pseudobulk`  to "none") or to provide pre-generated pseudobulk matrices (set parameter `pseudobulk`  to "supplied"). See [Advanced Options](<LINK>) for more details.
+
+Function `runDE()` allows the user to run several different methods of differential expression analysis, by adjusting parameters `de_method` and `de_test`:
+
+* `edgeR`: "LRT", "QLF", "exact"
+* `DESeq2`: "LRT", "Wald"
+* `limma`: "trend", "voom"
+* `presto`: "wilcox_cpm", "wilcox_cpm_log"
+
+By default, `runDE()` will run differential expression analysis using `edgeR` LRT. The precise execution of the differential expression analysis can be further adjusted using parameter `de_params` to pass further parameters to the selected method. This function is parallelized when multiple splits are assessed, so efficiency improves as `n_cores` is increased, up to the number of splits.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
-
+runDE_output <- runDE(object = sample_data,
+                      replicate_labels = "sample",
+                      group_labels = "group",
+                      split_labels = "cell_type",
+                      reference_group = "WT",
+                      n_cores = 2)
 ```
 
-The output contains <QQQ>. 
+The output is a list containing the following elements:
+* `DE_results` Dataframe containing DE results for each feature, by split
+* `PB_values` If using pseudobulk data, a list of feature x replicate matri(ces) containing pseudobulk values for each feature, one matrix per split
+* `cell_values` Alternately, if using cell-level data, a list of feature x cell matri(ces) containing counts for each feature, one matrix per split
+* `group_key` Dataframe record of group labels corresponding to each replicate
+* `metadata` List recording characteristics of the data and runtime
+* `parameters` List recording parameter values used
+
+```{r}
+head(runDE_output$DE_results)
+```
 
 ### Step 2: `permuteDE()`
 
-<QQQ>. This permutation test yields a p-value that <QQQ>. 
+Function `permuteDE()` will take the output from function `runDE()`, permute the group labels and rerun differential expression analysis in the same way across a number of iterations set by parameter `n_iterations` (the default is 1000). The parameters are inherited from the `runDE()` function call. For each iteration, the number of significant differentially expressed features is counted, forming a distribution to which the "true" number of significantly differentially expressed features is compared using a permutation test. This permutation test yields a p-value that suggests the probability of observing a number of significant features greater than or equal to the one output by the `runDE()` function if the two groups are not truly different.
+
+This function is highly parallelized, so efficiency greatly improves as `n_cores` is increased.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
-
+permuteDE_output <- permuteDE(input = runDE_output,
+                              n_cores = 2)
 ```
 
-The output contains <QQQ>. 
+The output is a list containing the following elements:
+* `permutation_test_results` Dataframe containing the permutation test results by split
+* `permutation_summary` Dataframe containing the permutation DE summary metrics by split
+* `permutation_all_DE_results` If parameter `return_all` is `TRUE`, dataframe DE results for each feature, by split, for each iteration
+* `metadata` List recording characteristics of the data and runtime
+* `parameters` List recording parameter values used
+
+```{r}
+head(runDE_output$permutation_test_results)
+```
 
 ## Plot
 
-<QQQ>. 
+permuteDE has several built-in plotting functions to help display the results from functions `runDE()` and `permuteDE()`. 
+
+To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `getVolcanos()`.
 
 ```{r}
+#volcano_plots <- getVolcanos(input = runDE_output)
+#volcano_plots[["astrocytes"]]
+```
 
+To generate histograms for each permutation test (or a single split), use function `getHistograms()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.
+
+```{r}
+#histogram_plots <- getHistograms(input = permuteDE_output)
+#histogram_plots[["astrocytes"]]
+```
+
+One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). In this plot, cell types are greyed out if the permutation test p-value was > 0.05.
+
+```{r}
+#plotUMAP(object = object,
+#         input = permuteDE_output)
+```
+
+To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.
+
+```{r}
+#plotFeature(input = runDE_output,
+#            feature = "Mbp",
+#            split = "astrocytes")
 ```
 
 ------
@@ -120,22 +176,42 @@ For Seurat objects, the "RNA" assay is used if no input is provided for paramete
 
 Some Seurat v5 objects have multiple layers (e.g., "counts.1", "counts.2", "counts.2"..) with different subsets of cells stored under the same assay. Currently, permuteDE requires a single layer containing all cells in an assay. For these cases, please re-organize the Seurat object prior to running permuteDE.
 
+For Seurat objects, the input to parameters `replicate_labels`, `group_labels`, and `split_labels` may be either a string indicating the name of the metadata column containing the labels or a character vector containing the labels in the same order as the cells.
+
 ### SingleCellExperiment
 
 For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to "counts". Please ensure that the relevant assay matrix includes both row and column names.
 
+For SingleCellExperiment objects, the input to parameters `replicate_labels`, `group_labels`, and `split_labels` may be either a string indicating the name of the metadata column containing the labels or a character vector containing the labels in the same order as the cells.
+
 ### Matrix input
 
-<QQQ>
+For matrix inputs, the provided matrix may be either a cell-level matrix (feature x cell) or a pre-generated pseudobulk matrix (feature x replicate). All permuteDE functions expect raw counts.
+
+If a pre-generated pseudobulk matrix is provided, parameter `pseudobulk` must be set to "supplied".
+
+For matrix inputs, the input to parameters `replicate_labels`, `group_labels`, and `split_labels` must be a character vector containing the labels in order, corresponding to each column of the matrix.
 
 ## permuteDE parameters
 
 ### Significance level & multiple comparison correction
 
-The default significance level used by permuteDE is `alpha = 0.05` with multiple comparison correction (parameter `p_adjust_method`) using FDR = 0.05. By default, permuteDE also requires that significant DEGs have a |LFC| > 0.5 (parameter `lfc_threshold`).
+The default significance level used by permuteDE is `alpha = 0.05` with multiple comparison correction using FDR = 0.05. The method of multiple comparisonn correction can be changed using parameter `p_adjust_method` (for permitted values, see `stats::p.adjust.methods`). By default, permuteDE also requires that significant DEGs have a |LFC| > 0.5 (parameter `lfc_threshold`).
 
 ### Filters
 
 permuteDE uses various filters to reduce the number of DE comparisons:
 
-*  Parameter `<QQQ>` indicates the minimum <QQQ>. It defaults to <QQQ>.
+*  Parameter `min_cells_per_split` indicates the minimum number of cells within one split. Defaults to 100.
+*  Parameter `min_replicates_per_split` indicates minimum number of distinct replicates represented within one split. Defaults to 6.
+*  Parameter `min_replicates_per_group` indicates the minimum number of distinct replicates represented within each of the two comparison groups. Defaults to 3.
+*  Parameter `min_cells_per_feature` indicates the minimum number of cells (within a split) with expression of a gene. Defaults to 10.
+*  Parameter `min_prop_cells_per_feature` indicates the minimum proportion of cells (within a split) with expression of a gene. Defaults to 0.1.
+
+### Pseudobulk vs. cell-level tests
+
+We highly encourage users to use pseudobulk differential expression analysis, as it reduces the incidence of false positives. However, permuteDE is also compatible with cell-level tests. To run function `runDE()` without pseudobulking, and treating the cells as the statistical sample size, set parameter `pseudobulk` to "none". This works with any input object type, including cell x feature matrices. Please note that the size of the returned output will be substantially larger, since the cell x feature matrices will be returned as output so that they can be subsequently passed to function `permuteDE()`.
+
+When running cell-level tests, we still recommend that users provide the biological replicate labels to function `runDE()` using parameter `replicate_labels`. These labels are not used when running function `runDE()` with parameter `pseudobulk = "none"`, but they are passed on to function `permuteDE()`, such that when the group labels are permuted, cells from each biological replicate are not separated. In other words, the permutation occurs at the replicate level, even for cell-level tests.
+
+In the rare case when a user wants to permute cells regardless of the biological replicate, simply set `replicate_labels` equal to the cell IDs.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/runDE.R
 \name{runDE}
 \alias{runDE}
-\title{Run differential expression to compare two groups}
+\title{Run differential expression analysis to compare two groups}
 \usage{
 runDE(
   object,

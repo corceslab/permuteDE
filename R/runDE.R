@@ -1,4 +1,4 @@
-#' Run differential expression to compare two groups
+#' Run differential expression analysis to compare two groups
 #'
 #' This function identifies differentially expressed features between two groups
 #' using indicated differential expression analysis methods.

@@ -278,3 +278,22 @@
   use_matrix <- use_matrix[use_features, use_cells]
   return(use_matrix)
 }
+
+# Startup ---------------------------
+#
+# Adapted from ArchR code, Jeffrey Granja & Ryan Corces
+
+.onAttach <- function(libname, pkgname){
+  # ASCII permuteDE logo
+  packageStartupMessage("                                                         _       ___   _____
+ ========.  .=======!\\   _ _     __ _ __ _ __ ___  _   _| |_ ___|  _ \\| ____|
+ --,-,--. \\/ .-,-,--|/  | '  \\ / = \\ '__| '_ ` _ \\| | | | __/ = \\ | | |  _|
+   ! !  /\\ \\/  ! !      | |)  |  __/ |  | | | | | | |_| | ||  __/ |_| | |___
+ ======' /\\ `=======!\\  | .__/ \\___|_|  |_| |_| |_|\\____|\\__\\___|____/|_____|
+ -------'  `--------|/  |_|
+ ")
+  # package startup
+  v <- utils::packageVersion("permuteDE")
+  packageStartupMessage("permuteDE : Version ", v,
+                        "\nIf you encounter a bug please report : https://github.com/CorcesLab/permuteDE/issues")
+}
