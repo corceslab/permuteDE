@@ -218,13 +218,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Generating 5 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
-<span><span class="co">#&gt; Excluded between 74.85% (1497 features) and 88.05% (1761 features) of features in each split.</span></span>
-<span><span class="co">#&gt; Highest % of features were excluded in split 'Oligodendrocytes'.</span></span>
-<span><span class="co">#&gt; Excluded between 25.38% (20320 reads) and 41.56% (17294 reads) of reads in each split.</span></span>
-<span><span class="co">#&gt; Highest % of reads were excluded in split 'Astrocytes'.</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Running DE on 5 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-09-30 18:59:33 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:33 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
+<span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:33 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements: *
 <code>DE_results</code> Dataframe containing DE results for each
 feature, by split * <code>PB_values</code> If using pseudobulk data, a
@@ -238,13 +238,13 @@ the data and runtime * <code>parameters</code> List recording parameter
 values used</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">runDE_output</span><span class="op">$</span><span class="va">DE_results</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     gene        lfc       pvalue        padj      split</span></span>
-<span><span class="co">#&gt; 1    App  2.0167834 9.591481e-06 0.002301955 Astrocytes</span></span>
-<span><span class="co">#&gt; 2 Dyrk1a -1.9616519 6.749865e-04 0.080998384 Astrocytes</span></span>
-<span><span class="co">#&gt; 3   Nnat  1.0397780 1.420917e-03 0.113673330 Astrocytes</span></span>
-<span><span class="co">#&gt; 4 Ube2g1  1.6691528 2.367652e-03 0.118452739 Astrocytes</span></span>
-<span><span class="co">#&gt; 5   Fth1  0.9574856 2.715762e-03 0.118452739 Astrocytes</span></span>
-<span><span class="co">#&gt; 6   Pcp4  1.5959082 2.961318e-03 0.118452739 Astrocytes</span></span></code></pre></div>
+<span><span class="co">#&gt;     gene        lfc       pvalue       padj      split</span></span>
+<span><span class="co">#&gt; 1  Stmn1  2.1530904 7.127649e-05 0.04077015 Astrocytes</span></span>
+<span><span class="co">#&gt; 2   Pan3 -1.5612588 2.635217e-04 0.07536720 Astrocytes</span></span>
+<span><span class="co">#&gt; 3 Slc4a4 -0.6058453 9.404665e-04 0.17931562 Astrocytes</span></span>
+<span><span class="co">#&gt; 4  Pcsk2  1.7141881 1.798391e-03 0.25716996 Astrocytes</span></span>
+<span><span class="co">#&gt; 5   Rpl3  1.4697542 2.957641e-03 0.32330591 Astrocytes</span></span>
+<span><span class="co">#&gt; 6   Fat3 -0.8415779 3.565231e-03 0.32330591 Astrocytes</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="step-2-permutede">Step 2: <code>permuteDE()</code><a class="anchor" aria-label="anchor" href="#step-2-permutede"></a>
@@ -266,10 +266,16 @@ as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Will skip 4 split labels due to insufficient differentially expressed features: Astrocytes, Microglia, Neurons, Oligodendrocytes</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Differential expression results for group WT vs. Tg across 1 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Generating 20 of 20 possible combinations for split OPCs (1/1)..</span></span>
-<span><span class="co">#&gt; 2025-09-30 15:16:17 : Running 20 permutations for split OPCs (1/1)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-09-30 18:59:34 : Will skip 2 split labels due to insufficient differentially expressed features: Astrocytes, Microglia</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:34 : Differential expression results for group WT vs. Tg across 4 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:34 : Generating 70 of 70 possible combinations for split Excitatory Neurons (1/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:34 : Running 70 permutations for split Excitatory Neurons (1/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:38 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (2/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:38 : Running 70 permutations for split Inhibitory Neurons (2/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:42 : Generating 70 of 70 possible combinations for split Oligodendrocytes (3/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:42 : Running 70 permutations for split Oligodendrocytes (3/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:44 : Generating 70 of 70 possible combinations for split OPCs (4/4)..</span></span>
+<span><span class="co">#&gt; 2025-09-30 18:59:44 : Running 70 permutations for split OPCs (4/4)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements: *
 <code>permutation_test_results</code> Dataframe containing the
 permutation test results by split * <code>permutation_summary</code>
