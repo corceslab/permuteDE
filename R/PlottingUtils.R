@@ -64,42 +64,49 @@ theme_permuteDE <- function(color = "black",
 
 #' Generate volcano plots from differential expression results
 #'
-#' This function creates a list of volcano plots for each subset of
-#' differential expression (DE) results contained in a `runDE_output` object.
-#' The DE results are split by the `split` column, and each split produces
-#' its own volcano plot using the \pkg{EnhancedVolcano} package.
+#' This function takes the output from function \code{runDE} and creates a list
+#' containing a volcano plot for each subset of differential expression (DE)
+#' results. The DE results are subset by the "split" column, and each split
+#' produces its own volcano plot using the \code{EnhancedVolcano} package.
 #'
-#' @param runDE_output A list-like object returned from a DE analysis,
-#'   containing at least a data frame `DE_result` with columns:
+#' @param input Output from function \code{runDE} or a list containing
+#'  (at minimum) a dataframe named "DE_result" including columns:
 #'   \describe{
 #'     \item{gene}{Gene identifiers (character).}
 #'     \item{lfc}{Log2 fold change values (numeric).}
 #'     \item{padj}{Adjusted p-values (numeric).}
-#'     \item{split}{Grouping variable used to subset results (character or factor).}
+#'     \item{split}{(Optionally) Grouping variable used to subset results
+#'     (character or factor).}
 #'   }
-#' @param alpha Numeric scalar. Adjusted p-value cutoff for significance
-#'   (default = 0.05).
-#' @param lfc_threshold Numeric scalar. Log2 fold change threshold for
-#'   significance (default = 0.5).
-#' @param title Character string or `NULL`. Plot title for all volcano plots.
-#'   If `NULL`, a title is automatically generated per split (default = `NULL`).
-#' @param subtitle Character string or `NULL`. Subtitle for all volcano plots.
-#'   If `NULL`, a subtitle describing the significance thresholds is generated
-#'   automatically (default = `NULL`).
-#' @param significant_color Character string. Color used to highlight
-#'   significant upregulated genes (default = `"red2"`).
+#' @param alpha A numeric value indicating the significance level used for
+#' permutation test comparisons of the number of differentially expressed
+#' features. Defaults to 0.05.
+#' @param lfc_threshold A numeric value indicating the minimum absolute value
+#' log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
+#' 0 to disregard log fold change when counting hits.
+#' @param title Character string indicating the plot title. Default = `NULL`
+#' sets a title automatically for each split.
+#' @param subtitle Character string indicating the plot subtitle. Default =
+#' `NULL` automatically generates a subtitle describing the significance
+#' thresholds.
+#' @param significant_color Character string color name or hex code indicating
+#' the color used to highlight significant differentially expressed features
+#' (default = `"red2"`).
+#' @param ... Additional parameters passed to
+#' \code{EnhancedVolcano::EnhancedVolcano()}.
 #'
-#' @return A named list of \pkg{ggplot2} objects, where each element
+#' @return A named list of \code{ggplot2} objects, where each element
 #'   corresponds to a volcano plot for one split of the DE results.
 #'
 #' @details
-#' Each volcano plot is created using \code{EnhancedVolcano()}, customized with:
+#' Each volcano plot is created using \code{EnhancedVolcano::EnhancedVolcano()},
+#' customized with:
 #' \itemize{
 #'   \item The x-axis showing log2 fold changes (`lfc`).
 #'   \item The y-axis showing adjusted p-values (`padj`).
 #'   \item Genes colored grey, blue, or red depending on significance status.
 #'   \item A caption showing the total number of genes in that split.
-#'   \item \code{themeCorcesRegular()} applied, with the legend removed.
+#'   \item \code{theme_permuteDE()} applied, with the legend removed.
 #' }
 #'
 #' @examples
@@ -110,17 +117,37 @@ theme_permuteDE <- function(color = "black",
 #'
 #' @export
 #'
-getVolcanos <- function(runDE_output,
+getVolcanos <- function(input,
                         alpha = 0.05,
                         lfc_threshold = 0.5,
                         title = NULL,
                         subtitle = NULL,
-                        significant_color = 'red2'){
+                        significant_color = 'red2',
+                        ...){
 
+  # ---------------------------------------------------------------------------
+  # Check input validity
+  # ---------------------------------------------------------------------------
+
+  .validInput(input, "input")
+  .validInput(alpha, "alpha")
+  .validInput(lfc_threshold, "lfc_threshold")
+  .validInput(title, "title")
+  .validInput(subtitle, "subtitle")
+  .validInput(significant_color, "significant_color") #
+
+  # ---------------------------------------------------------------------------
+  # Generate plots
+  # ---------------------------------------------------------------------------
+
+  # If available, grab group names and reference group
+  # TODO
+
+  # Separate results from each split
   split_results <- split(runDE_output$DE_result, runDE_output$DE_result$split)
 
-  volcano_list <- lapply(names(split_results), function(split_id) {
-    df <- split_results[[split_id]]
+  volcano_list <- lapply(names(split_results), function(s) {
+    df <- split_results[[s]]
 
     EnhancedVolcano::EnhancedVolcano(
       df,
@@ -129,7 +156,7 @@ getVolcanos <- function(runDE_output,
       y = 'padj',
       pCutoff = alpha,
       FCcutoff = lfc_threshold,
-      title = if (is.null(title)) paste('Volcano Plot of Gene Expression in', split_id) else title,
+      title = if (is.null(title)) paste('Volcano Plot of Gene Expression in', s) else title,
       subtitle = if (is.null(subtitle))
         paste("Significance: adjusted p-value <", alpha, "and |log2 fold change| >", lfc_threshold)
       else subtitle,
@@ -232,12 +259,25 @@ getHistograms <- function(permuteDE_result, title = NULL) {
 # vlineType -- Line type for vertical lines (e.g., "solid", "dashed") (default: "solid").
 # vlineWidth -- Line width for vertical lines (default: 1).
 
-.plotHistogram <- function(x, xlabel = "values", ylabel = "Count",
-                          addDensity = FALSE, bins = 20, baseSize = 14,
-                          histFill = "#3B9AB2", histColor = NA,
-                          densityFill = "#3B9AB2", densityColor = "#3B9AB2", title = "",
-                          size = 1.25, histAlpha = 0.85, densityAlpha = 0.15, ratioYX = 0.8,
-                          vline = NULL, vlineColor = "red", vlineType = "solid", vlineWidth = 1) {
+.plotHistogram <- function(x,
+                           xlabel = "values",
+                           ylabel = "Count",
+                           addDensity = FALSE,
+                           bins = 20,
+                           baseSize = 14,
+                           histFill = "#3B9AB2",
+                           histColor = NA,
+                           densityFill = "#3B9AB2",
+                           densityColor = "#3B9AB2",
+                           title = "",
+                           size = 1.25,
+                           histAlpha = 0.85,
+                           densityAlpha = 0.15,
+                           ratioYX = 0.8,
+                           vline = NULL,
+                           vlineColor = "red",
+                           vlineType = "solid",
+                           vlineWidth = 1) {
 
   stopifnot(is.numeric(x))
 

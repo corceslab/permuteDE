@@ -18,8 +18,8 @@ permuteDE(
 )
 }
 \arguments{
-\item{input}{Output from function 'runDE' containing differential expression
-results, pseudobulk values, and parameters used.}
+\item{input}{Output from function \code{runDE}: a list containing
+differential expression results, pseudobulk values, and parameters used.}
 
 \item{alpha}{A numeric value indicating the significance level used for
 permutation test comparisons of the number of differentially expressed
@@ -62,9 +62,9 @@ Can be set to \code{FALSE} for a cleaner output.}
 Returns a list containing the following elements: \describe{
 \item{permutation_test_results}{Dataframe containing the permutation test
 results by split}
-\item{permutation_summary}{Dataframe containing the permutation DE summary
+\item{permutation_DE_summary}{Dataframe containing the permutation DE summary
 metrics by split}
-\item{permutation_all_DE_results}{If parameter 'return_all' is TRUE,
+\item{permutation_DE_results}{If parameter 'return_all' is TRUE,
 dataframe DE results for each feature, by split, for each iteration}
 \item{metadata}{List recording characteristics of the data and runtime}
 \item{parameters}{List recording parameter values used}

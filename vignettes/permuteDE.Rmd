@@ -122,18 +122,18 @@ permuteDE_output <- permuteDE(input = runDE_output,
 
 The output is a list containing the following elements:
 * `permutation_test_results` Dataframe containing the permutation test results by split
-* `permutation_summary` Dataframe containing the permutation DE summary metrics by split
+* `permutation_DE_summary` Dataframe containing the permutation DE summary metrics by split
 * `permutation_all_DE_results` If parameter `return_all` is `TRUE`, dataframe DE results for each feature, by split, for each iteration
 * `metadata` List recording characteristics of the data and runtime
 * `parameters` List recording parameter values used
 
 ```{r}
-head(runDE_output$permutation_test_results)
+head(permuteDE_output$permutation_DE_summary)
 ```
 
 ## Plot
 
-permuteDE has several built-in plotting functions to help display the results from functions `runDE()` and `permuteDE()`. 
+permuteDE has several built-in plotting functions to help display the results from functions `runDE()` and `permuteDE()`. All plots are modifiable `ggplot` outputs.
 
 To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `getVolcanos()`.
 

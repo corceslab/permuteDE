@@ -235,8 +235,8 @@
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("LRT", "Wald"), collapse = ", "), "), please supply valid input!")
       }
     } else if (other == "limma") {
-      if (!(input %in% c("trend", "voom"))) {
-        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("trend", "voom"), collapse = ", "), "), please supply valid input!")
+      if (!(input %in% c("trend", "voom", "wilcox_cpm", "wilcox_log_cpm"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("trend", "voom", "wilcox_cpm", "wilcox_log_cpm"), collapse = ", "), "), please supply valid input!")
       }
     } else if (other == "presto") {
       if (!(input %in% c("wilcox_cpm", "wilcox_log_cpm"))) {
@@ -343,6 +343,17 @@
     if (!methods::is(input, "character") | length(input) != 1) {
       stop("Input for '", name, "' must be a single value of class 'character'.",
            " This parameter is intended for internal use, we recommend leaving it as the default value.")
+    }
+  }
+
+  # title, subtitle
+  if (name %in% c("title", "subtitle")) {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'character'
+      if (!methods::is(input, "character") | length(input) != 1) {
+        stop("Input for '", name, "' must be a single value of class 'character'. Please supply valid input!")
+      }
     }
   }
 

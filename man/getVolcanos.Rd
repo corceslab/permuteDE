@@ -5,58 +5,67 @@
 \title{Generate volcano plots from differential expression results}
 \usage{
 getVolcanos(
-  runDE_output,
+  input,
   alpha = 0.05,
   lfc_threshold = 0.5,
   title = NULL,
   subtitle = NULL,
-  significant_color = "red2"
+  significant_color = "red2",
+  ...
 )
 }
 \arguments{
-\item{runDE_output}{A list-like object returned from a DE analysis,
-containing at least a data frame \code{DE_result} with columns:
+\item{input}{Output from function \code{runDE} or a list containing
+(at minimum) a dataframe named "DE_result" including columns:
 \describe{
 \item{gene}{Gene identifiers (character).}
 \item{lfc}{Log2 fold change values (numeric).}
 \item{padj}{Adjusted p-values (numeric).}
-\item{split}{Grouping variable used to subset results (character or factor).}
+\item{split}{(Optionally) Grouping variable used to subset results
+(character or factor).}
 }}
 
-\item{alpha}{Numeric scalar. Adjusted p-value cutoff for significance
-(default = 0.05).}
+\item{alpha}{A numeric value indicating the significance level used for
+permutation test comparisons of the number of differentially expressed
+features. Defaults to 0.05.}
 
-\item{lfc_threshold}{Numeric scalar. Log2 fold change threshold for
-significance (default = 0.5).}
+\item{lfc_threshold}{A numeric value indicating the minimum absolute value
+log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
+0 to disregard log fold change when counting hits.}
 
-\item{title}{Character string or \code{NULL}. Plot title for all volcano plots.
-If \code{NULL}, a title is automatically generated per split (default = \code{NULL}).}
+\item{title}{Character string indicating the plot title. Default = \code{NULL}
+sets a title automatically for each split.}
 
-\item{subtitle}{Character string or \code{NULL}. Subtitle for all volcano plots.
-If \code{NULL}, a subtitle describing the significance thresholds is generated
-automatically (default = \code{NULL}).}
+\item{subtitle}{Character string indicating the plot subtitle. Default =
+\code{NULL} automatically generates a subtitle describing the significance
+thresholds.}
 
-\item{significant_color}{Character string. Color used to highlight
-significant upregulated genes (default = \code{"red2"}).}
+\item{significant_color}{Character string color name or hex code indicating
+the color used to highlight significant differentially expressed features
+(default = \code{"red2"}).}
+
+\item{...}{Additional parameters passed to
+\code{EnhancedVolcano::EnhancedVolcano()}.}
 }
 \value{
-A named list of \pkg{ggplot2} objects, where each element
+A named list of \code{ggplot2} objects, where each element
 corresponds to a volcano plot for one split of the DE results.
 }
 \description{
-This function creates a list of volcano plots for each subset of
-differential expression (DE) results contained in a \code{runDE_output} object.
-The DE results are split by the \code{split} column, and each split produces
-its own volcano plot using the \pkg{EnhancedVolcano} package.
+This function takes the output from function \code{runDE} and creates a list
+containing a volcano plot for each subset of differential expression (DE)
+results. The DE results are subset by the "split" column, and each split
+produces its own volcano plot using the \code{EnhancedVolcano} package.
 }
 \details{
-Each volcano plot is created using \code{EnhancedVolcano()}, customized with:
+Each volcano plot is created using \code{EnhancedVolcano::EnhancedVolcano()},
+customized with:
 \itemize{
 \item The x-axis showing log2 fold changes (\code{lfc}).
 \item The y-axis showing adjusted p-values (\code{padj}).
 \item Genes colored grey, blue, or red depending on significance status.
 \item A caption showing the total number of genes in that split.
-\item \code{themeCorcesRegular()} applied, with the legend removed.
+\item \code{theme_permuteDE()} applied, with the legend removed.
 }
 }
 \examples{

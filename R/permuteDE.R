@@ -21,8 +21,8 @@
 #' can be used to characterize the log fold change and significance observed for
 #' such false positives to help users prioritize reliable DE results.
 #'
-#' @param input Output from function 'runDE' containing differential expression
-#' results, pseudobulk values, and parameters used.
+#' @param input Output from function \code{runDE}: a list containing
+#' differential expression results, pseudobulk values, and parameters used.
 #' @param alpha A numeric value indicating the significance level used for
 #' permutation test comparisons of the number of differentially expressed
 #' features. Defaults to 0.05.
@@ -55,9 +55,9 @@
 #' @return Returns a list containing the following elements: \describe{
 #'   \item{permutation_test_results}{Dataframe containing the permutation test
 #'   results by split}
-#'   \item{permutation_summary}{Dataframe containing the permutation DE summary
+#'   \item{permutation_DE_summary}{Dataframe containing the permutation DE summary
 #'   metrics by split}
-#'   \item{permutation_all_DE_results}{If parameter 'return_all' is TRUE,
+#'   \item{permutation_DE_results}{If parameter 'return_all' is TRUE,
 #'   dataframe DE results for each feature, by split, for each iteration}
 #'   \item{metadata}{List recording characteristics of the data and runtime}
 #'   \item{parameters}{List recording parameter values used}
@@ -103,12 +103,13 @@ permuteDE <- function(input,
   # ---------------------------------------------------------------------------
 
   # Fetch values
+  reference_group <- input$parameters$reference_group
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
+  de_params <- input$parameters$de_params
   p_adjust_method <- input$parameters$p_adjust_method
   pseudobulk <- input$parameters$pseudobulk
   stored_replicates <- input$parameters$stored_replicates
-  de_params <- input$parameters$de_params
 
   if (is.null(use_splits)) {
     if (pseudobulk == "none") {
@@ -156,22 +157,22 @@ permuteDE <- function(input,
                        " across ", n_splits, " pseudobulk matrices..")
 
   # Set up
-  permutation_DE_results <- data.frame(split = NULL,
+  permutation_DE_summary <- data.frame(split = NULL,
                                        permutation = NULL,
                                        n_sig = NULL,
                                        min_lfc = NULL,
                                        max_lfc = NULL)
   permutation_test_results <- data.frame(split = NULL,
                                          true_n_sig = NULL,
-                                         p_n_sig = NULL,
+                                         pvalue_n_sig = NULL,
                                          n_iterations = NULL)
   if (return_all == TRUE) {
-    permutation_DE_results_all <- data.frame(gene = NULL,
-                                             lfc = NULL,
-                                             pvalue = NULL,
-                                             padj = NULL,
-                                             permutation = NULL,
-                                             split = NULL)
+    permutation_DE_results <- data.frame(gene = NULL,
+                                         lfc = NULL,
+                                         pvalue = NULL,
+                                         padj = NULL,
+                                         permutation = NULL,
+                                         split = NULL)
   }
 
   # For each split
@@ -249,6 +250,11 @@ permuteDE <- function(input,
                                                                                group = group2)
                                                        targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- group1
                                                        rownames(targets_i) <- targets_i$replicate
+
+                                                       group_factor <- factor(targets_i$group)
+                                                       group_factor <- stats::relevel(group_factor, ref = reference_group)
+                                                       targets_i$group <- group_factor
+
                                                        # Skip if true groups
                                                        if (!identical(targets_i$group, true_groups)) {
                                                          # Create design
@@ -298,8 +304,8 @@ permuteDE <- function(input,
                                                      mc.set.seed = TRUE)
 
       if (return_all == TRUE) {
-        permutation_DE_results_s_all <- do.call(rbind, permutation_DE_results_list) |> data.frame()
-        permutation_DE_results_s <- permutation_DE_results_all |>
+        permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
+        permutation_DE_summary_s <- permutation_DE_results_s |>
           dplyr::group_by(split, permutation) |>
           dplyr::summarise(
             n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
@@ -308,28 +314,28 @@ permuteDE <- function(input,
           data.frame() |>
           dplyr::select(split, permutation, n_sig, min_lfc_sig, max_lfc_sig)
       } else {
-        permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
+        permutation_DE_summary_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
       }
 
       # If true labels were among random permutations, they were then skipped, leaving n_iterations - 1
       # If not, remove one random set of labels, leaving n_iterations - 1
-      if (nrow(permutation_DE_results_s) == current_n_iterations) {
-        permutation_DE_results_s <- permutation_DE_results_s[-nrow(permutation_DE_results_s),]
+      if (nrow(permutation_DE_summary_s) == current_n_iterations) {
+        permutation_DE_summary_s <- permutation_DE_summary_s[-nrow(permutation_DE_summary_s),]
       }
 
       # Conduct permutation test
       true_n_sig <- dplyr::filter(true_DE_values, split == current_split)$n_sig
 
-      permutation_test_p_value <- 1 - stats::ecdf(c(true_n_sig, permutation_DE_results_s$n_sig))(true_n_sig)
+      permutation_test_p_value <- sum(c(true_n_sig, permutation_DE_summary_s$n_sig) >= true_n_sig)/n_iterations
       permutation_test_results_s <- data.frame(split = current_split,
                                                true_n_sig = true_n_sig,
-                                               p_n_sig = permutation_test_p_value,
+                                               pvalue_n_sig = permutation_test_p_value,
                                                n_iterations = current_n_iterations)
       # Add to overall results
-      permutation_DE_results <- rbind(permutation_DE_results, permutation_DE_results_s)
+      permutation_DE_summary <- rbind(permutation_DE_summary, permutation_DE_summary_s)
       permutation_test_results <- rbind(permutation_test_results, permutation_test_results_s)
       if (return_all == TRUE) {
-        permutation_DE_results_all <- rbind(permutation_DE_results_all, permutation_DE_results_s_all)
+        permutation_DE_results <- rbind(permutation_DE_results, permutation_DE_results_s)
       }
 
     } else {
@@ -355,6 +361,7 @@ permuteDE <- function(input,
                          "n_iterations" = n_iterations,
                          "use_splits" = use_splits,
                          "min_DE" = min_DE,
+                         "reference_group" = reference_group,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "de_params" = de_params,
@@ -367,13 +374,13 @@ permuteDE <- function(input,
   # Return
   if (return_all == TRUE) {
     return(list("permutation_test_results" = permutation_test_results,
+                "permutation_DE_summary" = permutation_DE_summary,
                 "permutation_DE_results" = permutation_DE_results,
-                "permutation_DE_results_all" = permutation_DE_results_all,
                 "metadata" = metadata_list,
                 "parameters" = parameter_list))
   } else {
     return(list("permutation_test_results" = permutation_test_results,
-                "permutation_DE_results" = permutation_DE_results,
+                "permutation_DE_summary" = permutation_DE_summary,
                 "metadata" = metadata_list,
                 "parameters" = parameter_list))
   }
