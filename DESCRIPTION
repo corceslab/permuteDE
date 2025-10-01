@@ -16,15 +16,15 @@ Imports:
     methods,
     pbmcapply,
     Seurat,
-    DESeq2,
-    limma,
     ggplot2,
     EnhancedVolcano,
     Matrix,
-    presto,
     stringr
 Suggests: 
+    DESeq2,
     knitr,
+    limma,
+    presto,
     rmarkdown
 VignetteBuilder: knitr
 URL: https://github.com/cathrinesant/permuteDE

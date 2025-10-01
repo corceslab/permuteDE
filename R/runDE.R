@@ -581,6 +581,8 @@ runDE <- function(object,
                           de_test = "LRT",
                           de_params = list()) {
 
+  .requirePackage("DESeq2", source = "bioc")
+
   # Construct DESeq2 dataset
   dds <- DESeq2::DESeqDataSetFromMatrix(
     countData = mat,
@@ -626,39 +628,76 @@ runDE <- function(object,
                          de_test = "voom",
                          de_params = list()) {
 
-  # Create a DGE list
-  dge <- do.call(edgeR::DGEList, c(list("counts" = mat),
-                                   de_params[["DGEList"]]))
-  # Apply TMM normalization
-  dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
-                                           de_params[["calcNormFactors"]]))
-  # Transform
-  if (de_test == "trend") {
-    # Apply logCPM
-    transformed_dge <- do.call(edgeR::cpm, c(list("y" = dge,
-                                                  "log" = TRUE),
-                                             de_params[["cpm"]]))
-  } else if (de_test == "voom") {
-    # Apply voom transformation
-    transformed_dge <- do.call(limma::voom, c(list("counts" = dge,
-                                     "design" = design),
-                                de_params[["voom"]]))
+  .requirePackage("limma", source = "bioc")
+
+  if (de_test %in% c("trend", "voom")) {
+    # Create a DGE list
+    dge <- do.call(edgeR::DGEList, c(list("counts" = mat),
+                                     de_params[["DGEList"]]))
+    # Apply TMM normalization
+    dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
+                                             de_params[["calcNormFactors"]]))
+    # Transform
+    if (de_test == "trend") {
+      # Apply logCPM
+      transformed_dge <- do.call(edgeR::cpm, c(list("y" = dge,
+                                                    "log" = TRUE),
+                                               de_params[["cpm"]]))
+    } else if (de_test == "voom") {
+      # Apply voom transformation
+      transformed_dge <- do.call(limma::voom, c(list("counts" = dge,
+                                                     "design" = design),
+                                                de_params[["voom"]]))
+    }
+    # limma DE
+    fit <- do.call(limma::lmFit, c(list("object" = transformed_dge,
+                                        "design" = design),
+                                   de_params[["lmFit"]]))
+    fit <- do.call(limma::eBayes, c(list("fit" = fit),
+                                    de_params[["eBayes"]]))
+
+    limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
+      data.frame()
+    limma_results <- limma_results |>
+      dplyr::transmute(gene = rownames(limma_results),
+                       lfc = logFC,
+                       pvalue = P.Value)
+    rownames(limma_results) <- NULL
+  } else if (de_test %in% c("wilcox_cpm", "wilcox_log_cpm")) {
+    # Normalization
+    if (de_test == "wilcox_cpm") {
+      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat),
+                                       de_params[["cpm"]]))
+    } else if (de_test == "wilcox_log_cpm") {
+      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                            "log" = TRUE),
+                                       de_params[["cpm"]]))
+    }
+    # Group indices
+    group1_indices <- which(targets$group == levels(targets$group)[1])
+    group2_indices <- which(targets$group == levels(targets$group)[2])
+
+    # Wilcoxon rank sum test p-values
+    pvalues <- apply(cpm_mat, 1,
+      FUN = function(x) {
+        return(min(2 * min(do.call(limma::rankSumTestWithCorrelation, c(list("index" = group1_indices,
+                                                                             "statistics" = x),
+                                                                        de_params[["rankSumTestWithCorrelation"]]))), 1))
+      }
+    )
+    # LFC
+    if ("pseudocount" %in% de_params[["lfc"]]) {
+      pseudocount <- de_params$lfc$pseudocount
+    } else {
+      pseudocount <- 1
+    }
+    lfcs <- log2(rowMeans(mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(mat[, group2_indices, drop = FALSE] + pseudocount))
+
+    wilcox_results <- data.frame(gene = rownames(cpm_mat),
+                                 lfc = lfcs,
+                                 pvalue = pvalues)
+    rownames(wilcox_results) <- NULL
   }
-  # limma DE
-  fit <- do.call(limma::lmFit, c(list("object" = transformed_dge,
-                                      "design" = design),
-                                 de_params[["lmFit"]]))
-  fit <- do.call(limma::eBayes, c(list("fit" = fit),
-                                  de_params[["eBayes"]]))
-
-  limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
-    data.frame()
-  limma_results <- limma_results |>
-    dplyr::transmute(gene = rownames(limma_results),
-                     lfc = logFC,
-                     pvalue = P.Value)
-  rownames(limma_results) <- NULL
-
   return(limma_results)
 }
 
@@ -673,6 +712,9 @@ runDE <- function(object,
                           targets,
                           de_test = "wilcox_cpm",
                           de_params = list()) {
+
+  .requirePackage("presto", installInfo = 'devtools::install_github("immunogenomics/presto")')
+
   # Normalization
   if (de_test == "wilcox_cpm") {
     cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat),

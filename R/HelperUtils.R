@@ -279,6 +279,40 @@
   return(use_matrix)
 }
 
+# Require package ---------------------------
+#
+# Load required package
+# Adapted from ArchR code, Jeffrey Granja & Ryan Corces
+#
+# x -- Name of package
+# load -- Whether to load package
+# installInfo -- Installation info
+# source -- cran/bioc, etc.
+.requirePackage <- function(x = NULL, load = TRUE, installInfo = NULL, source = NULL){
+  if(x %in% rownames(utils::installed.packages())){
+    if(load){
+      suppressPackageStartupMessages(require(x, character.only = TRUE))
+    }else{
+      return(0)
+    }
+  }else{
+    if (!is.null(source) & is.null(installInfo)) {
+      if (tolower(source) == "cran") {
+        installInfo <- paste0('install.packages("',x,'")')
+      } else if (tolower(source) == "bioc"){
+        installInfo <- paste0('BiocManager::install("',x,'")')
+      } else {
+        stop("Unrecognized package source, available are cran/bioc!")
+      }
+    }
+    if (!is.null(installInfo)) {
+      stop(paste0("Required package : ", x, " is not installed/found!\n  Package Can Be Installed : ", installInfo))
+    } else {
+      stop(paste0("Required package : ", x, " is not installed/found!"))
+    }
+  }
+}
+
 # Startup ---------------------------
 #
 # Adapted from ArchR code, Jeffrey Granja & Ryan Corces

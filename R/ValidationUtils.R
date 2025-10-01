@@ -381,6 +381,8 @@
           allowed_functions <- c("DGEList", "calcNormFactors", "cpm", "lmFit", "eBayes")
         } else if (other[[2]] == "voom") {
           allowed_functions <- c("DGEList", "calcNormFactors", "voom", "lmFit", "eBayes")
+        } else if (other[[2]] %in% c("wilcox_cpm", "wilcox_log_cpm")) {
+          allowed_functions <- c("cpm", "rankSumTestWithCorrelation", "lfc")
         }
       } else if (other[[1]] == "presto") {
         allowed_functions <- c("cpm", "wilcoxauc")
