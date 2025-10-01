@@ -326,7 +326,7 @@ permuteDE <- function(input,
       # Conduct permutation test
       true_n_sig <- dplyr::filter(true_DE_values, split == current_split)$n_sig
 
-      permutation_test_p_value <- sum(c(true_n_sig, permutation_DE_summary_s$n_sig) >= true_n_sig)/n_iterations
+      permutation_test_p_value <- sum(c(true_n_sig, permutation_DE_summary_s$n_sig) >= true_n_sig)/current_n_iterations
       permutation_test_results_s <- data.frame(split = current_split,
                                                true_n_sig = true_n_sig,
                                                pvalue_n_sig = permutation_test_p_value,
