@@ -148,8 +148,6 @@ split}
 \item{cell_values}{Alternately, if using cell-level data, a list of feature x
 cell matri(ces) containing counts for each feature, one matrix per
 split}
-\item{group_key}{Dataframe record of group labels corresponding to each
-replicate}
 \item{metadata}{List recording characteristics of the data and runtime}
 \item{parameters}{List recording parameter values used}
 }

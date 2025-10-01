@@ -70,7 +70,7 @@ theme_permuteDE <- function(color = "black",
 #' produces its own volcano plot using the \code{EnhancedVolcano} package.
 #'
 #' @param input Output from function \code{runDE} or a list containing
-#'  (at minimum) a dataframe named "DE_result" including columns:
+#'  (at minimum) a dataframe named "DE_results" including columns:
 #'   \describe{
 #'     \item{gene}{Gene identifiers (character).}
 #'     \item{lfc}{Log2 fold change values (numeric).}
@@ -129,7 +129,7 @@ getVolcanos <- function(input,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(input, "input")
+  .validInput(input, "input", "getVolcanos")
   .validInput(alpha, "alpha")
   .validInput(lfc_threshold, "lfc_threshold")
   .validInput(title, "title")
@@ -144,7 +144,7 @@ getVolcanos <- function(input,
   # TODO
 
   # Separate results from each split
-  split_results <- split(runDE_output$DE_result, runDE_output$DE_result$split)
+  split_results <- split(input$DE_results, input$DE_results$split)
 
   volcano_list <- lapply(names(split_results), function(s) {
     df <- split_results[[s]]
@@ -180,15 +180,28 @@ getVolcanos <- function(input,
 #' split in the permutation DE results. Each histogram includes a vertical line at
 #' the observed number of DE genes and a p-value annotation.
 #'
-#' @param permuteDE_result A returned list from `permuteDE`
+#' @param input A returned list from `permuteDE`
 #' @param title A string to be the title of histograms. Default to \code{NULL}.
 #' @export
 
-getHistograms <- function(permuteDE_result, title = NULL) {
-  permutation_DE_results <- permuteDE_result$permutation_DE_results
-  permutation_test_results <- permuteDE_result$permutation_test_results
-  all_splits <- unique(permutation_DE_results$split)
-  n_iterations <- permuteDE_result$parameters$n_iterations
+getHistograms <- function(input,
+                          title = NULL) {
+
+  # ---------------------------------------------------------------------------
+  # Check input validity
+  # ---------------------------------------------------------------------------
+
+  .validInput(input, "input", "getHistograms")
+  .validInput(title, "title")
+
+  # ---------------------------------------------------------------------------
+  # Generate plots
+  # ---------------------------------------------------------------------------
+
+  permutation_DE_summary <- input$permutation_DE_summary
+  permutation_test_results <- input$permutation_test_results
+  all_splits <- unique(permutation_DE_summary$split)
+  n_iterations <- input$parameters$n_iterations
 
   # generate a list of histogram(s) per split
   histogram_list <- lapply(all_splits, function(split_id) {
@@ -209,9 +222,9 @@ getHistograms <- function(permuteDE_result, title = NULL) {
         "label",
         x = label_x,
         y = Inf,
-        label = ifelse(df_test$p_n_sig < 0.01,
+        label = ifelse(df_test$pvalue_n_sig < 0.01,
                        "p < 0.01",
-                       paste0("p = ", round(df_test$p_n_sig, 2))),
+                       paste0("p = ", round(df_test$pvalue_n_sig, 2))),
         vjust = 1.5,
         hjust = 0.44,
         fill = "white",

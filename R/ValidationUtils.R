@@ -263,11 +263,32 @@
     if (!methods::is(input, "list")) {
       stop("Parameter '", name, "' must be a list, please supply valid input!")
     }
-    # Must have expected elements with set names
-    if (!identical(names(input), c("DE_results", "PB_values",  "group_key", "metadata", "parameters")) &
-        !identical(names(input), c("DE_results", "cell_values",  "group_key", "metadata", "parameters"))) {
-      stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with five named elements ",
-           "('DE_results', 'PB_values' (or 'cell_values'), 'group_key', 'metadata', and 'parameters'). Please supply valid input!")
+    if (other == "permuteDE") {
+      # Must have expected elements with set names
+      if (!identical(names(input), c("DE_results", "PB_values",  "metadata", "parameters")) &
+          !identical(names(input), c("DE_results", "cell_values",  "metadata", "parameters"))) {
+        stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with four named elements ",
+             "('DE_results', 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'). Please supply valid input!")
+      }
+      # Metadata must contain group key
+      if (!("group_key" %in% names(input$metadata))) {
+        stop("Structure of list provided for parameter 'input' is unexpected. ",
+             "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+      }
+    } else if (other == "getVolcanos") {
+      # Must have expected elements with set names
+      if (!("DE_results" %in% names(input))) {
+        stop("Structure of list provided for parameter 'input' is unexpected, ",
+             "it should be the output returned by function 'runDE()' or a list containing (at minimum) a dataframe named 'DE_results'. ",
+             "Please supply valid input!")
+      }
+    } else if (other == "getHistograms") {
+      # Must have expected elements with set names
+      if (!("permutation_test_results" %in% names(input)) | !("permutation_DE_summary" %in% names(input))) {
+        stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'permuteDE()' ",
+             "or a list containing (at minimum) dataframes named 'permutation_test_results' and 'permutation_DE_summary'. ",
+             "Please supply valid input!")
+      }
     }
   }
 

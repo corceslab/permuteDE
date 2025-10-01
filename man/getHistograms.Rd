@@ -4,10 +4,10 @@
 \alias{getHistograms}
 \title{Generate histogram plots of permutation test results}
 \usage{
-getHistograms(permuteDE_result, title = NULL)
+getHistograms(input, title = NULL)
 }
 \arguments{
-\item{permuteDE_result}{A returned list from \code{permuteDE}}
+\item{input}{A returned list from \code{permuteDE}}
 
 \item{title}{A string to be the title of histograms. Default to \code{NULL}.}
 }

@@ -82,7 +82,7 @@ permuteDE <- function(input,
 
   time1 <- Sys.time()
 
-  .validInput(input, "input")
+  .validInput(input, "input", "permuteDE")
   .validInput(alpha, "alpha")
   .validInput(lfc_threshold, "lfc_threshold")
   .validInput(n_iterations, "n_iterations")
@@ -153,7 +153,7 @@ permuteDE <- function(input,
   # Progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
                        " : Differential expression results for group ",
-                       unique(input$group_key$group)[1], " vs. ", unique(input$group_key$group)[2],
+                       unique(input$metadata$group_key$group)[1], " vs. ", unique(input$metadata$group_key$group)[2],
                        " across ", n_splits, " pseudobulk matrices..")
 
   # Set up
@@ -187,7 +187,7 @@ permuteDE <- function(input,
       # Subset biological replicates to current matrix
       current_stored_replicates <- stored_replicates[current_replicates]
       n_replicates <- length(current_stored_replicates)
-      true_groups <- input$group_key[current_replicates, "group"]
+      true_groups <- input$metadata$group_key[current_replicates, "group"]
       replicate_set <- unique(current_stored_replicates)
     } else {
       # Grab matrix and get values directly from there
@@ -198,7 +198,7 @@ permuteDE <- function(input,
       }
       current_replicates <- colnames(current_mat)
       n_replicates <- length(current_replicates)
-      true_groups <- input$group_key[current_replicates, "group"]
+      true_groups <- input$metadata$group_key[current_replicates, "group"]
     }
     # Proceed if there are two groups present
     if (dplyr::n_distinct(true_groups) == 2) {

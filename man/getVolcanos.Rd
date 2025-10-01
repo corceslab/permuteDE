@@ -16,7 +16,7 @@ getVolcanos(
 }
 \arguments{
 \item{input}{Output from function \code{runDE} or a list containing
-(at minimum) a dataframe named "DE_result" including columns:
+(at minimum) a dataframe named "DE_results" including columns:
 \describe{
 \item{gene}{Gene identifiers (character).}
 \item{lfc}{Log2 fold change values (numeric).}

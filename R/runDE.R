@@ -105,8 +105,6 @@
 #'   \item{cell_values}{Alternately, if using cell-level data, a list of feature x
 #'   cell matri(ces) containing counts for each feature, one matrix per
 #'   split}
-#'   \item{group_key}{Dataframe record of group labels corresponding to each
-#'   replicate}
 #'   \item{metadata}{List recording characteristics of the data and runtime}
 #'   \item{parameters}{List recording parameter values used}
 #'   }
@@ -457,13 +455,15 @@ runDE <- function(object,
 
   # Metadata
   if (pseudobulk == "generate") {
-    metadata_list <- list("PB_metadata" = pseudobulk_metadata,
+    metadata_list <- list("group_key" = group_key,
+                          "PB_metadata" = pseudobulk_metadata,
                           "time" = data.frame(total = difftime(time4, time1, units = "secs"),
                                               step1_setup = difftime(time2, time1, units = "secs"),
                                               step2_get_matrices = difftime(time3, time2, units = "secs"),
                                               step3_DE = difftime(time4, time3, units = "secs")))
   } else {
-    metadata_list <- list("time" = data.frame(total = difftime(time4, time1, units = "secs"),
+    metadata_list <- list("group_key" = group_key,
+                          "time" = data.frame(total = difftime(time4, time1, units = "secs"),
                                               step1_setup = difftime(time2, time1, units = "secs"),
                                               step2_get_matrices = difftime(time3, time2, units = "secs"),
                                               step3_DE = difftime(time4, time3, units = "secs")))
@@ -496,13 +496,11 @@ runDE <- function(object,
   if (pseudobulk == "none") {
     return(list("DE_results" = de_results,
                 "cell_values" = matrix_list,
-                "group_key" = group_key,
                 "metadata" = metadata_list,
                 "parameters" = parameter_list))
   } else {
     return(list("DE_results" = de_results,
                 "PB_values" = matrix_list,
-                "group_key" = group_key,
                 "metadata" = metadata_list,
                 "parameters" = parameter_list))
   }
