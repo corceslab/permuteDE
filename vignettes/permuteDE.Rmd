@@ -60,7 +60,12 @@ permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. If a matrix 
 To demonstrate how to run permuteDE, we’ll use a small sample dataset consisting of mouse brain snRNA-seq data, stored as a Seurat object.
 
 ```{r, message = FALSE, warning = FALSE}
+# Load dataset from permuteDE package
 data("sample_data")
+
+# Seurat object containing a count matrix, UMAP coordinates, and cell metadata
+#plotUMAP(object = sample_data,
+#         group_by = "cell_type")
 ```
 
 ------
@@ -111,9 +116,9 @@ head(runDE_output$DE_results)
 
 ### Step 2: `permuteDE()`
 
-Function `permuteDE()` will take the output from function `runDE()`, permute the group labels and rerun differential expression analysis in the same way across a number of iterations set by parameter `n_iterations` (the default is 1000). The parameters are inherited from the `runDE()` function call. For each iteration, the number of significant differentially expressed features is counted, forming a distribution to which the "true" number of significantly differentially expressed features is compared using a permutation test. This permutation test yields a p-value that suggests the probability of observing a number of significant features greater than or equal to the one output by the `runDE()` function if the two groups are not truly different.
+Function `permuteDE()` will take the output from function `runDE()`, permute the group labels and rerun differential expression analysis in the same way across a number of iterations set by parameter `n_iterations`. The parameters are inherited from the `runDE()` function call. For each iteration, the number of significant differentially expressed features is counted, forming a distribution to which the "true" number of significantly differentially expressed features is compared using a permutation test. This permutation test yields a p-value that suggests the probability of observing a number of significant features greater than or equal to the one output by the `runDE()` function if the two groups are not truly different.
 
-This function is highly parallelized, so efficiency greatly improves as `n_cores` is increased.
+The default number of iterations (set by parameter `n_iterations`) is 1000. However, for smaller datasets such as this one where the number of possible combinations of group labels is less than 1000, the permutation test is run using all possible combinations with no repeats. This function is highly parallelized, so efficiency greatly improves as `n_cores` is increased.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
 permuteDE_output <- permuteDE(input = runDE_output,
@@ -140,15 +145,17 @@ To generate volcano plots for each split assessed by `runDE()` (or a single spli
 ```{r}
 # Generate a list of volcano plots
 volcano_plots <- getVolcanos(input = runDE_output)
-# Display example
-volcano_plots[["Inhibitory Neurons"]]
+# Display examples
+volcano_plots[["Inhibitory Neurons"]] | volcano_plots[["Oligodendrocytes"]]
 ```
 
 To generate histograms for each permutation test (or a single split), use function `getHistograms()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.
 
 ```{r}
-#histogram_plots <- getHistograms(input = permuteDE_output)
-#histogram_plots[["astrocytes"]]
+# Generate a list of histograms
+histogram_plots <- getHistograms(input = permuteDE_output)
+# Display examples
+histogram_plots[["Inhibitory Neurons"]] | histogram_plots[["Oligodendrocytes"]]
 ```
 
 One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). In this plot, cell types are greyed out if the permutation test p-value was > 0.05.

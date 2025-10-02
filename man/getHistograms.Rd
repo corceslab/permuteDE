@@ -4,16 +4,27 @@
 \alias{getHistograms}
 \title{Generate histogram plots of permutation test results}
 \usage{
-getHistograms(input, title = NULL)
+getHistograms(input, title = NULL, subtitle = NULL, label_pvalue = TRUE)
 }
 \arguments{
-\item{input}{A returned list from \code{permuteDE}}
+\item{input}{Output from function \code{permuteDE}.}
 
-\item{title}{A string to be the title of histograms. Default to \code{NULL}.}
+\item{title}{Character string indicating the plot title. Default = \code{NULL}
+sets a title automatically for each split.}
+
+\item{subtitle}{Character string indicating the plot subtitle. Default =
+\code{NULL} automatically generates a subtitle.}
+
+\item{label_pvalue}{A Boolean value indicating whether to label the
+permutation test p-value. Defaults to TRUE.}
+}
+\value{
+A named list of \code{ggplot2} objects, where each element
+corresponds to a volcano plot for one split of the DE results.
 }
 \description{
-This function creates a list of \code{ggplot2} histogram plots showing the distribution
-of the number of differentially expressed (DE) genes across permutations for each
-split in the permutation DE results. Each histogram includes a vertical line at
-the observed number of DE genes and a p-value annotation.
+This function takes the output from function \code{permuteDE} and creates a
+list containing a histogram plot showing the permutation test result for
+each split. Each histogram includes a vertical line at the observed number
+of DE features in the unpermuted "true" comparison.
 }

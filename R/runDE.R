@@ -245,6 +245,7 @@ runDE <- function(object,
   if (is.null(reference_group)) {
     reference_group <- sort(unique(groups))[1]
   }
+  non_reference_group <- unique(groups)[unique(groups) != reference_group]
 
   # Group labels for each replicate
   # Returns a dataframe with two columns: replicate, group
@@ -474,6 +475,7 @@ runDE <- function(object,
                          "group_labels" = group_labels,
                          "split_labels" = split_labels,
                          "reference_group" = reference_group,
+                         "non_reference_group" = non_reference_group,
                          "use_cells" = use_cells,
                          "pseudobulk" = pseudobulk,
                          "de_method" = de_method,

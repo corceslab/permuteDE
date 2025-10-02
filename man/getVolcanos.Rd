@@ -37,8 +37,7 @@ log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
 sets a title automatically for each split.}
 
 \item{subtitle}{Character string indicating the plot subtitle. Default =
-\code{NULL} automatically generates a subtitle describing the significance
-thresholds.}
+\code{NULL} automatically generates a subtitle describing the DE method used.}
 
 \item{n_max_label}{A numeric value indicating how many of the top
 significant DE features to label. Defaults to 10.}

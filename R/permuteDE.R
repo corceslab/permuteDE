@@ -104,6 +104,7 @@ permuteDE <- function(input,
 
   # Fetch values
   reference_group <- input$parameters$reference_group
+  non_reference_group <- input$parameters$non_reference_group
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
   de_params <- input$parameters$de_params
@@ -362,6 +363,7 @@ permuteDE <- function(input,
                          "use_splits" = use_splits,
                          "min_DE" = min_DE,
                          "reference_group" = reference_group,
+                         "non_reference_group" = non_reference_group,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "de_params" = de_params,

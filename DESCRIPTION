@@ -15,10 +15,9 @@ Imports:
     edgeR,
     methods,
     pbmcapply,
-    Seurat,
     ggplot2,
     Matrix,
-    stringr
+    Seurat
 Suggests: 
     DESeq2,
     ggrepel,

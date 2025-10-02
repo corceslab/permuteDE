@@ -87,8 +87,7 @@ theme_permuteDE <- function(color = "black",
 #' @param title Character string indicating the plot title. Default = `NULL`
 #' sets a title automatically for each split.
 #' @param subtitle Character string indicating the plot subtitle. Default =
-#' `NULL` automatically generates a subtitle describing the significance
-#' thresholds.
+#' `NULL` automatically generates a subtitle describing the DE method used.
 #' @param n_max_label A numeric value indicating how many of the top
 #' significant DE features to label. Defaults to 10.
 #' @param center A Boolean value indicating whether to center the x-axis at 0.
@@ -126,18 +125,13 @@ getVolcanos <- function(input,
   # Set up
   # ---------------------------------------------------------------------------
 
-  # If available, grab group names and reference group
-  reference_group <- NULL
-  non_reference_group <- "non-reference group"
-  if ("metadata" %in% names(input)) {
-    groups <- unique(input$metadata$group_key$group)
-    if ("parameters" %in% names(input)) {
-      reference_group <- input$parameters[["reference_group"]]
-      non_reference_group <- groups[groups != reference_group]
-    } else {
-      reference_group <- sort(groups)[1]
-      non_reference_group <- sort(groups)[2]
-    }
+  # If available, grab group names
+  if ("parameters" %in% names(input)) {
+    reference_group <- input$parameters[["reference_group"]]
+    non_reference_group <- input$parameters[["non_reference_group"]]
+  } else {
+    reference_group <- "reference group"
+    non_reference_group <- "non-reference group"
   }
 
   # If available, grab test info
@@ -182,11 +176,8 @@ getVolcanos <- function(input,
     split_results_s <- split_results[[s]]
 
     # Set title
-    if (is.null(title) & !is.null(reference_group)) {
+    if (is.null(title)) {
       current_title <- paste0(non_reference_group, " *vs.* ", reference_group,": ", s)
-      current_title <- paste(strwrap(current_title, 80), collapse = "\n")
-    } else if (is.null(title)) {
-      current_title <- paste0("Differential expression: ", s)
       current_title <- paste(strwrap(current_title, 80), collapse = "\n")
     } else {
       current_title <- title
@@ -249,153 +240,135 @@ getVolcanos <- function(input,
 
 #' Generate histogram plots of permutation test results
 #'
-#' This function creates a list of `ggplot2` histogram plots showing the distribution
-#' of the number of differentially expressed (DE) genes across permutations for each
-#' split in the permutation DE results. Each histogram includes a vertical line at
-#' the observed number of DE genes and a p-value annotation.
+#' This function takes the output from function \code{permuteDE} and creates a
+#' list containing a histogram plot showing the permutation test result for
+#' each split. Each histogram includes a vertical line at the observed number
+#' of DE features in the unpermuted "true" comparison.
 #'
-#' @param input A returned list from `permuteDE`
-#' @param title A string to be the title of histograms. Default to \code{NULL}.
+#' @param input Output from function \code{permuteDE}.
+#' @param title Character string indicating the plot title. Default = `NULL`
+#' sets a title automatically for each split.
+#' @param subtitle Character string indicating the plot subtitle. Default =
+#' `NULL` automatically generates a subtitle.
+#' @param label_pvalue A Boolean value indicating whether to label the
+#' permutation test p-value. Defaults to TRUE.
+#'
+#' @return A named list of \code{ggplot2} objects, where each element
+#'   corresponds to a volcano plot for one split of the DE results.
 #' @export
 
 getHistograms <- function(input,
-                          title = NULL) {
+                          title = NULL,
+                          subtitle = NULL,
+                          label_pvalue = TRUE) {
 
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
 
+  .requirePackage("ggtext", source = "cran")
+
   .validInput(input, "input", "getHistograms")
   .validInput(title, "title")
+  .validInput(subtitle, "subtitle")
+  .validInput(label_pvalue, "label_pvalue")
+
+  # ---------------------------------------------------------------------------
+  # Set up
+  # ---------------------------------------------------------------------------
+
+  # If available, grab group names
+  if ("parameters" %in% names(input)) {
+    reference_group <- input$parameters[["reference_group"]]
+    non_reference_group <- input$parameters[["non_reference_group"]]
+  } else {
+    reference_group <- "reference group"
+    non_reference_group <- "non-reference group"
+  }
+
+  # Separate results from each split
+  split_results <- split(input$permutation_DE_summary, input$permutation_DE_summary$split)
 
   # ---------------------------------------------------------------------------
   # Generate plots
   # ---------------------------------------------------------------------------
 
-  permutation_DE_summary <- input$permutation_DE_summary
-  permutation_test_results <- input$permutation_test_results
-  all_splits <- unique(permutation_DE_summary$split)
-  n_iterations <- input$parameters$n_iterations
+  histogram_list <- lapply(names(split_results), function(s) {
+    # Current split
+    split_results_s <- split_results[[s]]
 
-  # generate a list of histogram(s) per split
-  histogram_list <- lapply(all_splits, function(split_id) {
-    df_perm <- dplyr::filter(permutation_DE_results, split == split_id)
-    df_test <- dplyr::filter(permutation_test_results, split == split_id)
+    # Set title
+    if (is.null(title)) {
+      current_title <- paste0(non_reference_group, " *vs.* ", reference_group,": ", s)
+      current_title <- paste(strwrap(current_title, 80), collapse = "\n")
+    } else {
+      current_title <- title
+    }
 
-    x_max <- max(df_perm$n_sig, df_test$true_n_sig)
-    label_x <- min(df_test$true_n_sig + 5, x_max * 0.95)
+    # Set subtitle
+    if (is.null(subtitle)) {
+      current_subtitle <- paste0("Permutation test with ", (nrow(split_results_s) + 1), " iterations")
+      current_subtitle <- paste(strwrap(current_subtitle, 80), collapse = "\n")
+    } else {
+      current_subtitle <- subtitle
+    }
 
+    # Set color groups & label
+    true_n_sig_s <- dplyr::filter(input$permutation_test_results, split == s)$true_n_sig[1]
+    pvalue_s <- dplyr::filter(input$permutation_test_results, split == s)$pvalue[1]
+    if (pvalue_s < 0.0001) {
+      pvalue_s <- paste0("*p* < 0.0001")
+    } else {
+      pvalue_s <- paste0("*p* = ", round(pvalue_s, 4))
+    }
+    split_results_s <- split_results_s |>
+      dplyr::mutate(fill_group = ifelse(n_sig >= true_n_sig_s, TRUE, FALSE))
+    # Set limits
+    y_limits <- c(0, (max(table(split_results_s$n_sig))*1.05))
+    x_max <- max(c(split_results_s$n_sig, true_n_sig_s)) + 1
+    x_breaks <- floor(pretty(seq(0, x_max, 1)))
+    if (true_n_sig_s/x_max < 0.5) {
+      x_label_position <- true_n_sig_s + x_max*0.025
+      x_label_hjust <- "left"
+    } else {
+      x_label_position <- true_n_sig_s - x_max*0.025
+      x_label_hjust <- "right"
+    }
 
-    .plotHistogram(df_perm$n_sig, xlabel = 'Number of DE genes',
-                    histAlpha = 0.5, vline = df_test$true_n_sig) +
-      ggplot2::geom_vline(xintercept = df_test$true_n_sig,
-                 color = 'red',
-                 linewidth = 1,
-                 linetype = 'solid') +
-      ggplot2::annotate(
-        "label",
-        x = label_x,
-        y = Inf,
-        label = ifelse(df_test$pvalue_n_sig < 0.01,
-                       "p < 0.01",
-                       paste0("p = ", round(df_test$pvalue_n_sig, 2))),
-        vjust = 1.5,
-        hjust = 0.44,
-        fill = "white",
-        color = 'red',
-        fontface = "bold",
-        label.size = 0.3
-      ) +
-      ggplot2::labs(
-        title = if (is.null(title)) {
-          stringr::str_wrap(
-            paste0(
-              'Distribution of # DE genes across ',
-              n_iterations, ' Iterations in ', split_id
-            ),
-            width = 40
-          )
-        } else {
-          title
-        }
-      )
+    # Plot
+    p <- ggplot2::ggplot(data = split_results_s,
+                         ggplot2::aes(x = n_sig,
+                                      fill = fill_group)) +
+      theme_permuteDE() +
+      ggplot2::theme(legend.position = "none") +
+      ggplot2::theme(plot.title = ggtext::element_markdown()) +
+      ggplot2::geom_histogram(alpha = 0.6,
+                              binwidth = 1,
+                              breaks = seq(-0.01, x_max, 1)) +
+      ggplot2::geom_vline(xintercept = true_n_sig_s, linetype = "longdash", color = "#EE3751") +
+      ggplot2::scale_fill_manual(values = c("#AAAAAA", "#EE3751")) +
+      ggplot2::scale_y_continuous(limits = y_limits, expand = c(0,0)) +
+      ggplot2::scale_x_continuous(breaks = x_breaks) +
+      ggplot2::labs(title = current_title,
+                    subtitle = current_subtitle,
+                    x = "Number of DE features",
+                    y = "Count")
+    # Add p-value label
+    if (label_pvalue == TRUE) {
+      p + ggtext::geom_richtext(x = x_label_position,
+                                y = y_limits[2]*0.975,
+                                label = pvalue_s,
+                                hjust = x_label_hjust,
+                                vjust = "top",
+                                color = "#EE3751",
+                                fill = "white",
+                                label.size = 0.4)
+    } else {
+      p
+    }
   })
-  names(histogram_list) <- all_splits
+
+  names(histogram_list) <- names(split_results)
   return(histogram_list)
 }
 
-# Plot custom histogram ---------------------------
-#
-# x -- Numeric vector of values to plot.
-# xlabel -- Label for the x-axis.
-# ylabel -- Label for the y-axis.
-# addDensity -- Logical; if `TRUE`, adds a density curve (default: `FALSE`).
-# bins -- Number of bins in the histogram (default: 20).
-# baseSize -- Base font size used in `themeCorcesRegular()` (default: 14).
-# histFill -- Fill color of histogram bars (default: "#3B9AB2").
-# histColor -- Outline color of histogram bars (default: `NA`).
-# densityFill -- Fill color of the density area (default: "#3B9AB2").
-# densityColor -- Line color of the density curve (default: "#3B9AB2").
-# size -- Line width for histogram and density elements (default: 1.25).
-# histAlpha -- Transparency (alpha) of the histogram fill (default: 0.85).
-# densityAlpha -- Transparency (alpha) of the density fill (default: 0.15).
-# title -- Title for the plot (default: empty string).
-# ratioYX -- Desired aspect ratio of y over x for `coord_equal()` (default: 0.8).
-# vline -- Numeric value (or vector) for vertical reference lines (default: `NULL`).
-# vlineColor -- Color for vertical lines (default: "red").
-# vlineType -- Line type for vertical lines (e.g., "solid", "dashed") (default: "solid").
-# vlineWidth -- Line width for vertical lines (default: 1).
-
-.plotHistogram <- function(x,
-                           xlabel = "values",
-                           ylabel = "Count",
-                           addDensity = FALSE,
-                           bins = 20,
-                           baseSize = 14,
-                           histFill = "#3B9AB2",
-                           histColor = NA,
-                           densityFill = "#3B9AB2",
-                           densityColor = "#3B9AB2",
-                           title = "",
-                           size = 1.25,
-                           histAlpha = 0.85,
-                           densityAlpha = 0.15,
-                           ratioYX = 0.8,
-                           vline = NULL,
-                           vlineColor = "red",
-                           vlineType = "solid",
-                           vlineWidth = 1) {
-
-  stopifnot(is.numeric(x))
-
-  df <- data.frame(y = x)
-
-  p <- ggplot2::ggplot(df, ggplot2::aes(y)) +
-    ggplot2::geom_histogram(bins = bins, fill = histFill, color = histColor, size = size, alpha = histAlpha)
-
-  if (addDensity) {
-    p <- p +
-      ggplot2::geom_density(ggplot2::aes(y = ..count..), fill = densityFill, color = NA, alpha = densityAlpha, size = size) +
-      ggplot2::stat_density(ggplot2::aes(y = ..count..), color = densityColor, geom = "line", size = size)
-  }
-
-  if (!is.null(vline)) {
-    p <- p + ggplot2::geom_vline(xintercept = vline, color = vlineColor, linewidth = vlineWidth, linetype = vlineType)
-  }
-
-  p <- p +
-    theme_permuteDE(base_size = baseSize) +
-    ggplot2::xlab(xlabel) + ggplot2::ylab(ylabel)
-
-  # Include vline in xlim computation
-  xlim_raw <- range(c(df$y, vline), na.rm = TRUE)
-  xlim <- grDevices::extendrange(xlim_raw, f = 0.1)
-
-  data <- ggplot2::ggplot_build(p)$data[[1]]
-  ylim <- c(0, max(data$y, na.rm = TRUE) * 1.1)
-  ratioXY <- ratioYX * diff(xlim) / diff(ylim)
-
-  p <- p + ggplot2::coord_equal(ratio = ratioXY, xlim = xlim, ylim = ylim, expand = FALSE)
-
-  return(p)
-}
