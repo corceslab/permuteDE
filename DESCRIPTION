@@ -17,11 +17,12 @@ Imports:
     pbmcapply,
     Seurat,
     ggplot2,
-    EnhancedVolcano,
     Matrix,
     stringr
 Suggests: 
     DESeq2,
+    ggrepel,
+    ggtext,
     knitr,
     limma,
     presto,

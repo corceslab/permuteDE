@@ -138,8 +138,10 @@ permuteDE has several built-in plotting functions to help display the results fr
 To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `getVolcanos()`.
 
 ```{r}
-#volcano_plots <- getVolcanos(input = runDE_output)
-#volcano_plots[["astrocytes"]]
+# Generate a list of volcano plots
+volcano_plots <- getVolcanos(input = runDE_output)
+# Display example
+volcano_plots[["Inhibitory Neurons"]]
 ```
 
 To generate histograms for each permutation test (or a single split), use function `getHistograms()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.

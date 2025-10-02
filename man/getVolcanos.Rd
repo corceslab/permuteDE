@@ -10,8 +10,8 @@ getVolcanos(
   lfc_threshold = 0.5,
   title = NULL,
   subtitle = NULL,
-  significant_color = "red2",
-  ...
+  n_max_label = 10,
+  center = TRUE
 )
 }
 \arguments{
@@ -40,12 +40,11 @@ sets a title automatically for each split.}
 \code{NULL} automatically generates a subtitle describing the significance
 thresholds.}
 
-\item{significant_color}{Character string color name or hex code indicating
-the color used to highlight significant differentially expressed features
-(default = \code{"red2"}).}
+\item{n_max_label}{A numeric value indicating how many of the top
+significant DE features to label. Defaults to 10.}
 
-\item{...}{Additional parameters passed to
-\code{EnhancedVolcano::EnhancedVolcano()}.}
+\item{center}{A Boolean value indicating whether to center the x-axis at 0.
+Defaults to \code{TRUE}.}
 }
 \value{
 A named list of \code{ggplot2} objects, where each element
@@ -55,23 +54,5 @@ corresponds to a volcano plot for one split of the DE results.
 This function takes the output from function \code{runDE} and creates a list
 containing a volcano plot for each subset of differential expression (DE)
 results. The DE results are subset by the "split" column, and each split
-produces its own volcano plot using the \code{EnhancedVolcano} package.
-}
-\details{
-Each volcano plot is created using \code{EnhancedVolcano::EnhancedVolcano()},
-customized with:
-\itemize{
-\item The x-axis showing log2 fold changes (\code{lfc}).
-\item The y-axis showing adjusted p-values (\code{padj}).
-\item Genes colored grey, blue, or red depending on significance status.
-\item A caption showing the total number of genes in that split.
-\item \code{theme_permuteDE()} applied, with the legend removed.
-}
-}
-\examples{
-\dontrun{
-plots <- generateVolcanoPlot(runDE_output)
-print(plots[[1]])
-}
-
+produces its own volcano plot.
 }

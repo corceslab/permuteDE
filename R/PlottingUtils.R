@@ -67,7 +67,7 @@ theme_permuteDE <- function(color = "black",
 #' This function takes the output from function \code{runDE} and creates a list
 #' containing a volcano plot for each subset of differential expression (DE)
 #' results. The DE results are subset by the "split" column, and each split
-#' produces its own volcano plot using the \code{EnhancedVolcano} package.
+#' produces its own volcano plot.
 #'
 #' @param input Output from function \code{runDE} or a list containing
 #'  (at minimum) a dataframe named "DE_results" including columns:
@@ -89,31 +89,13 @@ theme_permuteDE <- function(color = "black",
 #' @param subtitle Character string indicating the plot subtitle. Default =
 #' `NULL` automatically generates a subtitle describing the significance
 #' thresholds.
-#' @param significant_color Character string color name or hex code indicating
-#' the color used to highlight significant differentially expressed features
-#' (default = `"red2"`).
-#' @param ... Additional parameters passed to
-#' \code{EnhancedVolcano::EnhancedVolcano()}.
+#' @param n_max_label A numeric value indicating how many of the top
+#' significant DE features to label. Defaults to 10.
+#' @param center A Boolean value indicating whether to center the x-axis at 0.
+#' Defaults to \code{TRUE}.
 #'
 #' @return A named list of \code{ggplot2} objects, where each element
 #'   corresponds to a volcano plot for one split of the DE results.
-#'
-#' @details
-#' Each volcano plot is created using \code{EnhancedVolcano::EnhancedVolcano()},
-#' customized with:
-#' \itemize{
-#'   \item The x-axis showing log2 fold changes (`lfc`).
-#'   \item The y-axis showing adjusted p-values (`padj`).
-#'   \item Genes colored grey, blue, or red depending on significance status.
-#'   \item A caption showing the total number of genes in that split.
-#'   \item \code{theme_permuteDE()} applied, with the legend removed.
-#' }
-#'
-#' @examples
-#' \dontrun{
-#' plots <- generateVolcanoPlot(runDE_output)
-#' print(plots[[1]])
-#' }
 #'
 #' @export
 #'
@@ -122,49 +104,141 @@ getVolcanos <- function(input,
                         lfc_threshold = 0.5,
                         title = NULL,
                         subtitle = NULL,
-                        significant_color = 'red2',
-                        ...){
+                        n_max_label = 10,
+                        center = TRUE){
 
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
+
+  .requirePackage("ggrepel", source = "cran")
+  .requirePackage("ggtext", source = "cran")
 
   .validInput(input, "input", "getVolcanos")
   .validInput(alpha, "alpha")
   .validInput(lfc_threshold, "lfc_threshold")
   .validInput(title, "title")
   .validInput(subtitle, "subtitle")
-  .validInput(significant_color, "significant_color") #
+  .validInput(n_max_label, "n_max_label")
+  .validInput(center, "center")
+
+  # ---------------------------------------------------------------------------
+  # Set up
+  # ---------------------------------------------------------------------------
+
+  # If available, grab group names and reference group
+  reference_group <- NULL
+  non_reference_group <- "non-reference group"
+  if ("metadata" %in% names(input)) {
+    groups <- unique(input$metadata$group_key$group)
+    if ("parameters" %in% names(input)) {
+      reference_group <- input$parameters[["reference_group"]]
+      non_reference_group <- groups[groups != reference_group]
+    } else {
+      reference_group <- sort(groups)[1]
+      non_reference_group <- sort(groups)[2]
+    }
+  }
+
+  # If available, grab test info
+  de_method <- " "
+  de_test <- " "
+  p_adjust_method <- " "
+  if ("parameters" %in% names(input)) {
+    de_method <- paste0(" ", input$parameters[["de_method"]], " ")
+    de_test <- input$parameters[["de_test"]]
+    p_adjust_method <- input$parameters[["p_adjust_method"]]
+  }
+
+  # Set subtitle
+  if (is.null(subtitle)) {
+    subtitle <- paste0("DE using", de_method,
+                       switch(de_test,
+                              wilcox_cpm = "Wilcoxon Rank Sum Test with CPM normalization, ",
+                              wilcox_log_cpm = "Wilcoxon Rank Sum Test with log CPM normalization, ",
+                              paste0(de_test, ", ")),
+                       switch(p_adjust_method,
+                              holm =  paste0("Holm method, \u03b1=", alpha),
+                              hochberg = paste0("Hochberg adjustment, \u03b1=", alpha),
+                              hommel = paste0("Hommel procedure, \u03b1=", alpha),
+                              bonferroni = paste0("Bonferroni method, \u03b1=", alpha),
+                              BH = paste0("FDR=", alpha),
+                              fdr = paste0("FDR=", alpha),
+                              BY = paste0("Benjamini & Yekutieli, FDR=", alpha),
+                              paste0("no multiple comparison correction, \u03b1=", alpha)),
+                       ", |LFC|>", lfc_threshold)
+    subtitle <- paste(strwrap(subtitle, 80), collapse = "\n")
+  }
+
+  # Separate results from each split
+  split_results <- split(input$DE_results, input$DE_results$split)
 
   # ---------------------------------------------------------------------------
   # Generate plots
   # ---------------------------------------------------------------------------
 
-  # If available, grab group names and reference group
-  # TODO
-
-  # Separate results from each split
-  split_results <- split(input$DE_results, input$DE_results$split)
-
   volcano_list <- lapply(names(split_results), function(s) {
-    df <- split_results[[s]]
+    # Current split
+    split_results_s <- split_results[[s]]
 
-    EnhancedVolcano::EnhancedVolcano(
-      df,
-      lab = df$gene,
-      x = 'lfc',
-      y = 'padj',
-      pCutoff = alpha,
-      FCcutoff = lfc_threshold,
-      title = if (is.null(title)) paste('Volcano Plot of Gene Expression in', s) else title,
-      subtitle = if (is.null(subtitle))
-        paste("Significance: adjusted p-value <", alpha, "and |log2 fold change| >", lfc_threshold)
-      else subtitle,
-      caption = paste0("total = ", nrow(df), " genes"),
-      col = c("grey30", "grey30", "royalblue", significant_color)
-    ) +
+    # Set title
+    if (is.null(title) & !is.null(reference_group)) {
+      current_title <- paste0(non_reference_group, " *vs.* ", reference_group,": ", s)
+      current_title <- paste(strwrap(current_title, 80), collapse = "\n")
+    } else if (is.null(title)) {
+      current_title <- paste0("Differential expression: ", s)
+      current_title <- paste(strwrap(current_title, 80), collapse = "\n")
+    } else {
+      current_title <- title
+    }
+
+    # Set limits
+    if (center == FALSE) {
+      x_limits <- c(min(split_results_s$lfc, na.rm = TRUE)*1.1, max(split_results_s$lfc, na.rm = TRUE)*1.1)
+    } else {
+      x_limits <- c(max(abs(split_results_s$lfc), na.rm = TRUE)*(-1.1), max(abs(split_results_s$lfc), na.rm = TRUE)*1.1)
+    }
+    y_limits <- c(0, max(-log10(split_results_s$padj), na.rm = TRUE)*1.1)
+
+    # Set color groups & label set
+    split_results_s <- split_results_s |>
+      dplyr::mutate(sig_group = ifelse(lfc > lfc_threshold & padj < alpha, paste0("Higher in ", non_reference_group),
+                                       ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Lower in ", non_reference_group),
+                                              "Not significant")))
+    label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < 0.05, abs(lfc) > lfc_threshold),
+                                     padj, -abs(lfc))$gene[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < 0.05)))]
+    label_split_results_s <- split_results_s |>
+      dplyr::filter(gene %in% label_features)
+
+    # Plot
+    ggplot2::ggplot(data = split_results_s,
+                    ggplot2::aes(x = lfc,
+                                 y = -log10(padj),
+                                 color = sig_group)) +
       theme_permuteDE() +
-      ggplot2::theme(legend.position = 'none')
+      ggplot2::theme(plot.title = ggtext::element_markdown(),
+                     axis.title.x = ggtext::element_markdown(),
+                     axis.title.y = ggtext::element_markdown()) +
+      ggplot2::geom_point(alpha = 0.5,
+                          size = 2) +
+      ggplot2::geom_vline(xintercept = c(-lfc_threshold, lfc_threshold),
+                          linetype = "dashed") +
+      ggplot2::geom_hline(yintercept = -log10(alpha),
+                          linetype = "dashed") +
+      ggrepel::geom_text_repel(data = label_split_results_s,
+                               ggplot2::aes(label = gene),
+                               color = "black",
+                               max.overlaps = Inf) +
+      ggplot2::xlim(x_limits) +
+      ggplot2::ylim(y_limits) +
+      ggplot2::scale_color_manual(values = c("#3A4BED", "#EE3751", "#BBBBBB"),
+                                  breaks = c(paste0("Lower in ", non_reference_group),
+                                             paste0("Higher in ", non_reference_group))) +
+      ggplot2::labs(title = current_title,
+                    subtitle = subtitle,
+                    color = "",
+                    x = "Log<sub>2</sub> Fold Change",
+                    y = "-Log<sub>10</sub> Adjusted P Value")
   })
 
   names(volcano_list) <- names(split_results)

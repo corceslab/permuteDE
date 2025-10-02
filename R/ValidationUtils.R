@@ -122,8 +122,8 @@
   }
 
   # Single non-negative integer
-  # min_DE
-  if (name %in% c("min_DE")) {
+  # min_DE, n_max_label
+  if (name %in% c("min_DE", "n_max_label")) {
     # Should be of class 'numeric', must be a single value
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
@@ -135,8 +135,8 @@
   }
 
   # Single Boolean value
-  # force_balance, return_all, verbose
-  if (name %in% c("force_balance", "return_all", "verbose")) {
+  # center, force_balance, return_all, verbose
+  if (name %in% c("center", "force_balance", "return_all", "verbose")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
