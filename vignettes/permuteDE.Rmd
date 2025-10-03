@@ -168,9 +168,9 @@ One way to summarise the results from permuteDE is to color a UMAP by the number
 To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.
 
 ```{r}
-#plotFeature(input = runDE_output,
-#            feature = "Mbp",
-#            split = "astrocytes")
+plotFeature(input = runDE_output,
+            feature = "Tafa2",
+            use_splits = "Inhibitory Neurons")
 ```
 
 ------

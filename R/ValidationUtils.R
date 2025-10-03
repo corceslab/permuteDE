@@ -135,8 +135,8 @@
   }
 
   # Single Boolean value
-  # center, force_balance, label_pvalue, return_all, verbose
-  if (name %in% c("center", "force_balance", "label_pvalue", "return_all", "verbose")) {
+  # center, force_balance, label_pvalue, label_replicates, label_statistics, return_all, verbose
+  if (name %in% c("center", "force_balance", "label_pvalue", "label_replicates", "label_statistics", "return_all", "verbose")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
@@ -289,6 +289,17 @@
              "or a list containing (at minimum) dataframes named 'permutation_test_results' and 'permutation_DE_summary'. ",
              "Please supply valid input!")
       }
+    } else if (other == "plotFeature") {
+      # Must have expected elements with set names
+      if (!("metadata" %in% names(input)) | !("parameters" %in% names(input))) {
+        stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'runDE()' ",
+             "or a list containing (at minimum) elements named 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'. Please supply valid input!")
+      }
+      # Metadata must contain group key
+      if (!("group_key" %in% names(input$metadata))) {
+        stop("Structure of list provided for parameter 'input' is unexpected. ",
+             "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+      }
     }
   }
 
@@ -317,8 +328,14 @@
     # If not NULL
     if (!is.null(input)) {
       # Values must all be among those in input
-      if (!all(input %in% names(other$PB_values))) {
-        stop("Input value(s) for '", name, "' must all be present among provided pseudobulk matrices. Please supply valid input!")
+      if ("PB_values" %in% names(other)) {
+        if (!all(input %in% names(other$PB_values))) {
+          stop("Input value(s) for '", name, "' must all be present among provided pseudobulk matrices. Please supply valid input!")
+        }
+      } else if ("cell_values" %in% names(other)) {
+        if (!all(input %in% names(other$cell_values))) {
+          stop("Input value(s) for '", name, "' must all be present among provided matrices. Please supply valid input!")
+        }
       }
     }
   }
@@ -358,12 +375,11 @@
     }
   }
 
-  # message
-  if (name == "message") {
+  # message, feature
+  if (name %in% c("message", "feature")) {
     # Should be of class 'character'
     if (!methods::is(input, "character") | length(input) != 1) {
-      stop("Input for '", name, "' must be a single value of class 'character'.",
-           " This parameter is intended for internal use, we recommend leaving it as the default value.")
+      stop("Input for '", name, "' must be a single value of class 'character'.")
     }
   }
 
@@ -421,10 +437,22 @@
       }
       if (!all(names(input) %in% allowed_functions)) {
         stop("When supplying additional parameters to '", name, "' for use",
-             " with '", de_method, ": ", de_test, "',",
+             " with '", other[[1]], ": ", other[[2]], "',",
              " please provide a list of lists, where each secondary list is named according to",
              " the allowed functions (", paste0(allowed_functions, collapse = ", "), ").")
       }
+    }
+  }
+
+  # normalization_method
+  if (name == "normalization_method") {
+    # Should be of class 'character'
+    if (!methods::is(input, "character") | length(input) != 1) {
+      stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+    }
+    # Must be among permitted values
+    if (!(input %in% c("cpm", "log_cpm", "none"))) {
+        stop("Input for '", name, "' must be among permitted values (", paste0(c("cpm", "log_cpm", "none"), collapse = ", "), "), please supply valid input!")
     }
   }
 }

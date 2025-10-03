@@ -20,7 +20,7 @@ permutation test p-value. Defaults to TRUE.}
 }
 \value{
 A named list of \code{ggplot2} objects, where each element
-corresponds to a volcano plot for one split of the DE results.
+corresponds to a split.
 }
 \description{
 This function takes the output from function \code{permuteDE} and creates a

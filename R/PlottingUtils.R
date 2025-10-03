@@ -254,7 +254,7 @@ getVolcanos <- function(input,
 #' permutation test p-value. Defaults to TRUE.
 #'
 #' @return A named list of \code{ggplot2} objects, where each element
-#'   corresponds to a volcano plot for one split of the DE results.
+#'   corresponds to a split.
 #' @export
 
 getHistograms <- function(input,
@@ -372,3 +372,180 @@ getHistograms <- function(input,
   return(histogram_list)
 }
 
+
+#' Plot levels of a single feature across groups
+#'
+#' This functions takes the output from function \code{runDE} and plots the
+#' expression of a single feature across the replicates in each group for each
+#' indicated split.
+#'
+#' @param input Output from function \code{runDE}.
+#' @param feature A character string indicating which feature to plot.
+#' @param use_splits A character string or vector containing the names of splits
+#' to use. Defaults to \code{NULL}, which will try all splits.
+#' @param normalization_method A character string indicating which normalization
+#' method to apply to the replicate x feature matrix. Permitted values are
+#' "cpm", "log_cpm", and "none". Defaults to "cpm".
+#' @param title A character string indicating the plot title. Default = `NULL`
+#' sets a title automatically for each split.
+#' @param label_replicates A Boolean value indicating whether to label the
+#' replicates. Defaults to \code{FALSE}.
+#' @param label_statistics A Boolean value indicating whether to label the
+#' differential expression analysis LFC and p-value. Defaults to TRUE.
+#'
+#' @return If only one split is provided, a single \code{ggplot2} object,
+#' otherwise a named list of \code{ggplot2} objects, where each element
+#' corresponds to a split.
+#'
+#' @export
+#'
+plotFeature <- function(input,
+                        feature,
+                        use_splits = NULL,
+                        normalization_method = "cpm",
+                        title = NULL,
+                        label_replicates = FALSE,
+                        label_statistics = TRUE) {
+
+  # ---------------------------------------------------------------------------
+  # Check input validity
+  # ---------------------------------------------------------------------------
+
+  .requirePackage("ggtext", source = "cran")
+  .requirePackage("ggbeeswarm", source = "cran")
+  if (label_replicates == TRUE) {
+    .requirePackage("ggrepel", source = "cran")
+  }
+
+  .validInput(input, "input", "plotFeature")
+  .validInput(feature, "feature")
+  .validInput(use_splits, "use_splits", input)
+  .validInput(normalization_method, "normalization_method")
+  .validInput(title, "title")
+  .validInput(label_replicates, "label_replicates")
+  .validInput(label_statistics, "label_statistics")
+
+  # ---------------------------------------------------------------------------
+  # Set up
+  # ---------------------------------------------------------------------------
+
+  # Retrieve groups
+  reference_group <- input$parameters[["reference_group"]]
+  non_reference_group <- input$parameters[["non_reference_group"]]
+
+  # Subset data if split(s) are provided
+  if ("PB_values" %in% names(input)) {
+    if (!is.null(use_splits)) {
+      split_results <- input$PB_values[use_splits]
+    } else {
+      split_results <- input$PB_values
+    }
+  } else if ("cell_values" %in% names(input)) {
+    if (!is.null(use_splits)) {
+      split_results <- input$cell_values[use_splits]
+    } else {
+      split_results <- input$cell_values
+    }
+    warning("This plotting function may be less efficient for cell-level data.")
+  } else {
+    stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'runDE()' ",
+         "or a list containing (at minimum) elements named 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'. Please supply valid input!")
+  }
+
+  # ---------------------------------------------------------------------------
+  # Generate plots
+  # ---------------------------------------------------------------------------
+
+  plot_list <- lapply(names(split_results), function(s) {
+    # Current split
+    split_results_s <- split_results[[s]]
+
+    # Normalized data
+    if (normalization_method == "cpm") {
+      split_results_s <- edgeR::cpm(y = split_results_s)
+      y_axis_title <- paste0("Normalized expression of *", feature, "* (CPM)")
+    } else if (normalization_method == "log_cpm") {
+      split_results_s <- edgeR::cpm(y = split_results_s,
+                                    log = TRUE)
+      y_axis_title <- paste0("Normalized expression of *", feature, "* (Log CPM)")
+    } else {
+      y_axis_title <- paste0("Expression of *", feature, "*")
+    }
+
+    # Set title
+    if (is.null(title)) {
+      current_title <- paste0("Expression of *", feature, "*: ", s)
+      current_title <- paste(strwrap(current_title, 80), collapse = "\n")
+    } else {
+      current_title <- title
+    }
+
+    # If feature is not in matrix, return NULL
+    if (!(feature %in% rownames(split_results_s))) {
+      warning("Feature '", feature, "' is not present in split '", s, "'.")
+      return(NULL)
+    } else {
+      # Extract feature & proceed
+      feature_s <- data.frame(feature = split_results_s[feature,],
+                              replicate = input$metadata$group_key[colnames(split_results_s), "replicate"],
+                              group = input$metadata$group_key[colnames(split_results_s), "group"])
+      feature_s$group <- stats::relevel(factor(feature_s$group), ref = reference_group)
+
+      # If labeling statistics, extract
+      if (label_statistics == TRUE) {
+        if (!("DE_results" %in% names(input))) {
+          stop("When parameter 'label_statistics' is set to TRUE, list provided to parameter 'input' must contain an elements named 'DE_results'. Please supply valid input!")
+        }
+        feature_statistics <- dplyr::filter(input$DE_results,
+                                            gene == feature,
+                                            split == s)
+        if (feature_statistics$padj[1] < 0.0001) {
+          statistics_text <- paste0("LFC = ", round(feature_statistics$lfc[1], 4), ", *p* < 0.0001")
+        } else {
+          statistics_text <- paste0("LFC = ", round(feature_statistics$lfc[1], 4),
+                                    ", *p* = ", round(feature_statistics$padj[1], 4))
+        }
+      }
+
+      # Plot
+      p <- ggplot2::ggplot(data = feature_s,
+                           ggplot2::aes(x = group,
+                                        y = feature,
+                                        fill = group)) +
+        theme_permuteDE() +
+        ggplot2::theme(legend.position = "none") +
+        ggplot2::theme(plot.title = ggtext::element_markdown(),
+                       axis.title.y = ggtext::element_markdown()) +
+        ggbeeswarm::geom_beeswarm(size = 2, shape = 21) +
+        ggplot2::scale_fill_manual(values = c("#AAAAAA", "#EE3751")) +
+        ggplot2::labs(title = current_title,
+                      x = "Group",
+                      y = y_axis_title)
+      # Add replicate labels
+      if (label_replicates == TRUE) {
+        p <- p + ggrepel::geom_text_repel(ggplot2::aes(label = replicate))
+      }
+      # Add LFC & p-value
+      if (label_statistics == TRUE) {
+        p <- p + ggtext::geom_richtext(x = 1.5,
+                                       y = max(feature_s$feature)*1.05,
+                                       label = statistics_text,
+                                       hjust = "center",
+                                       vjust = "bottom",
+                                       fill = NA,
+                                       label.color = NA) +
+          ggplot2::geom_segment(x = 1, xend = 2,
+                                y = max(feature_s$feature)*1.05, yend = max(feature_s$feature)*1.05) +
+          ggplot2::ylim(c(min(feature_s$feature, na.rm = TRUE), max(feature_s$feature, na.rm = TRUE)*1.1))
+      }
+      return(p)
+    }
+  })
+  names(plot_list) <- names(split_results)
+
+  if (length(plot_list) == 1) {
+    return(plot_list[[1]])
+  } else {
+    return(plot_list)
+  }
+}
