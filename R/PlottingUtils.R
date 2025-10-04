@@ -46,13 +46,13 @@ theme_permuteDE <- function(color = "black",
     axis.ticks = ggplot2::element_line(color = color, size = (4/3) * base_line_size),
     legend.key = ggplot2::element_rect(fill = "transparent", colour = NA),
     legend.text = ggplot2::element_text(color = color, size = legend_text_size),
-    legend.background = ggplot2::element_rect(fill = "transparent"),
+    legend.title = ggplot2::element_text(color = color, size = legend_text_size),
     legend.box.background = ggplot2::element_rect(fill = "transparent"),
     legend.position = legend_position,
+    legend.spacing = ggplot2::unit(15, "pt"),
     strip.text = ggplot2::element_text(size = base_size, color="black"),
     plot.background = ggplot2::element_rect(fill = "transparent", color = NA)
   )
-
   if(rotate_x_axis_text_90){
     custom_theme <- custom_theme + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))
   }
@@ -60,6 +60,78 @@ theme_permuteDE <- function(color = "black",
     custom_theme <- custom_theme + ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90, vjust = 1))
   }
   return(custom_theme)
+}
+
+##' Generate color palette
+#'
+#' Generate a color palette. For discrete palettes, hex values are standard up
+#' to n = 100, but for larger values of n, they are generated using
+#' \code{Polychrome::createPalette()}.
+#'
+#' Adapted from function  \code{CHOIR::CHOIRpalette} from R package \code{CHOIR}
+#' (Sant et al. 2025).
+#'
+#' @param type A character string indicating the palette type. Permitted values
+#' are "discrete" and "gradient". Defaults to discrete.
+#' @param n Number of colors, defaults to 100.
+#'
+#' @return Returns a vector of n hex values.
+#'
+#' @export
+#'
+palette_permuteDE <- function(type = "discrete",
+                              n = 100) {
+
+  # ---------------------------------------------------------------------------
+  # Check parameter input validity
+  # ---------------------------------------------------------------------------
+
+  .validInput(type, "type")
+  .validInput(n, "n")
+
+  # ---------------------------------------------------------------------------
+  # Create palette
+  # ---------------------------------------------------------------------------
+  if (type == "discrete") {
+    starting_colors <- c("#00CCE3", "#F8A100", "#E81AEF", "#F56900", "#6560FF",
+                         "#00D456", "#A25AFF", "#C1D400", "#E58CCC", "#1990FF",
+                         "#00DEA3", "#FF5B4B", "#F7D823", "#3BA833", "#AEA9FF",
+                         "#FF9C88", "#7DA6CC", "#CB8251", "#61BBFF", "#FF4CF9",
+                         "#8B7CFF", "#A99900", "#FCB467", "#FB798C", "#83DD00",
+                         "#D98AF7", "#67D4D9", "#08A38E", "#8099FF", "#24B167",
+                         "#DBAA00", "#FF3FAD", "#D2C0CA", "#888DB2", "#8D9D63",
+                         "#E934FF", "#33C100", "#E0BFA1", "#21ADFD", "#86D582",
+                         "#FFA2D9", "#FFB703", "#9DCCC6", "#C078C1", "#F88800",
+                         "#9FD362", "#A876EB", "#B4908B", "#FF6C69", "#6693DE",
+                         "#E2B0FD", "#AD8EA8", "#93AC00", "#E37847", "#E368FB",
+                         "#ECB5D8", "#789F33", "#3AA2AA", "#F3B19C", "#CCC482",
+                         "#34DBC9", "#B486E1", "#C39131", "#FF7D4A", "#7F9F87",
+                         "#FF9BF3", "#0899D0", "#CCB0DB", "#7DD6B9", "#EABD7F",
+                         "#FC76AE", "#D97C9E", "#75C7E4", "#5EA157", "#A5D300",
+                         "#FF00FF", "#6A99C5", "#66D100", "#979177", "#E08500",
+                         "#EA53C2", "#BAC0FA", "#C3C4AE", "#9785C6", "#6BAE00",
+                         "#A78D60", "#EA4974", "#3AEF83", "#D168CC", "#B77E7B",
+                         "#77C65D", "#E2D452", "#FFB6C9", "#A2B3CC", "#C660A2",
+                         "#616DFF", "#FF9240", "#9B9CA3", "#7DE3FF", "#FF69A3")
+    if (n <= 100) {
+      values <- starting_colors[1:n]
+    } else {
+      .requirePackage("Polychrome", source = "cran")
+      values <- Polychrome::createPalette(N = n,
+                                          seedcolors = starting_colors,
+                                          range = c(50, 80))
+      names(values) <- NULL
+    }
+  } else if (type == "gradient") {
+    starting_colors <- c("#5AADFF", "#337DFF", "#2E5CEF", "#6937F4", "#5820C4", "#482F8E")
+    if (n != 6) {
+      color_function <- grDevices::colorRampPalette(colors = starting_colors)
+      values <- color_function(n)
+    } else {
+      values <- starting_colors
+    }
+  }
+  return(values)
 }
 
 #' Generate volcano plots from differential expression results
@@ -548,4 +620,212 @@ plotFeature <- function(input,
   } else {
     return(plot_list)
   }
+}
+
+
+#' Plot dimensionality reduction
+#'
+#' This function will generate a dimensionality reduction plot colored according
+#' to the selected metric.
+#'
+#' @param reduction Dimensionality reduction cell coordinates. If there are
+#' more than two columns, only the first two will be used.
+#' @param input Output from function \code{permuteDE}.
+#' @param split_labels An character vector containing the split labels for each
+#' cell in order. Default = \code{NULL} will assume all cells belong to the same
+#' split.
+#' @param use_cells A vector of cell names to subset the dimensionality
+#' reduction cell coordinates to. Default = \code{NULL} will use all cells.
+#' @param color_by A character vector indicating what metric to use to color
+#' each split. Permitted values are "n_sig", "pvalue", and "split". Default =
+#' \code{NULL} will not color the cells.
+#' @param permutation_test_alpha A numeric value indicating the significance
+#' level to apply to the permutation test results. Splits that do not pass this
+#' threshold will be grayed out. Default = 1 applies no threshold.
+#' @param label_splits A Boolean value indicating whether to label the
+#' splits. Defaults to \code{FALSE}.
+#' @param label_statistics A Boolean value indicating whether to label the
+#' values of the selected metric. Defaults to \code{FALSE}.
+#' @param ... Extra parameters passed to \code{Seurat::DimPlot()} or
+#' \code{Seurat::FeaturePlot()}.
+#'
+#' @return A dimensionality reduction plot.
+#' @export
+#'
+plotDimReduction <- function(reduction,
+                             input = NULL,
+                             split_labels = NULL,
+                             use_cells = NULL,
+                             color_by = NULL,
+                             permutation_test_alpha = 1,
+                             label_splits = FALSE,
+                             label_statistics = FALSE,
+                             ...) {
+
+  # ---------------------------------------------------------------------------
+  # Check input validity
+  # ---------------------------------------------------------------------------
+
+  .validInput(reduction, "reduction")
+  .validInput(input, "input", "plotDimReduction")
+  .validInput(split_labels, "split_labels", reduction)
+  .validInput(use_cells, "use_cells", list(t(reduction), "none"))
+  .validInput(color_by, "color_by", list(split_labels, input))
+  .validInput(permutation_test_alpha, "permutation_test_alpha")
+  .validInput(label_splits, "label_splits")
+  .validInput(label_statistics, "label_statistics")
+
+  # ---------------------------------------------------------------------------
+  # Set up
+  # ---------------------------------------------------------------------------
+
+  # Subset if necessary
+  if(!is.null(use_cells)) {
+    reduction <- reduction_[use_cells, ]
+  }
+
+  # Create temporary Seurat object
+  tmp <- matrix(stats::rnorm(nrow(reduction) * 3, 10),
+                ncol = nrow(reduction), nrow = 3)
+  colnames(tmp) <- rownames(reduction)
+  rownames(tmp) <- paste0("t",seq_len(nrow(tmp)))
+  tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
+  # Add dimensionality reduction
+  tmp_seurat@reductions$dim_reduction <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = reduction,
+                                                                                       key = 'dimreduction',
+                                                                                       assay = 'tmp'))
+  # Add color groupings
+  na_color <- "#BBBBBB"
+  add_labels <- FALSE
+  if (is.null(color_by) | (is.null(split_labels) & color_by == "split")) {
+    type <- "DimPlot"
+    # No groups
+    tmp_seurat$color_groups <- "all"
+    palette <- c(na_color)
+    color_label <- ""
+    if (label_splits == TRUE) {
+      warning("Input value for 'label_splits' is not used when parameters 'split_labels' or 'color_by' are NULL.")
+    }
+    if (label_statistics == TRUE) {
+      warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
+    }
+  } else if (color_by == "split") {
+    type <- "DimPlot"
+    # Add splits to metadata
+    tmp_seurat$color_groups <- split_labels
+    palette <- palette_permuteDE(type = "discrete",
+                                 n = dplyr::n_distinct(split_labels))
+    color_label <- ""
+    if (label_splits == TRUE) {
+      add_labels <- TRUE
+    }
+    if (label_statistics == TRUE) {
+      warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
+    }
+  } else if (color_by %in% c("n_sig", "pvalue")) {
+    type <- "FeaturePlot"
+    # Extract
+    if (permutation_test_alpha < 1) {
+      input$permutation_test_results$true_n_sig[input$permutation_test_results$pvalue_n_sig >= permutation_test_alpha] <- NA
+      input$permutation_test_results$pvalue_n_sig[input$permutation_test_results$pvalue_n_sig >= permutation_test_alpha] <- NA
+      na_legend <- paste0("Did not pass\npermutation test\n\u03b1 = ", permutation_test_alpha)
+    }
+    tmp_seurat$n_sig <- input$permutation_test_results$true_n_sig[match(split_labels, input$permutation_test_results$split)]
+    tmp_seurat$pvalue <- input$permutation_test_results$pvalue_n_sig[match(split_labels, input$permutation_test_results$split)]
+    if (color_by == "n_sig") {
+      color_label <- "Number of\nsignificant\nDE features"
+      tmp_seurat$color_groups <- tmp_seurat$n_sig
+    } else if (color_by == "pvalue") {
+      color_label <- "Permutation\ntest p-value"
+      tmp_seurat$color_groups <- tmp_seurat$pvalue
+    }
+    # Color palette
+    n_values <- unique(tmp_seurat$color_groups[!is.na(tmp_seurat$color_groups)])
+    if (length(n_values) == 1) {
+      palette <- c("#482F8E")
+    } else {
+      palette <- palette_permuteDE(type = "gradient",
+                                   n = 6)
+    }
+    # Labels
+    if (label_splits == TRUE & label_statistics == TRUE) {
+      add_labels <- TRUE
+      tmp_seurat$labels <- split_labels
+      Seurat::Idents(object = tmp_seurat) <- "labels"
+    } else if (label_splits == TRUE) {
+      add_labels <- TRUE
+      tmp_seurat$labels <- paste0(split_labels, "\n", tmp_seurat$n_sig, " DE features\np = ", round(tmp_seurat$pvalue, 4))
+      tmp_seurat$labels[is.na(tmp_seurat$n_sig) | is.na(tmp_seurat$pvalue)] <- split_labels[is.na(tmp_seurat$n_sig) | is.na(tmp_seurat$pvalue)]
+      Seurat::Idents(object = tmp_seurat) <- "labels"
+    } else if (label_statistics == TRUE) {
+      add_labels <- TRUE
+      tmp_seurat$labels <- paste0(tmp_seurat$n_sig, " DE features\np = ", round(tmp_seurat$pvalue, 4))
+      tmp_seurat$labels[is.na(tmp_seurat$n_sig) | is.na(tmp_seurat$pvalue)] <- NA
+      Seurat::Idents(object = tmp_seurat) <- "labels"
+    }
+  }
+
+  # ---------------------------------------------------------------------------
+  # Plot
+  # ---------------------------------------------------------------------------
+  if (type == "DimPlot") {
+    p <- Seurat::DimPlot(tmp_seurat,
+                         reduction = "dim_reduction",
+                         group.by = "color_groups",
+                         label = add_labels,
+                         ...) +
+      ggplot2::theme_void() +
+      theme_permuteDE() +
+      ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
+                     axis.text.x = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.title.y = ggplot2::element_text(angle = 90, vjust = 0.5),
+                     plot.title = ggplot2::element_blank(),
+                     legend.box.margin = ggplot2::margin(5, 5, 5, 5)) +
+      ggplot2::scale_color_manual(values = palette) +
+      ggplot2::labs(color = color_label) +
+      ggplot2::xlab("Dim 1") +
+      ggplot2::ylab("Dim 2")
+  } else if (type == "FeaturePlot") {
+    p <- Seurat::FeaturePlot(tmp_seurat,
+                             features = "color_groups",
+                             reduction = "dim_reduction",
+                             label = add_labels,
+                             label.size = 3.5,
+                             ...) +
+      ggplot2::theme_void() +
+      theme_permuteDE() +
+      ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
+                     axis.text.x = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.title.y = ggplot2::element_text(angle = 90, vjust = 0.5),
+                     plot.title = ggplot2::element_blank(),
+                     legend.title = ggplot2::element_text(margin = ggplot2::margin(l = 5, r = 5)),
+                     legend.box.margin = ggplot2::margin(5, 5, 5, 5)) +
+      ggplot2::scale_color_gradientn(colors = palette,
+                                     na.value = na_color,
+                                     guide = ggplot2::guide_colorbar(frame.colour = "black",
+                                                                     ticks.colour = "black")) +
+      ggplot2::labs(color = color_label) +
+      ggplot2::xlab("Dim 1") +
+      ggplot2::ylab("Dim 2")
+    # Add NA legend
+    if (permutation_test_alpha < 1) {
+      sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
+      sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
+      p <- p + ggplot2::geom_point(x = sample_x,
+                                   y = sample_y,
+                                   alpha = 0,
+                                   ggplot2::aes(fill = "")) +
+        ggplot2::scale_fill_manual(values = NA) +
+        ggplot2::guides(fill = ggplot2::guide_legend(na_legend,
+                                                     override.aes = list(fill=na_color,
+                                                                         alpha = 1,
+                                                                         shape = 22,
+                                                                         size = 8)))
+    }
+  }
+  return(p)
 }

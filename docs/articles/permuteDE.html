@@ -166,8 +166,10 @@ consisting of mouse brain snRNA-seq data, stored as a Seurat object.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"sample_data"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Seurat object containing a count matrix, UMAP coordinates, and cell metadata</span></span>
-<span><span class="co">#plotUMAP(object = sample_data,</span></span>
-<span><span class="co">#         group_by = "cell_type")</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
+<span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
+<span>                 color_by <span class="op">=</span> <span class="st">"split"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-6-1.png" width="700"></p>
 <hr>
 </div>
 </div>
@@ -177,11 +179,8 @@ consisting of mouse brain snRNA-seq data, stored as a Seurat object.</p>
 <p>permuteDE proceeds in two main steps, each corresponding to a
 function: (1) <code><a href="../reference/runDE.html">runDE()</a></code> and (2) <code><a href="../reference/permuteDE.html">permuteDE()</a></code>.</p>
 <div class="section level3">
-<h3 id="step-by-step">Step-by-step:<a class="anchor" aria-label="anchor" href="#step-by-step"></a>
+<h3 id="step-1-runde">Step 1: <code>runDE()</code><a class="anchor" aria-label="anchor" href="#step-1-runde"></a>
 </h3>
-<div class="section level4">
-<h4 id="step-1-runde">Step 1: <code>runDE()</code><a class="anchor" aria-label="anchor" href="#step-1-runde"></a>
-</h4>
 <p>Function <code><a href="../reference/runDE.html">runDE()</a></code> will run differential expression
 analysis to compare two groups.</p>
 <p>By default, <code><a href="../reference/runDE.html">runDE()</a></code> will generate pseudobulk matrices
@@ -223,13 +222,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:55 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:55 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:02 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:02 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:55 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-03 17:28:03 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements: *
 <code>DE_results</code> Dataframe containing DE results for each
 feature, by split * <code>PB_values</code> If using pseudobulk data, a
@@ -251,9 +250,9 @@ values used</p>
 <span><span class="co">#&gt; 5   Rpl3  1.4697542 2.957641e-03 0.32330591 Astrocytes</span></span>
 <span><span class="co">#&gt; 6   Fat3 -0.8415779 3.565231e-03 0.32330591 Astrocytes</span></span></code></pre></div>
 </div>
-<div class="section level4">
-<h4 id="step-2-permutede">Step 2: <code>permuteDE()</code><a class="anchor" aria-label="anchor" href="#step-2-permutede"></a>
-</h4>
+<div class="section level3">
+<h3 id="step-2-permutede">Step 2: <code>permuteDE()</code><a class="anchor" aria-label="anchor" href="#step-2-permutede"></a>
+</h3>
 <p>Function <code><a href="../reference/permuteDE.html">permuteDE()</a></code> will take the output from function
 <code><a href="../reference/runDE.html">runDE()</a></code>, permute the group labels and rerun differential
 expression analysis in the same way across a number of iterations set by
@@ -275,25 +274,26 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:56 : Will skip 2 split labels due to insufficient differentially expressed features: Astrocytes, Microglia</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:56 : Differential expression results for group WT vs. Tg across 4 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:56 : Generating 70 of 70 possible combinations for split Excitatory Neurons (1/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:07:56 : Running 70 permutations for split Excitatory Neurons (1/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:08:00 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (2/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:08:00 : Running 70 permutations for split Inhibitory Neurons (2/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:08:04 : Generating 70 of 70 possible combinations for split Oligodendrocytes (3/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:08:04 : Running 70 permutations for split Oligodendrocytes (3/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:08:06 : Generating 70 of 70 possible combinations for split OPCs (4/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-02 23:08:06 : Running 70 permutations for split OPCs (4/4)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-03 17:28:03 : Will skip 2 split labels due to insufficient differentially expressed features: Astrocytes, Microglia</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:03 : Differential expression results for group WT vs. Tg across 4 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:03 : Generating 70 of 70 possible combinations for split Excitatory Neurons (1/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:03 : Running 70 permutations for split Excitatory Neurons (1/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:07 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (2/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:07 : Running 70 permutations for split Inhibitory Neurons (2/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:11 : Generating 70 of 70 possible combinations for split Oligodendrocytes (3/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:11 : Running 70 permutations for split Oligodendrocytes (3/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:14 : Generating 70 of 70 possible combinations for split OPCs (4/4)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:14 : Running 70 permutations for split OPCs (4/4)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements: *
 <code>permutation_test_results</code> Dataframe containing the
 permutation test results by split * <code>permutation_DE_summary</code>
 Dataframe containing the permutation DE summary metrics by split *
 <code>permutation_all_DE_results</code> If parameter
 <code>return_all</code> is <code>TRUE</code>, dataframe DE results for
-each feature, by split, for each iteration * <code>metadata</code> List
-recording characteristics of the data and runtime *
-<code>parameters</code> List recording parameter values used</p>
+each feature, by split, for each iteration (note that this substantially
+increases the size of the output) * <code>metadata</code> List recording
+characteristics of the data and runtime * <code>parameters</code> List
+recording parameter values used</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">permuteDE_output</span><span class="op">$</span><span class="va">permutation_DE_summary</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                split permutation n_sig min_lfc_sig max_lfc_sig</span></span>
@@ -303,7 +303,6 @@ recording characteristics of the data and runtime *
 <span><span class="co">#&gt; 4 Excitatory Neurons           4     0          NA          NA</span></span>
 <span><span class="co">#&gt; 5 Excitatory Neurons           5     0          NA          NA</span></span>
 <span><span class="co">#&gt; 6 Excitatory Neurons           6     2  -1.5232517   -1.055201</span></span></code></pre></div>
-</div>
 </div>
 <div class="section level3">
 <h3 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
@@ -334,17 +333,23 @@ results fall on this distribution.</p>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-12-1.png" width="700"></p>
 <p>One way to summarise the results from permuteDE is to color a UMAP by
 the number of differentially expressed features in each split (in this
-case, cell type). In this plot, cell types are greyed out if the
+case, cell type). In this plot, cell types are grayed out if the
 permutation test p-value was &gt; 0.05.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#plotUMAP(object = object,</span></span>
-<span><span class="co">#         input = permuteDE_output)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Example UMAP</span></span>
+<span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
+<span>                 input <span class="op">=</span> <span class="va">permuteDE_output</span>,</span>
+<span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
+<span>                 color_by <span class="op">=</span> <span class="st">"n_sig"</span>,</span>
+<span>                 permutation_test_alpha <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
 <p>To plot the results for a single feature, use function
 <code><a href="../reference/plotFeature.html">plotFeature()</a></code>. By default, this function will apply CPM
 normalization (using <code><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">edgeR::cpm()</a></code>), but this can be changed
 using the parameter <code>normalization_method</code>.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotFeature.html">plotFeature</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
+<code class="sourceCode R"><span><span class="co"># Example feature plot</span></span>
+<span><span class="fu"><a href="../reference/plotFeature.html">plotFeature</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>            feature <span class="op">=</span> <span class="st">"Tafa2"</span>,</span>
 <span>            use_splits <span class="op">=</span> <span class="st">"Inhibitory Neurons"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
@@ -355,7 +360,7 @@ using the parameter <code>normalization_method</code>.</p>
 <h2 id="advanced-options">Advanced Options<a class="anchor" aria-label="anchor" href="#advanced-options"></a>
 </h2>
 <div class="section level3">
-<h3 id="input-object-types">Input object types<a class="anchor" aria-label="anchor" href="#input-object-types"></a>
+<h3 id="input-object-types-for-function-runde">Input object types for function <code>runDE()</code><a class="anchor" aria-label="anchor" href="#input-object-types-for-function-runde"></a>
 </h3>
 <div class="section level4">
 <h4 id="seurat">Seurat<a class="anchor" aria-label="anchor" href="#seurat"></a>
@@ -400,6 +405,57 @@ replicate). All permuteDE functions expect raw counts.</p>
 <code>replicate_labels</code>, <code>group_labels</code>, and
 <code>split_labels</code> must be a character vector containing the
 labels in order, corresponding to each column of the matrix.</p>
+<p>Here’s an example of how to apply function <code><a href="../reference/runDE.html">runDE()</a></code> to a
+feature x cell matrix:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Extract count matrix from the sample dataset</span></span>
+<span><span class="va">counts_matrix</span> <span class="op">&lt;-</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">RNA</span><span class="op">$</span><span class="va">counts</span></span>
+<span><span class="co"># Extract relevant metadata as a vector</span></span>
+<span><span class="va">replicates</span> <span class="op">&lt;-</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">sample</span></span>
+<span><span class="va">groups</span> <span class="op">&lt;-</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">group</span></span>
+<span><span class="va">splits</span> <span class="op">&lt;-</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span></span>
+<span></span>
+<span><span class="co"># Run </span></span>
+<span><span class="va">runDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runDE.html">runDE</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">counts_matrix</span>,</span>
+<span>                      replicate_labels <span class="op">=</span> <span class="va">replicates</span>,</span>
+<span>                      group_labels <span class="op">=</span> <span class="va">groups</span>,</span>
+<span>                      split_labels <span class="op">=</span> <span class="va">splits</span>,</span>
+<span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
+<span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:19 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
+<span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:19 : Running DE on 6 matrices..</span></span></code></pre></div>
+<p>Or a pre-generated pseudobulk matrix:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Pre-generate pseudobulk matrix</span></span>
+<span><span class="va">pb_matrix_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getPseudobulk.html">getPseudobulk</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">sample_data</span>,</span>
+<span>                                replicate_labels <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>                                split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>                                n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:20 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:20 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
+<span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
+<span><span class="va">pb_matrix</span> <span class="op">&lt;-</span> <span class="va">pb_matrix_list</span><span class="op">$</span><span class="va">PB_values</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Extract relevant metadata as a vector</span></span>
+<span><span class="va">replicates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pb_matrix</span><span class="op">)</span></span>
+<span><span class="va">groups</span> <span class="op">&lt;-</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">group</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">replicates</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"rep_"</span>, <span class="va">sample_data</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Run </span></span>
+<span><span class="va">runDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runDE.html">runDE</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">pb_matrix</span>,</span>
+<span>                      replicate_labels <span class="op">=</span> <span class="va">replicates</span>,</span>
+<span>                      group_labels <span class="op">=</span> <span class="va">groups</span>,</span>
+<span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
+<span>                      pseudobulk <span class="op">=</span> <span class="st">"supplied"</span>,</span>
+<span>                      n_cores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:20 : Extracting 1 pseudobulk matrix..</span></span>
+<span><span class="co">#&gt; 2025-10-03 17:28:20 : Running DE on 1 matrix..</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -410,11 +466,11 @@ labels in order, corresponding to each column of the matrix.</p>
 </h4>
 <p>The default significance level used by permuteDE is
 <code>alpha = 0.05</code> with multiple comparison correction using FDR
-= 0.05. The method of multiple comparisonn correction can be changed
+= 0.05. The method of multiple comparison correction can be changed
 using parameter <code>p_adjust_method</code> (for permitted values, see
 <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust.methods</a></code>). By default, permuteDE also
-requires that significant DEGs have a |LFC| &gt; 0.5 (parameter
-<code>lfc_threshold</code>).</p>
+requires that significant differentially expressed features have a |LFC|
+&gt; 0.5 (parameter <code>lfc_threshold</code>).</p>
 </div>
 <div class="section level4">
 <h4 id="filters">Filters<a class="anchor" aria-label="anchor" href="#filters"></a>
@@ -431,11 +487,11 @@ number of distinct replicates represented within one split. Defaults to
 minimum number of distinct replicates represented within each of the two
 comparison groups. Defaults to 3.</li>
 <li>Parameter <code>min_cells_per_feature</code> indicates the minimum
-number of cells (within a split) with expression of a gene. Defaults to
-10.</li>
+number of cells (within a split) with expression of a feature. Defaults
+to 10.</li>
 <li>Parameter <code>min_prop_cells_per_feature</code> indicates the
-minimum proportion of cells (within a split) with expression of a gene.
-Defaults to 0.1.</li>
+minimum proportion of cells (within a split) with expression of a
+feature. Defaults to 0.1.</li>
 </ul>
 </div>
 <div class="section level4">

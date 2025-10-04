@@ -64,8 +64,9 @@ To demonstrate how to run permuteDE, we’ll use a small sample dataset consisti
 data("sample_data")
 
 # Seurat object containing a count matrix, UMAP coordinates, and cell metadata
-#plotUMAP(object = sample_data,
-#         group_by = "cell_type")
+plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
+                 split_labels = sample_data$cell_type,
+                 color_by = "split")
 ```
 
 ------
@@ -74,9 +75,7 @@ data("sample_data")
 
 permuteDE proceeds in two main steps, each corresponding to a function: (1) `runDE()` and (2) `permuteDE()`.
 
-## Step-by-step:
-
-### Step 1: `runDE()`
+## Step 1: `runDE()`
 
 Function `runDE()` will run differential expression analysis to compare two groups.
 
@@ -93,7 +92,7 @@ Function `runDE()` allows the user to run several different methods of different
 
 By default, `runDE()` will run differential expression analysis using `edgeR` LRT. The precise execution of the differential expression analysis can be further adjusted using parameter `de_params` to pass further parameters to the selected method. This function is parallelized when multiple splits are assessed, so efficiency improves as `n_cores` is increased, up to the number of splits.
 
-```{r, message = TRUE, warning = FALSE, results = "hide"}
+```{r, message = TRUE, warning = FALSE}
 runDE_output <- runDE(object = sample_data,
                       replicate_labels = "sample",
                       group_labels = "group",
@@ -114,13 +113,13 @@ The output is a list containing the following elements:
 head(runDE_output$DE_results)
 ```
 
-### Step 2: `permuteDE()`
+## Step 2: `permuteDE()`
 
 Function `permuteDE()` will take the output from function `runDE()`, permute the group labels and rerun differential expression analysis in the same way across a number of iterations set by parameter `n_iterations`. The parameters are inherited from the `runDE()` function call. For each iteration, the number of significant differentially expressed features is counted, forming a distribution to which the "true" number of significantly differentially expressed features is compared using a permutation test. This permutation test yields a p-value that suggests the probability of observing a number of significant features greater than or equal to the one output by the `runDE()` function if the two groups are not truly different.
 
 The default number of iterations (set by parameter `n_iterations`) is 1000. However, for smaller datasets such as this one where the number of possible combinations of group labels is less than 1000, the permutation test is run using all possible combinations with no repeats. This function is highly parallelized, so efficiency greatly improves as `n_cores` is increased.
 
-```{r, message = TRUE, warning = FALSE, results = "hide"}
+```{r, message = TRUE, warning = FALSE}
 permuteDE_output <- permuteDE(input = runDE_output,
                               n_cores = 2)
 ```
@@ -128,7 +127,7 @@ permuteDE_output <- permuteDE(input = runDE_output,
 The output is a list containing the following elements:
 * `permutation_test_results` Dataframe containing the permutation test results by split
 * `permutation_DE_summary` Dataframe containing the permutation DE summary metrics by split
-* `permutation_all_DE_results` If parameter `return_all` is `TRUE`, dataframe DE results for each feature, by split, for each iteration
+* `permutation_all_DE_results` If parameter `return_all` is `TRUE`, dataframe DE results for each feature, by split, for each iteration (note that this substantially increases the size of the output)
 * `metadata` List recording characteristics of the data and runtime
 * `parameters` List recording parameter values used
 
@@ -142,7 +141,7 @@ permuteDE has several built-in plotting functions to help display the results fr
 
 To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `getVolcanos()`.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # Generate a list of volcano plots
 volcano_plots <- getVolcanos(input = runDE_output)
 # Display examples
@@ -151,23 +150,28 @@ volcano_plots[["Inhibitory Neurons"]] | volcano_plots[["Oligodendrocytes"]]
 
 To generate histograms for each permutation test (or a single split), use function `getHistograms()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # Generate a list of histograms
 histogram_plots <- getHistograms(input = permuteDE_output)
 # Display examples
 histogram_plots[["Inhibitory Neurons"]] | histogram_plots[["Oligodendrocytes"]]
 ```
 
-One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). In this plot, cell types are greyed out if the permutation test p-value was > 0.05.
+One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). In this plot, cell types are grayed out if the permutation test p-value was > 0.05.
 
-```{r}
-#plotUMAP(object = object,
-#         input = permuteDE_output)
+```{r, message = FALSE, warning = FALSE}
+# Example UMAP
+plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
+                 input = permuteDE_output,
+                 split_labels = sample_data$cell_type,
+                 color_by = "n_sig",
+                 permutation_test_alpha = 0.05)
 ```
 
 To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
+# Example feature plot
 plotFeature(input = runDE_output,
             feature = "Tafa2",
             use_splits = "Inhibitory Neurons")
@@ -177,7 +181,7 @@ plotFeature(input = runDE_output,
 
 # Advanced Options
 
-## Input object types
+## Input object types for function `runDE()`
 
 ### Seurat
 
@@ -201,11 +205,53 @@ If a pre-generated pseudobulk matrix is provided, parameter `pseudobulk` must be
 
 For matrix inputs, the input to parameters `replicate_labels`, `group_labels`, and `split_labels` must be a character vector containing the labels in order, corresponding to each column of the matrix.
 
+Here's an example of how to apply function `runDE()` to a feature x cell matrix:
+
+```{r, message = TRUE, warning = FALSE}
+# Extract count matrix from the sample dataset
+counts_matrix <- sample_data@assays$RNA$counts
+# Extract relevant metadata as a vector
+replicates <- sample_data$sample
+groups <- sample_data$group
+splits <- sample_data$cell_type
+
+# Run 
+runDE_output <- runDE(object = counts_matrix,
+                      replicate_labels = replicates,
+                      group_labels = groups,
+                      split_labels = splits,
+                      reference_group = "WT",
+                      n_cores = 2)
+```
+
+Or a pre-generated pseudobulk matrix:
+
+```{r, message = TRUE, warning = FALSE}
+# Pre-generate pseudobulk matrix
+pb_matrix_list <- getPseudobulk(object = sample_data,
+                                replicate_labels = "sample",
+                                split_labels = "cell_type",
+                                n_cores = 2)
+pb_matrix <- pb_matrix_list$PB_values[["Oligodendrocytes"]]
+
+# Extract relevant metadata as a vector
+replicates <- colnames(pb_matrix)
+groups <- sample_data$group[match(replicates, paste0("rep_", sample_data$sample))]
+
+# Run 
+runDE_output <- runDE(object = pb_matrix,
+                      replicate_labels = replicates,
+                      group_labels = groups,
+                      reference_group = "WT",
+                      pseudobulk = "supplied",
+                      n_cores = 1)
+```
+
 ## permuteDE parameters
 
 ### Significance level & multiple comparison correction
 
-The default significance level used by permuteDE is `alpha = 0.05` with multiple comparison correction using FDR = 0.05. The method of multiple comparisonn correction can be changed using parameter `p_adjust_method` (for permitted values, see `stats::p.adjust.methods`). By default, permuteDE also requires that significant DEGs have a |LFC| > 0.5 (parameter `lfc_threshold`).
+The default significance level used by permuteDE is `alpha = 0.05` with multiple comparison correction using FDR = 0.05. The method of multiple comparison correction can be changed using parameter `p_adjust_method` (for permitted values, see `stats::p.adjust.methods`). By default, permuteDE also requires that significant differentially expressed features have a |LFC| > 0.5 (parameter `lfc_threshold`).
 
 ### Filters
 
@@ -214,8 +260,8 @@ permuteDE uses various filters to reduce the number of DE comparisons:
 *  Parameter `min_cells_per_split` indicates the minimum number of cells within one split. Defaults to 100.
 *  Parameter `min_replicates_per_split` indicates minimum number of distinct replicates represented within one split. Defaults to 6.
 *  Parameter `min_replicates_per_group` indicates the minimum number of distinct replicates represented within each of the two comparison groups. Defaults to 3.
-*  Parameter `min_cells_per_feature` indicates the minimum number of cells (within a split) with expression of a gene. Defaults to 10.
-*  Parameter `min_prop_cells_per_feature` indicates the minimum proportion of cells (within a split) with expression of a gene. Defaults to 0.1.
+*  Parameter `min_cells_per_feature` indicates the minimum number of cells (within a split) with expression of a feature. Defaults to 10.
+*  Parameter `min_prop_cells_per_feature` indicates the minimum proportion of cells (within a split) with expression of a feature. Defaults to 0.1.
 
 ### Pseudobulk vs. cell-level tests
 

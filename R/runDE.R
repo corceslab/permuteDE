@@ -249,7 +249,12 @@ runDE <- function(object,
 
   # Group labels for each replicate
   # Returns a dataframe with two columns: replicate, group
-  group_key <- data.frame(replicate = paste0("rep_", replicates),
+  if (pseudobulk == "generate") {
+    replicate_prefix <- "rep_"
+  } else {
+    replicate_prefix <- ""
+  }
+  group_key <- data.frame(replicate = paste0(replicate_prefix, replicates),
                           group = groups) |>
     dplyr::group_by(replicate, group) |>
     dplyr::summarise(n = dplyr::n()) |>
@@ -351,6 +356,7 @@ runDE <- function(object,
   # Run through each matrix
   # Downsample when appropriate if parameter force_balance = TRUE
   # Check group composition against min_replicates_per_group
+  pre_labels <- names(matrix_list)
   matrix_list <- lapply(matrix_list, function(m) {
     current_replicates <- colnames(m)
     current_groups <- group_key$group[match(current_replicates, group_key$replicate)]
@@ -371,7 +377,6 @@ runDE <- function(object,
     return(m)
   })
   # Remove NULL elements
-  pre_labels <- names(matrix_list)
   matrix_list <- matrix_list[lengths(matrix_list) > 0]
   if (verbose & any(lengths(matrix_list) == 0)) {
     message("Skipped ", sum(lengths(matrix_list) == 0), " split label",

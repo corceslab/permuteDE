@@ -20,10 +20,12 @@ Imports:
     Seurat
 Suggests: 
     DESeq2,
+    ggbeeswarm,
     ggrepel,
     ggtext,
     knitr,
     limma,
+    Polychrome,
     presto,
     rmarkdown
 VignetteBuilder: knitr

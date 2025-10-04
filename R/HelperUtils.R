@@ -50,6 +50,8 @@
     }
   } else if (methods::is(object, "SingleCellExperiment")) {
     cell_IDs <- rownames(object@colData)
+  } else {
+    cell_IDs <- colnames(object)
   }
   return(cell_IDs)
 }
@@ -58,14 +60,14 @@
 #
 # Extract a matrix from provided object
 #
-# object -- An object of class Seurat or SingleCellExperiment
+# object -- An object of class Seurat or SingleCellExperiment or matrix
 # use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
 # use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
 # use_layer -- For Seurat objects, a character string indicating the layer/slot to use
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
 # use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+# verbose -- A boolean value indicating whether to use verbose output
 .getMatrix <- function(object = NULL,
                        use_matrix = NULL,
                        use_assay = NULL,
@@ -93,6 +95,13 @@
                                                   exclude_features,
                                                   use_cells,
                                                   verbose)
+  } else {
+    use_matrix <- .getMatrix.matrix(object,
+                                    use_matrix,
+                                    use_features,
+                                    exclude_features,
+                                    use_cells,
+                                    verbose)
   }
   # Return matrix
   return(use_matrix)
@@ -107,7 +116,7 @@
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
 # use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output during the executio
+# verbose -- A boolean value indicating whether to use verbose output
 .getMatrix.Seurat <- function(object,
                               use_matrix,
                               use_assay,
@@ -227,6 +236,75 @@
   # If use_layer is not NULL
   if (!is.null(use_layer)) {
     if (verbose) warning("Input for parameter 'use_layer' is not used when input for parameter 'object' is of type 'SingleCellExperiment'.")
+  }
+
+  # If matrix has no row names
+  if (is.null(rownames(use_matrix))) {
+    # Stop if trying to subset features
+    if (!is.null(use_features) | !is.null(exclude_features)) {
+      stop("Provided 'use_matrix' has no row names, therefore, input for parameters 'use_features' and 'exclude_features' cannot be used.")
+    }
+    rownames(use_matrix) <- seq(1, nrow(use_matrix))
+  }
+  # Subset matrix by selected features
+  if (!is.null(use_features)) {
+    unused_features <- use_features[!(use_features %in% rownames(use_matrix))]
+    if (verbose & (length(unused_features) > 0)) {
+      warning("Could not find the following ",
+              length(unused_features),
+              " features provided by 'use_features' in 'use_matrix': \n",
+              unused_features)
+    }
+  } else {
+    use_features <- rownames(use_matrix)
+  }
+  use_features <- use_features[!(use_features %in% exclude_features)]
+  if (length(use_features) < 1) {
+    stop("No remaining features in matrix. Please check input to 'use_features' and/or 'exclude_features'!")
+  }
+
+  # If matrix has no column names
+  if (is.null(colnames(use_matrix))) {
+    # Stop if trying to subset cells
+    if (!is.null(use_cells)) {
+      stop("Provided 'use_matrix' has no column names, therefore, input for parameter 'use_cells' cannot be used.")
+    }
+    colnames(use_matrix) <- seq(1, ncol(use_matrix))
+  }
+  # Subset matrix by selected cells
+  if (!is.null(use_cells)) {
+    unused_cells <- use_cells[!(use_cells %in% colnames(use_matrix))]
+    if (verbose & (length(unused_cells) > 0)) {
+      warning("Could not find the following ",
+              length(unused_cells),
+              " cells provided by 'use_cells' in 'use_matrix': \n",
+              unused_cells)
+    }
+  } else {
+    use_cells <- colnames(use_matrix)
+  }
+
+  use_matrix <- use_matrix[use_features, use_cells]
+  return(use_matrix)
+}
+
+# Extract/subset a matrix
+#
+# object -- A matrix
+# use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
+# use_features -- A vector of feature names to use to subset the matrix
+# exclude_features -- A vector of feature names to exclude from the matrix
+# use_cells -- A vector of cell IDs to use to subset the matrix
+# verbose -- A boolean value indicating whether to use verbose output
+.getMatrix.matrix <- function(object,
+                              use_matrix,
+                              use_features,
+                              exclude_features,
+                              use_cells,
+                              verbose) {
+  # If matrix is not provided as input
+  if (is.null(use_matrix)) {
+    use_matrix <- object
   }
 
   # If matrix has no row names

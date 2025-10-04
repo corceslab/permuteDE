@@ -18,11 +18,11 @@
     # Only allowed to be NULL for functions countCombinations and getCombinations
     if (any(!(other %in% c("countCombinations", "getCombinations")), !is.null(input))) {
       # Otherwise, must be of type Seurat, SingleCellExperiment, or matrix
-      if (length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment", "matrix"))) < 1) {
+      if (length(intersect(methods::is(input), c("Seurat", "SingleCellExperiment", "matrix", "Matrix", "dgCMatrix"))) < 1) {
         stop("Input value for '", name, "' is not one of classes 'Seurat', 'SingleCellExperiment', or 'matrix'. Please supply valid input!")
       }
       # If object is of type matrix, must have row names
-      if ("matrix" %in% methods::is(input) & is.null(rownames(input))) {
+      if ((length(intersect(methods::is(input), c("matrix", "Matrix", "dgCMatrix"))) >= 1) & is.null(rownames(input))) {
         stop("When input value for '", name, "' is of class 'matrix', row names cannot be NULL. Please set row names to feature names.")
       }
     }
@@ -32,9 +32,9 @@
   if (name %in% c("replicate_labels", "group_labels", "split_labels")) {
     # If not NULL
     if (!is.null(input)) {
-      # Should be of class "character"
-      if (!methods::is(input, "character")) {
-        stop("Input value for '", name, "' must be of class 'character', please supply valid input!")
+      # Should be of class "character" or "factor"
+      if (!methods::is(input, "character") & !methods::is(input, "factor")) {
+        stop("Input value for '", name, "' must be of class 'character' or 'factor', please supply valid input!")
       }
       # replicate_labels are not used for cell-level tests
       if (name == "replicate_labels") {
@@ -85,11 +85,11 @@
   }
 
   # Single positive integer
-  # n_replicates, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, min_cells_per_feature, random_seed
+  # n, n_replicates, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, min_cells_per_feature, random_seed
   if (name %in% c("min_cells_per_split", "min_replicates_per_split", "min_replicates_per_group", "min_cells_per_feature",
                   "n_replicates", "n_group1",
                   "n_combinations", "n_iterations",
-                  "random_seed", "n_cores")) {
+                  "random_seed", "n_cores", "n")) {
     # n_cores, n_replicates, n_group1, can be NULL
     if (!(name %in% c("n_replicates", "n_group1", "n_cores") & is.null(input))) {
       # Should be of class 'numeric', must be a single value
@@ -135,8 +135,8 @@
   }
 
   # Single Boolean value
-  # center, force_balance, label_pvalue, label_replicates, label_statistics, return_all, verbose
-  if (name %in% c("center", "force_balance", "label_pvalue", "label_replicates", "label_statistics", "return_all", "verbose")) {
+  # center, force_balance, label_pvalue, label_replicates, label_splits, label_statistics, return_all, verbose
+  if (name %in% c("center", "force_balance", "label_pvalue", "label_replicates", "label_splits", "label_statistics", "return_all", "verbose")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
@@ -259,53 +259,66 @@
 
   # input
   if (name == "input") {
-    # Must be of type list
-    if (!methods::is(input, "list")) {
-      stop("Parameter '", name, "' must be a list, please supply valid input!")
-    }
-    if (other == "permuteDE") {
-      # Must have expected elements with set names
-      if (!identical(names(input), c("DE_results", "PB_values",  "metadata", "parameters")) &
-          !identical(names(input), c("DE_results", "cell_values",  "metadata", "parameters"))) {
-        stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with four named elements ",
-             "('DE_results', 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'). Please supply valid input!")
+    # If not NULL
+    if (!is.null(input)) {
+      # Must be of type list
+      if (!methods::is(input, "list")) {
+        stop("Parameter '", name, "' must be a list, please supply valid input!")
       }
-      # Metadata must contain group key
-      if (!("group_key" %in% names(input$metadata))) {
-        stop("Structure of list provided for parameter 'input' is unexpected. ",
-             "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+      if (other == "permuteDE") {
+        # Must have expected elements with set names
+        if (!identical(names(input), c("DE_results", "PB_values",  "metadata", "parameters")) &
+            !identical(names(input), c("DE_results", "cell_values",  "metadata", "parameters"))) {
+          stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with four named elements ",
+               "('DE_results', 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'). Please supply valid input!")
+        }
+        # Metadata must contain group key
+        if (!("group_key" %in% names(input$metadata))) {
+          stop("Structure of list provided for parameter 'input' is unexpected. ",
+               "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+        }
+      } else if (other == "getVolcanos") {
+        # Must have expected elements with set names
+        if (!("DE_results" %in% names(input))) {
+          stop("Structure of list provided for parameter 'input' is unexpected, ",
+               "it should be the output returned by function 'runDE()' or a list containing (at minimum) a dataframe named 'DE_results'. ",
+               "Please supply valid input!")
+        }
+      } else if (other == "getHistograms") {
+        # Must have expected elements with set names
+        if (!("permutation_test_results" %in% names(input)) | !("permutation_DE_summary" %in% names(input))) {
+          stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'permuteDE()' ",
+               "or a list containing (at minimum) dataframes named 'permutation_test_results' and 'permutation_DE_summary'. ",
+               "Please supply valid input!")
+        }
+      } else if (other == "plotFeature") {
+        # Must have expected elements with set names
+        if (!("metadata" %in% names(input)) | !("parameters" %in% names(input))) {
+          stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'runDE()' ",
+               "or a list containing (at minimum) elements named 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'. Please supply valid input!")
+        }
+        # Metadata must contain group key
+        if (!("group_key" %in% names(input$metadata))) {
+          stop("Structure of list provided for parameter 'input' is unexpected. ",
+               "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+        }
+      } else if (other == "plotDimReduction") {
+        # Must have expected elements with set names
+        if (!("permutation_test_results" %in% names(input))) {
+          stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'permuteDE()' ",
+               "or a list containing an element named 'permutation_test_results'. Please supply valid input!")
+        }
       }
-    } else if (other == "getVolcanos") {
-      # Must have expected elements with set names
-      if (!("DE_results" %in% names(input))) {
-        stop("Structure of list provided for parameter 'input' is unexpected, ",
-             "it should be the output returned by function 'runDE()' or a list containing (at minimum) a dataframe named 'DE_results'. ",
-             "Please supply valid input!")
-      }
-    } else if (other == "getHistograms") {
-      # Must have expected elements with set names
-      if (!("permutation_test_results" %in% names(input)) | !("permutation_DE_summary" %in% names(input))) {
-        stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'permuteDE()' ",
-             "or a list containing (at minimum) dataframes named 'permutation_test_results' and 'permutation_DE_summary'. ",
-             "Please supply valid input!")
-      }
-    } else if (other == "plotFeature") {
-      # Must have expected elements with set names
-      if (!("metadata" %in% names(input)) | !("parameters" %in% names(input))) {
-        stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'runDE()' ",
-             "or a list containing (at minimum) elements named 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'. Please supply valid input!")
-      }
-      # Metadata must contain group key
-      if (!("group_key" %in% names(input$metadata))) {
-        stop("Structure of list provided for parameter 'input' is unexpected. ",
-             "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+    } else {
+      if (other != "plotDimReduction") {
+        stop("Parameter '", name, "' cannot be NULL, please supply valid input!")
       }
     }
   }
 
   # Single number from 0-1
-  # alpha, min_prop_cells_per_feature
-  if (name %in% c("alpha", "min_prop_cells_per_feature")) {
+  # alpha, min_prop_cells_per_feature, permutation_test_alpha
+  if (name %in% c("alpha", "min_prop_cells_per_feature", "permutation_test_alpha")) {
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
     }
@@ -344,11 +357,15 @@
   if (name == "reference_group") {
     # If not NULL
     if (!is.null(input)) {
-      # Value must be among those indicated by group_labels
-      groups <- .retrieveData(object = other[[1]],
-                              type = "cell_metadata",
-                              name = other[[2]],
-                              use_cells = other[[3]])
+      if (length(other[[2]]) == 1) {
+        # Value must be among those indicated by group_labels
+        groups <- .retrieveData(object = other[[1]],
+                                type = "cell_metadata",
+                                name = other[[2]],
+                                use_cells = other[[3]])
+      } else {
+        groups <- other[[2]]
+      }
       if (!input %in% groups) {
         stop("Input value for '", name, "' must be present among provided group labels. Please supply valid input!")
       }
@@ -453,6 +470,52 @@
     # Must be among permitted values
     if (!(input %in% c("cpm", "log_cpm", "none"))) {
         stop("Input for '", name, "' must be among permitted values (", paste0(c("cpm", "log_cpm", "none"), collapse = ", "), "), please supply valid input!")
+    }
+  }
+
+  # type
+  if (name == "type") {
+    # Should be of class 'character'
+    if (!methods::is(input, "character") | length(input) != 1) {
+      stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+    }
+    # Must be among permitted values
+    if (!(input %in% c("discrete", "gradient"))) {
+      stop("Input for '", name, "' must be among permitted values (", paste0(c("discrete", "gradient"), collapse = ", "), "), please supply valid input!")
+    }
+  }
+
+  # reduction
+  if (name == "reduction") {
+    # Should be of class "matrix"
+    if (!methods::is(input, "matrix")) {
+      stop("Input value for '", name, "' is not of class 'matrix', please supply valid input!")
+    }
+    # Must have at least 2 columns
+    if (ncol(input) < 2) {
+      stop("Input value for '", name, "' must have at least 2 columns, please supply valid input!")
+    }
+  }
+
+  # color_by
+  if (name == "color_by") {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'character'
+      if (!methods::is(input, "character") | length(input) != 1) {
+        stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+      }
+      # Must be among permitted values
+      if (!(input %in% c("split", "n_sig", "pvalue"))) {
+        stop("Input for '", name, "' must be among permitted values (", paste0(c("split", "n_sig", "pvalue"), collapse = ", "), "), please supply valid input!")
+      }
+      # Other input can't be NULL
+      if (is.null(other[[1]])) {
+        stop("Input for 'split_labels' cannot be NULL when input for '", name, "' is '", input, "', please supply valid input!")
+      }
+      if (input %in% c("n_sig", "pvalue") & is.null(other[[2]])) {
+        stop("Parameter 'input' cannot be NULL when parameter '", name, "' is '", input, "', please supply valid input!")
+      }
     }
   }
 }
