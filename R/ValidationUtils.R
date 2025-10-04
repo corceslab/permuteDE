@@ -91,7 +91,7 @@
                   "n_combinations", "n_iterations",
                   "random_seed", "n_cores", "n")) {
     # n_cores, n_replicates, n_group1, can be NULL
-    if (!(name %in% c("n_replicates", "n_group1", "n_cores") & is.null(input))) {
+    if (!(name %in% c("n_replicates", "n_group1", "n_cores", "n") & is.null(input))) {
       # Should be of class 'numeric', must be a single value
       if (!methods::is(input, "numeric") | length(input) != 1) {
         stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
@@ -525,6 +525,29 @@
       }
       if (input %in% c("n_sig", "pvalue") & is.null(other[[2]])) {
         stop("Parameter 'input' cannot be NULL when parameter '", name, "' is '", input, "', please supply valid input!")
+      }
+    }
+  }
+
+  # name
+  if (name == "name") {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'character'
+      if (!methods::is(input, "character") | length(input) != 1) {
+        stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+      }
+      # Must be among permitted values for palette type
+      if (other == "discrete") {
+        if (!(input %in% c("choir", "archr"))) {
+          stop("When input for 'type' is 'discrete', input for '", name, "' must be among permitted values (",
+               paste0(c("choir", "archr"), collapse = ", "), "), please supply valid input!")
+        }
+      } else if (other == "gradient") {
+        if (!(input %in% c("corces_cold", "corces_warm"))) {
+          stop("When input for 'type' is 'gradient', input for '", name, "' must be among permitted values (",
+               paste0(c("corces_cold", "corces_warm"), collapse = ", "), "), please supply valid input!")
+        }
       }
     }
   }

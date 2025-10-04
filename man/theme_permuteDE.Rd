@@ -20,25 +20,25 @@ theme_permuteDE(
 )
 }
 \arguments{
-\item{color}{color of text and lines of the plot}
+\item{color}{Color of text and lines of the plot}
 
-\item{base_size}{the size of the font for the axis labels}
+\item{base_size}{The size of the font for the axis labels}
 
-\item{base_line_size}{the line width for most lines}
+\item{base_line_size}{The line width for most lines}
 
-\item{base_rect_size}{the line width for rectangular boxes}
+\item{base_rect_size}{The line width for rectangular boxes}
 
-\item{axis_title_size}{the font size of the axis title}
+\item{axis_title_size}{The font size of the axis title}
 
-\item{plot_title_size}{the font size of the plot title}
+\item{plot_title_size}{The font size of the plot title}
 
-\item{plot_margin_cm}{the margin around the plot in centimeters}
+\item{plot_margin_cm}{The margin around the plot in centimeters}
 
 \item{legend_text_size}{0.75*base_size}
 
-\item{legend_position}{the placement of the legend in the plot}
+\item{legend_position}{The placement of the legend in the plot}
 
-\item{axis_tick_length_mm}{axis tick length in mm}
+\item{axis_tick_length_mm}{Axis tick length in mm}
 
 \item{rotate_x_axis_text_90}{Boolean value indicating whether to rotate the x-axis text by 90 degrees}
 

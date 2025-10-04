@@ -13,6 +13,7 @@ plotDimReduction(
   permutation_test_alpha = 1,
   label_splits = FALSE,
   label_statistics = FALSE,
+  palette_name = NULL,
   ...
 )
 }
@@ -42,6 +43,11 @@ splits. Defaults to \code{FALSE}.}
 
 \item{label_statistics}{A Boolean value indicating whether to label the
 values of the selected metric. Defaults to \code{FALSE}.}
+
+\item{palette_name}{A character string indicating the palette name. Permitted
+values are "choir", "archr", "corces_cold", and "corces_warm". Default =
+\code{NULL} will use "choir" for discrete colors and "corces_cold" for
+gradient colors.}
 
 \item{...}{Extra parameters passed to \code{Seurat::DimPlot()} or
 \code{Seurat::FeaturePlot()}.}

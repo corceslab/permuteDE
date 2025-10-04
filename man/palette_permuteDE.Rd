@@ -4,13 +4,19 @@
 \alias{palette_permuteDE}
 \title{Generate color palette}
 \usage{
-palette_permuteDE(type = "discrete", n = 100)
+palette_permuteDE(type = "discrete", n = NULL, palette_name = NULL)
 }
 \arguments{
 \item{type}{A character string indicating the palette type. Permitted values
 are "discrete" and "gradient". Defaults to discrete.}
 
-\item{n}{Number of colors, defaults to 100.}
+\item{n}{Number of colors. Default = \code{NULL} will return all of the
+pre-set colors in the palette.}
+
+\item{palette_name}{A character string indicating the palette name. Permitted values
+are "choir", "archr", "corces_cold", and "corces_warm". Default =
+\code{NULL} will use "choir" when \code{type} is "discrete" and "corces_cold"
+when \code{type} is "gradient.}
 }
 \value{
 Returns a vector of n hex values.
@@ -21,6 +27,8 @@ to n = 100, but for larger values of n, they are generated using
 \code{Polychrome::createPalette()}.
 }
 \details{
-Adapted from function  \code{CHOIR::CHOIRpalette} from R package \code{CHOIR}
-(Sant et al. 2025).
+The "choir" palette is adapted from function  \code{CHOIR::CHOIRpalette}
+in R package \code{CHOIR} (Sant et al. 2025). The "archr" palette is
+adapted from palette "stallion" in R package \code{ArchR} (Granja & Corces
+et al. 2020).
 }

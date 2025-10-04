@@ -7,18 +7,19 @@
 #' This function returns the ggplot2 theme used throughout the permuteDE
 #' plotting functions.
 #'
-#' @param color color of text and lines of the plot
-#' @param base_size the size of the font for the axis labels
-#' @param base_line_size the line width for most lines
-#' @param base_rect_size the line width for rectangular boxes
-#' @param axis_title_size the font size of the axis title
-#' @param plot_title_size the font size of the plot title
-#' @param plot_margin_cm the margin around the plot in centimeters
+#' @param color Color of text and lines of the plot
+#' @param base_size The size of the font for the axis labels
+#' @param base_line_size The line width for most lines
+#' @param base_rect_size The line width for rectangular boxes
+#' @param axis_title_size The font size of the axis title
+#' @param plot_title_size The font size of the plot title
+#' @param plot_margin_cm The margin around the plot in centimeters
 #' @param legend_text_size 0.75*base_size
-#' @param legend_position the placement of the legend in the plot
-#' @param axis_tick_length_mm axis tick length in mm
+#' @param legend_position The placement of the legend in the plot
+#' @param axis_tick_length_mm Axis tick length in mm
 #' @param rotate_x_axis_text_90 Boolean value indicating whether to rotate the x-axis text by 90 degrees
 #' @param rotate_y_axis_text_90 Boolean value indicating whether to rotate the y-axis text by 90 degrees
+#'
 #' @export
 theme_permuteDE <- function(color = "black",
                             base_size = 10,
@@ -68,19 +69,27 @@ theme_permuteDE <- function(color = "black",
 #' to n = 100, but for larger values of n, they are generated using
 #' \code{Polychrome::createPalette()}.
 #'
-#' Adapted from function  \code{CHOIR::CHOIRpalette} from R package \code{CHOIR}
-#' (Sant et al. 2025).
+#' The "choir" palette is adapted from function  \code{CHOIR::CHOIRpalette}
+#' in R package \code{CHOIR} (Sant et al. 2025). The "archr" palette is
+#' adapted from palette "stallion" in R package \code{ArchR} (Granja & Corces
+#' et al. 2020).
 #'
 #' @param type A character string indicating the palette type. Permitted values
 #' are "discrete" and "gradient". Defaults to discrete.
-#' @param n Number of colors, defaults to 100.
+#' @param n Number of colors. Default = \code{NULL} will return all of the
+#' pre-set colors in the palette.
+#' @param palette_name A character string indicating the palette name. Permitted values
+#' are "choir", "archr", "corces_cold", and "corces_warm". Default =
+#' \code{NULL} will use "choir" when `type` is "discrete" and "corces_cold"
+#' when `type` is "gradient.
 #'
 #' @return Returns a vector of n hex values.
 #'
 #' @export
 #'
 palette_permuteDE <- function(type = "discrete",
-                              n = 100) {
+                              n = NULL,
+                              palette_name = NULL) {
 
   # ---------------------------------------------------------------------------
   # Check parameter input validity
@@ -88,32 +97,47 @@ palette_permuteDE <- function(type = "discrete",
 
   .validInput(type, "type")
   .validInput(n, "n")
+  .validInput(palette_name, "palette_name", type)
 
   # ---------------------------------------------------------------------------
   # Create palette
   # ---------------------------------------------------------------------------
   if (type == "discrete") {
-    starting_colors <- c("#00CCE3", "#F8A100", "#E81AEF", "#F56900", "#6560FF",
-                         "#00D456", "#A25AFF", "#C1D400", "#E58CCC", "#1990FF",
-                         "#00DEA3", "#FF5B4B", "#F7D823", "#3BA833", "#AEA9FF",
-                         "#FF9C88", "#7DA6CC", "#CB8251", "#61BBFF", "#FF4CF9",
-                         "#8B7CFF", "#A99900", "#FCB467", "#FB798C", "#83DD00",
-                         "#D98AF7", "#67D4D9", "#08A38E", "#8099FF", "#24B167",
-                         "#DBAA00", "#FF3FAD", "#D2C0CA", "#888DB2", "#8D9D63",
-                         "#E934FF", "#33C100", "#E0BFA1", "#21ADFD", "#86D582",
-                         "#FFA2D9", "#FFB703", "#9DCCC6", "#C078C1", "#F88800",
-                         "#9FD362", "#A876EB", "#B4908B", "#FF6C69", "#6693DE",
-                         "#E2B0FD", "#AD8EA8", "#93AC00", "#E37847", "#E368FB",
-                         "#ECB5D8", "#789F33", "#3AA2AA", "#F3B19C", "#CCC482",
-                         "#34DBC9", "#B486E1", "#C39131", "#FF7D4A", "#7F9F87",
-                         "#FF9BF3", "#0899D0", "#CCB0DB", "#7DD6B9", "#EABD7F",
-                         "#FC76AE", "#D97C9E", "#75C7E4", "#5EA157", "#A5D300",
-                         "#FF00FF", "#6A99C5", "#66D100", "#979177", "#E08500",
-                         "#EA53C2", "#BAC0FA", "#C3C4AE", "#9785C6", "#6BAE00",
-                         "#A78D60", "#EA4974", "#3AEF83", "#D168CC", "#B77E7B",
-                         "#77C65D", "#E2D452", "#FFB6C9", "#A2B3CC", "#C660A2",
-                         "#616DFF", "#FF9240", "#9B9CA3", "#7DE3FF", "#FF69A3")
-    if (n <= 100) {
+    if (is.null(palette_name)) {
+      palette_name <- "choir"
+    }
+    if (palette_name == "choir") {
+      starting_colors <- c("#00CCE3", "#F8A100", "#E81AEF", "#F56900", "#6560FF",
+                           "#00D456", "#A25AFF", "#C1D400", "#E58CCC", "#1990FF",
+                           "#00DEA3", "#FF5B4B", "#F7D823", "#3BA833", "#AEA9FF",
+                           "#FF9C88", "#7DA6CC", "#CB8251", "#61BBFF", "#FF4CF9",
+                           "#8B7CFF", "#A99900", "#FCB467", "#FB798C", "#83DD00",
+                           "#D98AF7", "#67D4D9", "#08A38E", "#8099FF", "#24B167",
+                           "#DBAA00", "#FF3FAD", "#D2C0CA", "#888DB2", "#8D9D63",
+                           "#E934FF", "#33C100", "#E0BFA1", "#21ADFD", "#86D582",
+                           "#FFA2D9", "#FFB703", "#9DCCC6", "#C078C1", "#F88800",
+                           "#9FD362", "#A876EB", "#B4908B", "#FF6C69", "#6693DE",
+                           "#E2B0FD", "#AD8EA8", "#93AC00", "#E37847", "#E368FB",
+                           "#ECB5D8", "#789F33", "#3AA2AA", "#F3B19C", "#CCC482",
+                           "#34DBC9", "#B486E1", "#C39131", "#FF7D4A", "#7F9F87",
+                           "#FF9BF3", "#0899D0", "#CCB0DB", "#7DD6B9", "#EABD7F",
+                           "#FC76AE", "#D97C9E", "#75C7E4", "#5EA157", "#A5D300",
+                           "#FF00FF", "#6A99C5", "#66D100", "#979177", "#E08500",
+                           "#EA53C2", "#BAC0FA", "#C3C4AE", "#9785C6", "#6BAE00",
+                           "#A78D60", "#EA4974", "#3AEF83", "#D168CC", "#B77E7B",
+                           "#77C65D", "#E2D452", "#FFB6C9", "#A2B3CC", "#C660A2",
+                           "#616DFF", "#FF9240", "#9B9CA3", "#7DE3FF", "#FF69A3")
+    } else if (palette_name == "archr") {
+      starting_colors <- c("#D51F26","#272E6A","#208A42","#89288F","#F47D2B",
+                           "#FEE500","#8A9FD1","#C06CAB","#E6C2DC","#90D5E4",
+                           "#89C75F","#F37B7D","#9983BD","#D24B27","#3BBCA8",
+                           "#6E4B9E","#0C727C","#7E1416","#D8A767","#3D3D3D")
+
+    }
+    if (is.null(n)) {
+      n <- length(starting_colors)
+    }
+    if (n <= length(starting_colors)) {
       values <- starting_colors[1:n]
     } else {
       .requirePackage("Polychrome", source = "cran")
@@ -123,8 +147,18 @@ palette_permuteDE <- function(type = "discrete",
       names(values) <- NULL
     }
   } else if (type == "gradient") {
-    starting_colors <- c("#5AADFF", "#337DFF", "#2E5CEF", "#6937F4", "#5820C4", "#482F8E")
-    if (n != 6) {
+    if (is.null(palette_name)) {
+      palette_name <- "corces_cold"
+    }
+    if (palette_name == "corces_cold") {
+      starting_colors <- c("#61DAFF", "#48ACFF", "#337DFF", "#2E5CEF", "#5F36F2", "#511DCE", "#32217A", "#1E1551")
+    } else if (palette_name == "corces_warm") {
+      starting_colors <- c("#FFC715", "#FF9D33", "#FF7145", "#FF527B", "#ED35B9", "#CB27E2", "#9031FF", "#5939F7", "#2A26EA", "#1A17BA", "#0C0782", "#000A51")
+    }
+    if (is.null(n)) {
+      n <- length(starting_colors)
+    }
+    if (n != length(starting_colors)) {
       color_function <- grDevices::colorRampPalette(colors = starting_colors)
       values <- color_function(n)
     } else {
@@ -672,6 +706,10 @@ plotFeature <- function(input,
 #' splits. Defaults to \code{FALSE}.
 #' @param label_statistics A Boolean value indicating whether to label the
 #' values of the selected metric. Defaults to \code{FALSE}.
+#' @param palette_name A character string indicating the palette name. Permitted
+#' values are "choir", "archr", "corces_cold", and "corces_warm". Default =
+#' \code{NULL} will use "choir" for discrete colors and "corces_cold" for
+#' gradient colors.
 #' @param ... Extra parameters passed to \code{Seurat::DimPlot()} or
 #' \code{Seurat::FeaturePlot()}.
 #'
@@ -686,6 +724,7 @@ plotDimReduction <- function(reduction,
                              permutation_test_alpha = 1,
                              label_splits = FALSE,
                              label_statistics = FALSE,
+                             palette_name = NULL,
                              ...) {
 
   # ---------------------------------------------------------------------------
@@ -740,7 +779,8 @@ plotDimReduction <- function(reduction,
     # Add splits to metadata
     tmp_seurat$color_groups <- split_labels
     palette <- palette_permuteDE(type = "discrete",
-                                 n = dplyr::n_distinct(split_labels))
+                                 n = dplyr::n_distinct(split_labels),
+                                 palette_name = palette_name)
     color_label <- ""
     if (label_splits == TRUE) {
       add_labels <- TRUE
@@ -777,7 +817,7 @@ plotDimReduction <- function(reduction,
       palette <- c("#482F8E")
     } else {
       palette <- palette_permuteDE(type = "gradient",
-                                   n = 6)
+                                   palette_name = palette_name)
     }
     # Labels
     if (label_splits == TRUE & label_statistics == TRUE) {
