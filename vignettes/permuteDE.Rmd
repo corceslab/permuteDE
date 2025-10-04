@@ -139,33 +139,53 @@ head(permuteDE_output$permutation_DE_summary)
 
 permuteDE has several built-in plotting functions to help display the results from functions `runDE()` and `permuteDE()`. All plots are modifiable `ggplot` outputs.
 
-To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `getVolcanos()`.
+To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `plotVolcano()`.
 
 ```{r, message = FALSE, warning = FALSE}
 # Generate a list of volcano plots
-volcano_plots <- getVolcanos(input = runDE_output)
+volcano_plots <- plotVolcano(input = runDE_output)
 # Display examples
 volcano_plots[["Inhibitory Neurons"]] | volcano_plots[["Oligodendrocytes"]]
 ```
 
-To generate histograms for each permutation test (or a single split), use function `getHistograms()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.
+To generate histograms for each permutation test (or a single split), use function `plotHistogram()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.
 
 ```{r, message = FALSE, warning = FALSE}
 # Generate a list of histograms
-histogram_plots <- getHistograms(input = permuteDE_output)
+histogram_plots <- plotHistogram(input = permuteDE_output)
 # Display examples
 histogram_plots[["Inhibitory Neurons"]] | histogram_plots[["Oligodendrocytes"]]
 ```
 
-One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). In this plot, cell types are grayed out if the permutation test p-value was > 0.05.
+One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). 
 
 ```{r, message = FALSE, warning = FALSE}
-# Example UMAP
+# Example UMAP showing number of DE features for each split
+plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
+                 input = permuteDE_output,
+                 split_labels = sample_data$cell_type,
+                 color_by = "n_sig")
+```
+
+In this plot, cell types are grayed out if the permutation test p-value was > 0.05.
+
+```{r, message = FALSE, warning = FALSE}
+# Example UMAP showing number of DE features for each split that passes permutation testing threshold
 plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  input = permuteDE_output,
                  split_labels = sample_data$cell_type,
                  color_by = "n_sig",
                  permutation_test_alpha = 0.05)
+```
+
+Or we can color by the p-values from the permutation test.
+
+```{r, message = FALSE, warning = FALSE}
+# Example UMAP showing permutation testing p-value for each split
+plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
+                 input = permuteDE_output,
+                 split_labels = sample_data$cell_type,
+                 color_by = "pvalue")
 ```
 
 To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.

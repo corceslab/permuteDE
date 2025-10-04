@@ -10,7 +10,7 @@ permuteDE(
   lfc_threshold = 0.5,
   n_iterations = 1000,
   use_splits = NULL,
-  min_DE = 2,
+  min_DE = 1,
   return_all = FALSE,
   random_seed = 1,
   n_cores = NULL,
@@ -38,7 +38,7 @@ approximately linearly with the number of iterations.}
 
 \item{min_DE}{A numeric value indicating the minimum number of
 differentially expressed features between the true group labels for a split,
-below which permutations will not be run. Defaults to 2. Set to 0 to run
+below which permutations will not be run. Defaults to 1. Set to 0 to run
 permutation test for all splits, regardless of the true number of DEGs.}
 
 \item{return_all}{A Boolean value indicating whether to store and return all

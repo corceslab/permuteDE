@@ -277,14 +277,14 @@
           stop("Structure of list provided for parameter 'input' is unexpected. ",
                "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
         }
-      } else if (other == "getVolcanos") {
+      } else if (other == "plotVolcano") {
         # Must have expected elements with set names
         if (!("DE_results" %in% names(input))) {
           stop("Structure of list provided for parameter 'input' is unexpected, ",
                "it should be the output returned by function 'runDE()' or a list containing (at minimum) a dataframe named 'DE_results'. ",
                "Please supply valid input!")
         }
-      } else if (other == "getHistograms") {
+      } else if (other == "plotHistogram") {
         # Must have expected elements with set names
         if (!("permutation_test_results" %in% names(input)) | !("permutation_DE_summary" %in% names(input))) {
           stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'permuteDE()' ",
@@ -341,13 +341,23 @@
     # If not NULL
     if (!is.null(input)) {
       # Values must all be among those in input
-      if ("PB_values" %in% names(other)) {
-        if (!all(input %in% names(other$PB_values))) {
-          stop("Input value(s) for '", name, "' must all be present among provided pseudobulk matrices. Please supply valid input!")
+      if (other[[2]] %in% c("permuteDE", "plotFeature")) {
+        if ("PB_values" %in% names(other[[1]])) {
+          if (!all(input %in% names(other[[1]]$PB_values))) {
+            stop("Input value(s) for '", name, "' must all be present among provided pseudobulk matrices. Please supply valid input!")
+          }
+        } else if ("cell_values" %in% names(other[[1]])) {
+          if (!all(input %in% names(other[[1]]$cell_values))) {
+            stop("Input value(s) for '", name, "' must all be present among provided matrices. Please supply valid input!")
+          }
         }
-      } else if ("cell_values" %in% names(other)) {
-        if (!all(input %in% names(other$cell_values))) {
-          stop("Input value(s) for '", name, "' must all be present among provided matrices. Please supply valid input!")
+      } else if (other[[2]] %in% c("plotVolcano")) {
+        if (!all(input %in% other[[1]]$DE_results$split)) {
+          stop("Input value(s) for '", name, "' must all be present in DE results. Please supply valid input!")
+        }
+      } else if (other[[2]] %in% c("plotHistogram")) {
+        if (!all(input %in% other[[1]]$permutation_DE_summary$split)) {
+          stop("Input value(s) for '", name, "' must all be present in permutation test summary. Please supply valid input!")
         }
       }
     }

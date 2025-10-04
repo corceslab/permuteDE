@@ -222,13 +222,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:02 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:02 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:13 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:13 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:03 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-03 18:18:13 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements: *
 <code>DE_results</code> Dataframe containing DE results for each
 feature, by split * <code>PB_values</code> If using pseudobulk data, a
@@ -274,16 +274,19 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:03 : Will skip 2 split labels due to insufficient differentially expressed features: Astrocytes, Microglia</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:03 : Differential expression results for group WT vs. Tg across 4 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:03 : Generating 70 of 70 possible combinations for split Excitatory Neurons (1/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:03 : Running 70 permutations for split Excitatory Neurons (1/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:07 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (2/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:07 : Running 70 permutations for split Inhibitory Neurons (2/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:11 : Generating 70 of 70 possible combinations for split Oligodendrocytes (3/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:11 : Running 70 permutations for split Oligodendrocytes (3/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:14 : Generating 70 of 70 possible combinations for split OPCs (4/4)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:14 : Running 70 permutations for split OPCs (4/4)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-03 18:18:14 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:14 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:14 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:16 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:16 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:21 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:21 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:25 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:25 : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:27 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:27 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:29 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:29 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements: *
 <code>permutation_test_results</code> Dataframe containing the
 permutation test results by split * <code>permutation_DE_summary</code>
@@ -296,13 +299,13 @@ characteristics of the data and runtime * <code>parameters</code> List
 recording parameter values used</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">permuteDE_output</span><span class="op">$</span><span class="va">permutation_DE_summary</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                split permutation n_sig min_lfc_sig max_lfc_sig</span></span>
-<span><span class="co">#&gt; 1 Excitatory Neurons           1    14  -0.6253146    2.078985</span></span>
-<span><span class="co">#&gt; 2 Excitatory Neurons           2     0          NA          NA</span></span>
-<span><span class="co">#&gt; 3 Excitatory Neurons           3     1   1.7860353    1.786035</span></span>
-<span><span class="co">#&gt; 4 Excitatory Neurons           4     0          NA          NA</span></span>
-<span><span class="co">#&gt; 5 Excitatory Neurons           5     0          NA          NA</span></span>
-<span><span class="co">#&gt; 6 Excitatory Neurons           6     2  -1.5232517   -1.055201</span></span></code></pre></div>
+<span><span class="co">#&gt;        split permutation n_sig min_lfc_sig max_lfc_sig</span></span>
+<span><span class="co">#&gt; 1 Astrocytes           1     4    1.116157    3.472168</span></span>
+<span><span class="co">#&gt; 2 Astrocytes           2     1   -1.839246   -1.839246</span></span>
+<span><span class="co">#&gt; 3 Astrocytes           3     0          NA          NA</span></span>
+<span><span class="co">#&gt; 4 Astrocytes           4     0          NA          NA</span></span>
+<span><span class="co">#&gt; 5 Astrocytes           5     0          NA          NA</span></span>
+<span><span class="co">#&gt; 6 Astrocytes           6     0          NA          NA</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
@@ -313,46 +316,62 @@ results from functions <code><a href="../reference/runDE.html">runDE()</a></code
 outputs.</p>
 <p>To generate volcano plots for each split assessed by
 <code><a href="../reference/runDE.html">runDE()</a></code> (or a single split) use function
-<code><a href="../reference/getVolcanos.html">getVolcanos()</a></code>.</p>
+<code><a href="../reference/plotVolcano.html">plotVolcano()</a></code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Generate a list of volcano plots</span></span>
-<span><span class="va">volcano_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getVolcanos.html">getVolcanos</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span><span class="op">)</span></span>
+<span><span class="va">volcano_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotVolcano.html">plotVolcano</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span><span class="op">)</span></span>
 <span><span class="co"># Display examples</span></span>
 <span><span class="va">volcano_plots</span><span class="op">[[</span><span class="st">"Inhibitory Neurons"</span><span class="op">]</span><span class="op">]</span> <span class="op">|</span> <span class="va">volcano_plots</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
 <p>To generate histograms for each permutation test (or a single split),
-use function <code><a href="../reference/getHistograms.html">getHistograms()</a></code>. These histograms display the
+use function <code><a href="../reference/plotHistogram.html">plotHistogram()</a></code>. These histograms display the
 distribution of the number of significant differentially expressed
 features in each iteration of the permutation test, and where the “true”
 results fall on this distribution.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Generate a list of histograms</span></span>
-<span><span class="va">histogram_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getHistograms.html">getHistograms</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">permuteDE_output</span><span class="op">)</span></span>
+<span><span class="va">histogram_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotHistogram.html">plotHistogram</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">permuteDE_output</span><span class="op">)</span></span>
 <span><span class="co"># Display examples</span></span>
 <span><span class="va">histogram_plots</span><span class="op">[[</span><span class="st">"Inhibitory Neurons"</span><span class="op">]</span><span class="op">]</span> <span class="op">|</span> <span class="va">histogram_plots</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-12-1.png" width="700"></p>
 <p>One way to summarise the results from permuteDE is to color a UMAP by
 the number of differentially expressed features in each split (in this
-case, cell type). In this plot, cell types are grayed out if the
-permutation test p-value was &gt; 0.05.</p>
+case, cell type).</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Example UMAP</span></span>
+<code class="sourceCode R"><span><span class="co"># Example UMAP showing number of DE features for each split</span></span>
+<span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
+<span>                 input <span class="op">=</span> <span class="va">permuteDE_output</span>,</span>
+<span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
+<span>                 color_by <span class="op">=</span> <span class="st">"n_sig"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
+<p>In this plot, cell types are grayed out if the permutation test
+p-value was &gt; 0.05.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example UMAP showing number of DE features for each split that passes permutation testing threshold</span></span>
 <span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
 <span>                 input <span class="op">=</span> <span class="va">permuteDE_output</span>,</span>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
 <span>                 color_by <span class="op">=</span> <span class="st">"n_sig"</span>,</span>
 <span>                 permutation_test_alpha <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
+<p>Or we can color by the p-values from the permutation test.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example UMAP showing permutation testing p-value for each split</span></span>
+<span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
+<span>                 input <span class="op">=</span> <span class="va">permuteDE_output</span>,</span>
+<span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
+<span>                 color_by <span class="op">=</span> <span class="st">"pvalue"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-15-1.png" width="700"></p>
 <p>To plot the results for a single feature, use function
 <code><a href="../reference/plotFeature.html">plotFeature()</a></code>. By default, this function will apply CPM
 normalization (using <code><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">edgeR::cpm()</a></code>), but this can be changed
 using the parameter <code>normalization_method</code>.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example feature plot</span></span>
 <span><span class="fu"><a href="../reference/plotFeature.html">plotFeature</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>            feature <span class="op">=</span> <span class="st">"Tafa2"</span>,</span>
 <span>            use_splits <span class="op">=</span> <span class="st">"Inhibitory Neurons"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
 <hr>
 </div>
 </div>
@@ -407,7 +426,7 @@ replicate). All permuteDE functions expect raw counts.</p>
 labels in order, corresponding to each column of the matrix.</p>
 <p>Here’s an example of how to apply function <code><a href="../reference/runDE.html">runDE()</a></code> to a
 feature x cell matrix:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Extract count matrix from the sample dataset</span></span>
 <span><span class="va">counts_matrix</span> <span class="op">&lt;-</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">RNA</span><span class="op">$</span><span class="va">counts</span></span>
 <span><span class="co"># Extract relevant metadata as a vector</span></span>
@@ -422,21 +441,21 @@ feature x cell matrix:</p>
 <span>                      split_labels <span class="op">=</span> <span class="va">splits</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:19 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:34 : Generating 6 pseudobulk matrices..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:19 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-03 18:18:35 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>Or a pre-generated pseudobulk matrix:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Pre-generate pseudobulk matrix</span></span>
 <span><span class="va">pb_matrix_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getPseudobulk.html">getPseudobulk</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">sample_data</span>,</span>
 <span>                                replicate_labels <span class="op">=</span> <span class="st">"sample"</span>,</span>
 <span>                                split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                                n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:20 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:20 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:35 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:35 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
@@ -454,8 +473,8 @@ feature x cell matrix:</p>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      pseudobulk <span class="op">=</span> <span class="st">"supplied"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:20 : Extracting 1 pseudobulk matrix..</span></span>
-<span><span class="co">#&gt; 2025-10-03 17:28:20 : Running DE on 1 matrix..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-03 18:18:36 : Extracting 1 pseudobulk matrix..</span></span>
+<span><span class="co">#&gt; 2025-10-03 18:18:36 : Running DE on 1 matrix..</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">

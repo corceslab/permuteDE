@@ -134,12 +134,10 @@ palette_permuteDE <- function(type = "discrete",
   return(values)
 }
 
-#' Generate volcano plots from differential expression results
+#' Generate volcano plot(s) from differential expression results
 #'
-#' This function takes the output from function \code{runDE} and creates a list
-#' containing a volcano plot for each subset of differential expression (DE)
-#' results. The DE results are subset by the "split" column, and each split
-#' produces its own volcano plot.
+#' This function takes the output from function \code{runDE} and creates volcano
+#' plots for each indicated split.
 #'
 #' @param input Output from function \code{runDE} or a list containing
 #'  (at minimum) a dataframe named "DE_results" including columns:
@@ -156,6 +154,8 @@ palette_permuteDE <- function(type = "discrete",
 #' @param lfc_threshold A numeric value indicating the minimum absolute value
 #' log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
 #' 0 to disregard log fold change when counting hits.
+#' @param use_splits A character string or vector containing the names of splits
+#' to use. Defaults to \code{NULL}, which will try all splits.
 #' @param title Character string indicating the plot title. Default = `NULL`
 #' sets a title automatically for each split.
 #' @param subtitle Character string indicating the plot subtitle. Default =
@@ -165,14 +165,16 @@ palette_permuteDE <- function(type = "discrete",
 #' @param center A Boolean value indicating whether to center the x-axis at 0.
 #' Defaults to \code{TRUE}.
 #'
-#' @return A named list of \code{ggplot2} objects, where each element
-#'   corresponds to a volcano plot for one split of the DE results.
+#' @return If only one split is provided, a single \code{ggplot2} object,
+#' otherwise a named list of \code{ggplot2} objects, where each element
+#' corresponds to a split.
 #'
 #' @export
 #'
-getVolcanos <- function(input,
+plotVolcano <- function(input,
                         alpha = 0.05,
                         lfc_threshold = 0.5,
+                        use_splits = NULL,
                         title = NULL,
                         subtitle = NULL,
                         n_max_label = 10,
@@ -185,9 +187,10 @@ getVolcanos <- function(input,
   .requirePackage("ggrepel", source = "cran")
   .requirePackage("ggtext", source = "cran")
 
-  .validInput(input, "input", "getVolcanos")
+  .validInput(input, "input", "plotVolcano")
   .validInput(alpha, "alpha")
   .validInput(lfc_threshold, "lfc_threshold")
+  .validInput(use_splits, "use_splits", list(input, "plotVolcano"))
   .validInput(title, "title")
   .validInput(subtitle, "subtitle")
   .validInput(n_max_label, "n_max_label")
@@ -224,20 +227,25 @@ getVolcanos <- function(input,
                               wilcox_log_cpm = "Wilcoxon Rank Sum Test with log CPM normalization, ",
                               paste0(de_test, ", ")),
                        switch(p_adjust_method,
-                              holm =  paste0("Holm method, \u03b1=", alpha),
-                              hochberg = paste0("Hochberg adjustment, \u03b1=", alpha),
-                              hommel = paste0("Hommel procedure, \u03b1=", alpha),
-                              bonferroni = paste0("Bonferroni method, \u03b1=", alpha),
-                              BH = paste0("FDR=", alpha),
-                              fdr = paste0("FDR=", alpha),
-                              BY = paste0("Benjamini & Yekutieli, FDR=", alpha),
-                              paste0("no multiple comparison correction, \u03b1=", alpha)),
-                       ", |LFC|>", lfc_threshold)
+                              holm =  paste0("Holm method, \u03b1 = ", alpha),
+                              hochberg = paste0("Hochberg adjustment, \u03b1 = ", alpha),
+                              hommel = paste0("Hommel procedure, \u03b1 = ", alpha),
+                              bonferroni = paste0("Bonferroni method, \u03b1 = ", alpha),
+                              BH = paste0("FDR = ", alpha),
+                              fdr = paste0("FDR = ", alpha),
+                              BY = paste0("Benjamini & Yekutieli, FDR = ", alpha),
+                              paste0("no multiple comparison correction, \u03b1 = ", alpha)),
+                       ", |LFC| > ", lfc_threshold)
     subtitle <- paste(strwrap(subtitle, 80), collapse = "\n")
   }
 
   # Separate results from each split
   split_results <- split(input$DE_results, input$DE_results$split)
+
+  # Subset data if split(s) are provided
+  if (!is.null(use_splits)) {
+    split_results <- split_results[use_splits]
+  }
 
   # ---------------------------------------------------------------------------
   # Generate plots
@@ -305,19 +313,24 @@ getVolcanos <- function(input,
   })
 
   names(volcano_list) <- names(split_results)
-
-  return(volcano_list)
+  if (length(volcano_list) == 1) {
+    return(volcano_list[[1]])
+  } else {
+    return(volcano_list)
+  }
 }
 
 
-#' Generate histogram plots of permutation test results
+#' Generate histogram plot(s) of permutation test results
 #'
 #' This function takes the output from function \code{permuteDE} and creates a
-#' list containing a histogram plot showing the permutation test result for
-#' each split. Each histogram includes a vertical line at the observed number
-#' of DE features in the unpermuted "true" comparison.
+#' histogram plot showing the permutation test result for each indicated split.
+#' Each histogram includes a vertical line at the observed number of DE features
+#' in the unpermuted "true" comparison.
 #'
 #' @param input Output from function \code{permuteDE}.
+#' @param use_splits A character string or vector containing the names of splits
+#' to use. Defaults to \code{NULL}, which will try all splits.
 #' @param title Character string indicating the plot title. Default = `NULL`
 #' sets a title automatically for each split.
 #' @param subtitle Character string indicating the plot subtitle. Default =
@@ -325,11 +338,14 @@ getVolcanos <- function(input,
 #' @param label_pvalue A Boolean value indicating whether to label the
 #' permutation test p-value. Defaults to TRUE.
 #'
-#' @return A named list of \code{ggplot2} objects, where each element
-#'   corresponds to a split.
+#' @return If only one split is provided, a single \code{ggplot2} object,
+#' otherwise a named list of \code{ggplot2} objects, where each element
+#' corresponds to a split.
+#'
 #' @export
 
-getHistograms <- function(input,
+plotHistogram <- function(input,
+                          use_splits = NULL,
                           title = NULL,
                           subtitle = NULL,
                           label_pvalue = TRUE) {
@@ -340,7 +356,8 @@ getHistograms <- function(input,
 
   .requirePackage("ggtext", source = "cran")
 
-  .validInput(input, "input", "getHistograms")
+  .validInput(input, "input", "plotHistogram")
+  .validInput(use_splits, "use_splits", list(input, "plotHistogram"))
   .validInput(title, "title")
   .validInput(subtitle, "subtitle")
   .validInput(label_pvalue, "label_pvalue")
@@ -360,6 +377,11 @@ getHistograms <- function(input,
 
   # Separate results from each split
   split_results <- split(input$permutation_DE_summary, input$permutation_DE_summary$split)
+
+  # Subset data if split(s) are provided
+  if (!is.null(use_splits)) {
+    split_results <- split_results[use_splits]
+  }
 
   # ---------------------------------------------------------------------------
   # Generate plots
@@ -441,7 +463,11 @@ getHistograms <- function(input,
   })
 
   names(histogram_list) <- names(split_results)
-  return(histogram_list)
+  if (length(histogram_list) == 1) {
+    return(histogram_list[[1]])
+  } else {
+    return(histogram_list)
+  }
 }
 
 
@@ -491,7 +517,7 @@ plotFeature <- function(input,
 
   .validInput(input, "input", "plotFeature")
   .validInput(feature, "feature")
-  .validInput(use_splits, "use_splits", input)
+  .validInput(use_splits, "use_splits", list(input, "plotFeature"))
   .validInput(normalization_method, "normalization_method")
   .validInput(title, "title")
   .validInput(label_replicates, "label_replicates")
@@ -735,9 +761,15 @@ plotDimReduction <- function(reduction,
     if (color_by == "n_sig") {
       color_label <- "Number of\nsignificant\nDE features"
       tmp_seurat$color_groups <- tmp_seurat$n_sig
+      if(min(tmp_seurat$n_sig, na.rm = TRUE) == 0) {
+        na_cutoff <- 1
+      } else {
+        na_cutoff <- NA
+      }
     } else if (color_by == "pvalue") {
       color_label <- "Permutation\ntest p-value"
       tmp_seurat$color_groups <- tmp_seurat$pvalue
+      na_cutoff <- NA
     }
     # Color palette
     n_values <- unique(tmp_seurat$color_groups[!is.na(tmp_seurat$color_groups)])
@@ -806,6 +838,7 @@ plotDimReduction <- function(reduction,
                      legend.box.margin = ggplot2::margin(5, 5, 5, 5)) +
       ggplot2::scale_color_gradientn(colors = palette,
                                      na.value = na_color,
+                                     limits = c(na_cutoff, NA),
                                      guide = ggplot2::guide_colorbar(frame.colour = "black",
                                                                      ticks.colour = "black")) +
       ggplot2::labs(color = color_label) +

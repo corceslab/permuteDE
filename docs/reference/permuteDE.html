@@ -87,7 +87,7 @@ significance level <code>alpha</code> and log fold change threshold
 <span>  lfc_threshold <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  n_iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  use_splits <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  min_DE <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  min_DE <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  return_all <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  random_seed <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  n_cores <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -128,7 +128,7 @@ approximately linearly with the number of iterations.</p></dd>
 <dt>min_DE</dt>
 <dd><p>A numeric value indicating the minimum number of
 differentially expressed features between the true group labels for a split,
-below which permutations will not be run. Defaults to 2. Set to 0 to run
+below which permutations will not be run. Defaults to 1. Set to 0 to run
 permutation test for all splits, regardless of the true number of DEGs.</p></dd>
 
 

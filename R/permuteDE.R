@@ -36,7 +36,7 @@
 #' \code{NULL}, which will try all splits.
 #' @param min_DE A numeric value indicating the minimum number of
 #' differentially expressed features between the true group labels for a split,
-#' below which permutations will not be run. Defaults to 2. Set to 0 to run
+#' below which permutations will not be run. Defaults to 1. Set to 0 to run
 #' permutation test for all splits, regardless of the true number of DEGs.
 #' @param return_all A Boolean value indicating whether to store and return all
 #' DE results (log fold changes and p-values per gene per split) for every
@@ -70,7 +70,7 @@ permuteDE <- function(input,
                       lfc_threshold = 0.5,
                       n_iterations = 1000,
                       use_splits = NULL,
-                      min_DE = 2,
+                      min_DE = 1,
                       return_all = FALSE,
                       random_seed = 1,
                       n_cores = NULL,
@@ -86,7 +86,7 @@ permuteDE <- function(input,
   .validInput(alpha, "alpha")
   .validInput(lfc_threshold, "lfc_threshold")
   .validInput(n_iterations, "n_iterations")
-  .validInput(use_splits, "use_splits", input)
+  .validInput(use_splits, "use_splits", list(input, "permuteDE"))
   .validInput(min_de, "min_de")
   .validInput(return_all, "return_all")
   .validInput(random_seed, "random_seed")
