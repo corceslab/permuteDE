@@ -62,11 +62,13 @@ Can be set to \code{FALSE} for a cleaner output.}
 Returns a list containing the following elements: \describe{
 \item{permutation_test_results}{Dataframe containing the permutation test
 results by split}
-\item{permutation_DE_summary}{Dataframe containing the permutation DE summary
-metrics by split}
+\item{permutation_DE_summary}{Dataframe containing the permutation DE
+summary metrics by split}
 \item{permutation_DE_results}{If parameter 'return_all' is TRUE,
 dataframe DE results for each feature, by split, for each iteration}
-\item{metadata}{List recording characteristics of the data and runtime}
+\item{metadata}{List recording additional characteristics of the data: the
+number of significant DE features from runDE, the group indices for each
+iteration of the permutation test, and runtime}
 \item{parameters}{List recording parameter values used}
 }
 }
