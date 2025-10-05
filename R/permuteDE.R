@@ -248,7 +248,7 @@ permuteDE <- function(input,
         # If not, remove one random set of labels, leaving n_iterations - 1
         permuted_group_indices <- permuted_group_indices[,-1]
         ref_group_overlap <- ref_group_overlap[-1]
-        non_ref_overlap <- non_ref_group_overlap[-1]
+        non_ref_group_overlap <- non_ref_group_overlap[-1]
       }
       # If cell-level but permuting biological replicates, convert permuted group indices for each replicate into cell indices
       if (pseudobulk == "none" & !is.null(stored_replicates)) {

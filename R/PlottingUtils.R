@@ -857,6 +857,9 @@ plotDimReduction <- function(reduction,
     }
     tmp_seurat$n_sig <- key$runDE_n_sig[match(split_labels, key$split)]
     tmp_seurat$pvalue <- key$pvalue[match(split_labels, key$split)]
+    # Color palette
+    palette <- permuteDEpalette(type = "gradient",
+                                palette_name = palette_name)
     if (color_by == "n_sig") {
       color_legend <- "Number of<br>significant<br>DE features"
       tmp_seurat$color_groups <- tmp_seurat$n_sig
@@ -874,10 +877,9 @@ plotDimReduction <- function(reduction,
       color_legend <- "Permutation<br>test p-value"
       tmp_seurat$color_groups <- tmp_seurat$pvalue
       na_cutoff <- NA
+      # Reverse palette
+      palette <- rev(palette)
     }
-    # Color palette
-    palette <- permuteDEpalette(type = "gradient",
-                                palette_name = palette_name)
     # Labels
     if (label_splits == TRUE & label_statistics == TRUE) {
       add_labels <- TRUE
