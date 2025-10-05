@@ -4,7 +4,12 @@
 \alias{palette_permuteDE}
 \title{Generate color palette}
 \usage{
-palette_permuteDE(type = "discrete", n = NULL, palette_name = NULL)
+palette_permuteDE(
+  type = "discrete",
+  n = NULL,
+  palette_name = NULL,
+  swatch = FALSE
+)
 }
 \arguments{
 \item{type}{A character string indicating the palette type. Permitted values
@@ -17,6 +22,9 @@ pre-set colors in the palette.}
 are "choir", "archr", "corces_cold", and "corces_warm". Default =
 \code{NULL} will use "choir" when \code{type} is "discrete" and "corces_cold"
 when \code{type} is "gradient.}
+
+\item{swatch}{A Boolean value indicating whether to plot a swatch of the
+palette.}
 }
 \value{
 Returns a vector of n hex values.

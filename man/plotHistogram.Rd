@@ -18,8 +18,8 @@ plotHistogram(
 \item{use_splits}{A character string or vector containing the names of splits
 to use. Defaults to \code{NULL}, which will try all splits.}
 
-\item{title}{Character string indicating the plot title. Default = \code{NULL}
-sets a title automatically for each split.}
+\item{title}{Character string indicating the plot title. Default =
+\code{NULL} sets a title automatically for each split.}
 
 \item{subtitle}{Character string indicating the plot subtitle. Default =
 \code{NULL} automatically generates a subtitle.}

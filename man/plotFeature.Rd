@@ -10,6 +10,7 @@ plotFeature(
   use_splits = NULL,
   normalization_method = "cpm",
   title = NULL,
+  subtitle = NULL,
   label_replicates = FALSE,
   label_statistics = TRUE
 )
@@ -26,8 +27,11 @@ to use. Defaults to \code{NULL}, which will try all splits.}
 method to apply to the replicate x feature matrix. Permitted values are
 "cpm", "log_cpm", and "none". Defaults to "cpm".}
 
-\item{title}{A character string indicating the plot title. Default = \code{NULL}
-sets a title automatically for each split.}
+\item{title}{A character string indicating the plot title. Default =
+\code{NULL} sets a title automatically for each split.}
+
+\item{subtitle}{Character string indicating the plot subtitle. Default =
+\code{NULL} automatically generates a subtitle.}
 
 \item{label_replicates}{A Boolean value indicating whether to label the
 replicates. Defaults to \code{FALSE}.}

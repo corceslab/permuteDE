@@ -135,8 +135,9 @@
   }
 
   # Single Boolean value
-  # center, force_balance, label_pvalue, label_replicates, label_splits, label_statistics, return_all, verbose
-  if (name %in% c("center", "force_balance", "label_pvalue", "label_replicates", "label_splits", "label_statistics", "return_all", "verbose")) {
+  # center, force_balance, label_pvalue, label_replicates, label_splits, label_statistics, return_all, verbose, swatch, fix_coords
+  if (name %in% c("center", "force_balance", "label_pvalue", "label_replicates", "label_splits", "label_statistics",
+                  "return_all", "verbose", "swatch", "fix_coords")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")

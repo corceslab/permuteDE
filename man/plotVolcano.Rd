@@ -37,8 +37,8 @@ log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
 \item{use_splits}{A character string or vector containing the names of splits
 to use. Defaults to \code{NULL}, which will try all splits.}
 
-\item{title}{Character string indicating the plot title. Default = \code{NULL}
-sets a title automatically for each split.}
+\item{title}{Character string indicating the plot title. Default =
+\code{NULL} sets a title automatically for each split.}
 
 \item{subtitle}{Character string indicating the plot subtitle. Default =
 \code{NULL} automatically generates a subtitle describing the DE method used.}

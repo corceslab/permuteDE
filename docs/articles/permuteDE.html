@@ -204,7 +204,8 @@ parameters <code>de_method</code> and <code>de_test</code>:</p>
 <li>
 <code>DESeq2</code>: “LRT”, “Wald”</li>
 <li>
-<code>limma</code>: “trend”, “voom”</li>
+<code>limma</code>: “trend”, “voom”, “wilcox_cpm”,
+“wilcox_cpm_log”</li>
 <li>
 <code>presto</code>: “wilcox_cpm”, “wilcox_cpm_log”</li>
 </ul>
@@ -222,24 +223,32 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:13 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:13 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2025-10-05 02:59:59 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-05 02:59:59 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:13 : Running DE on 6 matrices..</span></span></code></pre></div>
-<p>The output is a list containing the following elements: *
+<span><span class="co">#&gt; 2025-10-05 03:00:00 : Running DE on 6 matrices..</span></span></code></pre></div>
+<p>The output is a list containing the following elements:</p>
+<ul>
+<li>
 <code>DE_results</code> Dataframe containing DE results for each
-feature, by split * <code>PB_values</code> If using pseudobulk data, a
-list of feature x replicate matri(ces) containing pseudobulk values for
-each feature, one matrix per split * <code>cell_values</code>
-Alternately, if using cell-level data, a list of feature x cell
-matri(ces) containing counts for each feature, one matrix per split *
-<code>group_key</code> Dataframe record of group labels corresponding to
-each replicate * <code>metadata</code> List recording characteristics of
-the data and runtime * <code>parameters</code> List recording parameter
-values used</p>
+feature, by split</li>
+<li>
+<code>PB_values</code> If using pseudobulk data, a list of feature x
+replicate matri(ces) containing pseudobulk values for each feature, one
+matrix per split</li>
+<li>
+<code>cell_values</code> Alternately, if using cell-level data, a
+list of feature x cell matri(ces) containing counts for each feature,
+one matrix per split</li>
+<li>
+<code>metadata</code> List recording characteristics of the data and
+runtime</li>
+<li>
+<code>parameters</code> List recording parameter values used</li>
+</ul>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">runDE_output</span><span class="op">$</span><span class="va">DE_results</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     gene        lfc       pvalue       padj      split</span></span>
@@ -274,38 +283,54 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:14 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:14 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:14 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:16 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:16 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:21 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:21 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:25 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:25 : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:27 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:27 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:29 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:29 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
-<p>The output is a list containing the following elements: *
+<span><span class="co">#&gt; 2025-10-05 03:00:00 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:00 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:00 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:03 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:03 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:07 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:07 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:11 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:11 : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:13 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:13 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:16 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:16 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<p>The output is a list containing the following elements:</p>
+<ul>
+<li>
 <code>permutation_test_results</code> Dataframe containing the
-permutation test results by split * <code>permutation_DE_summary</code>
-Dataframe containing the permutation DE summary metrics by split *
-<code>permutation_all_DE_results</code> If parameter
+permutation test results by split</li>
+<li>
+<code>permutation_DE_summary</code> Dataframe containing the
+permutation DE summary metrics by split</li>
+<li>
+<code>permutation_DE_results</code> If parameter
 <code>return_all</code> is <code>TRUE</code>, dataframe DE results for
 each feature, by split, for each iteration (note that this substantially
-increases the size of the output) * <code>metadata</code> List recording
-characteristics of the data and runtime * <code>parameters</code> List
-recording parameter values used</p>
+increases the size of the output)</li>
+<li>
+<code>metadata</code> List recording characteristics of the data and
+runtime</li>
+<li>
+<code>parameters</code> List recording parameter values used</li>
+</ul>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">permuteDE_output</span><span class="op">$</span><span class="va">permutation_DE_summary</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        split permutation n_sig min_lfc_sig max_lfc_sig</span></span>
-<span><span class="co">#&gt; 1 Astrocytes           1     4    1.116157    3.472168</span></span>
-<span><span class="co">#&gt; 2 Astrocytes           2     1   -1.839246   -1.839246</span></span>
-<span><span class="co">#&gt; 3 Astrocytes           3     0          NA          NA</span></span>
-<span><span class="co">#&gt; 4 Astrocytes           4     0          NA          NA</span></span>
-<span><span class="co">#&gt; 5 Astrocytes           5     0          NA          NA</span></span>
-<span><span class="co">#&gt; 6 Astrocytes           6     0          NA          NA</span></span></code></pre></div>
+<span><span class="co">#&gt;        split permutation reference_group_overlap non_reference_group_overlap</span></span>
+<span><span class="co">#&gt; 1 Astrocytes           1                    0.25                        0.25</span></span>
+<span><span class="co">#&gt; 2 Astrocytes           2                    0.75                        0.75</span></span>
+<span><span class="co">#&gt; 3 Astrocytes           3                    0.75                        0.75</span></span>
+<span><span class="co">#&gt; 4 Astrocytes           4                    0.50                        0.50</span></span>
+<span><span class="co">#&gt; 5 Astrocytes           5                    0.50                        0.50</span></span>
+<span><span class="co">#&gt; 6 Astrocytes           6                    0.75                        0.75</span></span>
+<span><span class="co">#&gt;   n_sig min_lfc_sig max_lfc_sig min_lfc_all max_lfc_all</span></span>
+<span><span class="co">#&gt; 1     4   -3.472168   -1.116157   -3.472168    1.391549</span></span>
+<span><span class="co">#&gt; 2     1    1.839246    1.839246   -1.342398    1.839246</span></span>
+<span><span class="co">#&gt; 3     0          NA          NA   -1.392288    1.878978</span></span>
+<span><span class="co">#&gt; 4     0          NA          NA   -1.496774    1.639203</span></span>
+<span><span class="co">#&gt; 5     0          NA          NA   -3.156099    1.541848</span></span>
+<span><span class="co">#&gt; 6     0          NA          NA   -1.187755    1.699554</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
@@ -367,10 +392,12 @@ p-value was &gt; 0.05.</p>
 normalization (using <code><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">edgeR::cpm()</a></code>), but this can be changed
 using the parameter <code>normalization_method</code>.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Example feature plot</span></span>
-<span><span class="fu"><a href="../reference/plotFeature.html">plotFeature</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
-<span>            feature <span class="op">=</span> <span class="st">"Tafa2"</span>,</span>
-<span>            use_splits <span class="op">=</span> <span class="st">"Inhibitory Neurons"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Generate a list of plots</span></span>
+<span><span class="va">feature_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotFeature.html">plotFeature</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
+<span>                             feature <span class="op">=</span> <span class="st">"App"</span>,</span>
+<span>                             use_splits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Inhibitory Neurons"</span>, <span class="st">"Oligodendrocytes"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Display examples</span></span>
+<span><span class="va">feature_plots</span><span class="op">[[</span><span class="st">"Inhibitory Neurons"</span><span class="op">]</span><span class="op">]</span> <span class="op">|</span> <span class="va">feature_plots</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
 <hr>
 </div>
@@ -441,12 +468,12 @@ feature x cell matrix:</p>
 <span>                      split_labels <span class="op">=</span> <span class="va">splits</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:34 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:22 : Generating 6 pseudobulk matrices..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:35 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-05 03:00:22 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>Or a pre-generated pseudobulk matrix:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Pre-generate pseudobulk matrix</span></span>
@@ -454,8 +481,8 @@ feature x cell matrix:</p>
 <span>                                replicate_labels <span class="op">=</span> <span class="st">"sample"</span>,</span>
 <span>                                split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                                n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:35 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:35 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:22 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:22 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
@@ -473,8 +500,8 @@ feature x cell matrix:</p>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      pseudobulk <span class="op">=</span> <span class="st">"supplied"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:36 : Extracting 1 pseudobulk matrix..</span></span>
-<span><span class="co">#&gt; 2025-10-03 18:18:36 : Running DE on 1 matrix..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-05 03:00:22 : Extracting 1 pseudobulk matrix..</span></span>
+<span><span class="co">#&gt; 2025-10-05 03:00:22 : Running DE on 1 matrix..</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -539,6 +566,19 @@ tests.</p>
 biological replicate, simply set <code>replicate_labels</code> equal to
 the cell IDs.</p>
 </div>
+</div>
+<div class="section level3">
+<h3 id="palettes">Palettes<a class="anchor" aria-label="anchor" href="#palettes"></a>
+</h3>
+<p>Four color palettes are included in this package. They can be called
+using function <code><a href="../reference/palette_permuteDE.html">palette_permuteDE()</a></code>, and setting parameter
+<code>swatch</code> to <code>TRUE</code> will display the palette.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/palette_permuteDE.html">palette_permuteDE</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"discrete"</span>, </span>
+<span>                  n <span class="op">=</span> <span class="fl">10</span>, </span>
+<span>                  palette_name <span class="op">=</span> <span class="st">"choir"</span>, </span>
+<span>                  swatch <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-20-1.png" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-20-2.png" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-20-3.png" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-20-4.png" width="700"></p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

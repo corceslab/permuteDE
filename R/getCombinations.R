@@ -130,8 +130,8 @@ getCombinations <- function(object = NULL,
   if (n_possible_combinations < n_combinations) {
     warning("Input ", n_combinations,
             " for parameter 'n_combinations' exceeds the number of possible combinations ",
-            n_possible_combinations, ". Only ", n_possible_combinations,
-            " combinations will be generated.")
+            n_possible_combinations,". Only ", n_possible_combinations,
+            " combinations will be generated", message, ".")
     n_combinations <- n_possible_combinations
   }
 

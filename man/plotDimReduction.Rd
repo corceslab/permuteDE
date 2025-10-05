@@ -14,6 +14,7 @@ plotDimReduction(
   label_splits = FALSE,
   label_statistics = FALSE,
   palette_name = NULL,
+  fix_coords = TRUE,
   ...
 )
 }
@@ -32,7 +33,8 @@ reduction cell coordinates to. Default = \code{NULL} will use all cells.}
 
 \item{color_by}{A character vector indicating what metric to use to color
 each split. Permitted values are "n_sig", "pvalue", and "split". Default =
-\code{NULL} will not color the cells.}
+"split" will color the cells by the split they belong to if input to
+parameter \code{split_labels} is provided.}
 
 \item{permutation_test_alpha}{A numeric value indicating the significance
 level to apply to the permutation test results. Splits that do not pass this
@@ -48,6 +50,9 @@ values of the selected metric. Defaults to \code{FALSE}.}
 values are "choir", "archr", "corces_cold", and "corces_warm". Default =
 \code{NULL} will use "choir" for discrete colors and "corces_cold" for
 gradient colors.}
+
+\item{fix_coords}{A Boolean value indicating whether the aspect ratio of the
+x and y axis should be 1.}
 
 \item{...}{Extra parameters passed to \code{Seurat::DimPlot()} or
 \code{Seurat::FeaturePlot()}.}

@@ -59,7 +59,7 @@ permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. If a matrix 
 
 To demonstrate how to run permuteDE, we’ll use a small sample dataset consisting of mouse brain snRNA-seq data, stored as a Seurat object.
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 # Load dataset from permuteDE package
 data("sample_data")
 
@@ -87,7 +87,7 @@ Function `runDE()` allows the user to run several different methods of different
 
 * `edgeR`: "LRT", "QLF", "exact"
 * `DESeq2`: "LRT", "Wald"
-* `limma`: "trend", "voom"
+* `limma`: "trend", "voom", "wilcox_cpm", "wilcox_cpm_log"
 * `presto`: "wilcox_cpm", "wilcox_cpm_log"
 
 By default, `runDE()` will run differential expression analysis using `edgeR` LRT. The precise execution of the differential expression analysis can be further adjusted using parameter `de_params` to pass further parameters to the selected method. This function is parallelized when multiple splits are assessed, so efficiency improves as `n_cores` is increased, up to the number of splits.
@@ -102,10 +102,10 @@ runDE_output <- runDE(object = sample_data,
 ```
 
 The output is a list containing the following elements:
+
 * `DE_results` Dataframe containing DE results for each feature, by split
 * `PB_values` If using pseudobulk data, a list of feature x replicate matri(ces) containing pseudobulk values for each feature, one matrix per split
 * `cell_values` Alternately, if using cell-level data, a list of feature x cell matri(ces) containing counts for each feature, one matrix per split
-* `group_key` Dataframe record of group labels corresponding to each replicate
 * `metadata` List recording characteristics of the data and runtime
 * `parameters` List recording parameter values used
 
@@ -125,9 +125,10 @@ permuteDE_output <- permuteDE(input = runDE_output,
 ```
 
 The output is a list containing the following elements:
+
 * `permutation_test_results` Dataframe containing the permutation test results by split
 * `permutation_DE_summary` Dataframe containing the permutation DE summary metrics by split
-* `permutation_all_DE_results` If parameter `return_all` is `TRUE`, dataframe DE results for each feature, by split, for each iteration (note that this substantially increases the size of the output)
+* `permutation_DE_results` If parameter `return_all` is `TRUE`, dataframe DE results for each feature, by split, for each iteration (note that this substantially increases the size of the output)
 * `metadata` List recording characteristics of the data and runtime
 * `parameters` List recording parameter values used
 
@@ -159,7 +160,7 @@ histogram_plots[["Inhibitory Neurons"]] | histogram_plots[["Oligodendrocytes"]]
 
 One way to summarise the results from permuteDE is to color a UMAP by the number of differentially expressed features in each split (in this case, cell type). 
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 # Example UMAP showing number of DE features for each split
 plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  input = permuteDE_output,
@@ -169,7 +170,7 @@ plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
 
 In this plot, cell types are grayed out if the permutation test p-value was > 0.05.
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 # Example UMAP showing number of DE features for each split that passes permutation testing threshold
 plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  input = permuteDE_output,
@@ -180,7 +181,7 @@ plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
 
 Or we can color by the p-values from the permutation test.
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
 # Example UMAP showing permutation testing p-value for each split
 plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  input = permuteDE_output,
@@ -191,10 +192,12 @@ plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
 To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.
 
 ```{r, message = FALSE, warning = FALSE}
-# Example feature plot
-plotFeature(input = runDE_output,
-            feature = "Tafa2",
-            use_splits = "Inhibitory Neurons")
+# Generate a list of plots
+feature_plots <- plotFeature(input = runDE_output,
+                             feature = "App",
+                             use_splits = c("Inhibitory Neurons", "Oligodendrocytes"))
+# Display examples
+feature_plots[["Inhibitory Neurons"]] | feature_plots[["Oligodendrocytes"]]
 ```
 
 ------
@@ -290,3 +293,21 @@ We highly encourage users to use pseudobulk differential expression analysis, as
 When running cell-level tests, we still recommend that users provide the biological replicate labels to function `runDE()` using parameter `replicate_labels`. These labels are not used when running function `runDE()` with parameter `pseudobulk = "none"`, but they are passed on to function `permuteDE()`, such that when the group labels are permuted, cells from each biological replicate are not separated. In other words, the permutation occurs at the replicate level, even for cell-level tests.
 
 In the rare case when a user wants to permute cells regardless of the biological replicate, simply set `replicate_labels` equal to the cell IDs.
+
+## Palettes
+
+Four color palettes are included in this package. They can be called using function `palette_permuteDE()`, and setting parameter `swatch` to `TRUE` will display the palette.
+
+```{r, eval = FALSE}
+palette_permuteDE(type = "discrete", 
+                  n = 10, 
+                  palette_name = "choir", 
+                  swatch = TRUE)
+```
+
+```{r, echo = FALSE, fig.height = 1}
+palette_choir <- palette_permuteDE(type = "discrete", n = 10, palette_name = "choir", swatch = TRUE)
+palette_archr <- palette_permuteDE(type = "discrete", n = 10, palette_name = "archr", swatch = TRUE)
+palette_corces_cold <- palette_permuteDE(type = "gradient", n = 10, palette_name = "corces_cold", swatch = TRUE) 
+palette_corces_warm <- palette_permuteDE(type = "gradient", n = 10, palette_name = "corces_warm", swatch = TRUE)
+```

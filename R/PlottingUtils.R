@@ -80,8 +80,10 @@ theme_permuteDE <- function(color = "black",
 #' pre-set colors in the palette.
 #' @param palette_name A character string indicating the palette name. Permitted values
 #' are "choir", "archr", "corces_cold", and "corces_warm". Default =
-#' \code{NULL} will use "choir" when `type` is "discrete" and "corces_cold"
-#' when `type` is "gradient.
+#' \code{NULL} will use "choir" when \code{type} is "discrete" and "corces_cold"
+#' when \code{type} is "gradient.
+#' @param swatch A Boolean value indicating whether to plot a swatch of the
+#' palette.
 #'
 #' @return Returns a vector of n hex values.
 #'
@@ -89,7 +91,8 @@ theme_permuteDE <- function(color = "black",
 #'
 palette_permuteDE <- function(type = "discrete",
                               n = NULL,
-                              palette_name = NULL) {
+                              palette_name = NULL,
+                              swatch = FALSE) {
 
   # ---------------------------------------------------------------------------
   # Check parameter input validity
@@ -98,6 +101,7 @@ palette_permuteDE <- function(type = "discrete",
   .validInput(type, "type")
   .validInput(n, "n")
   .validInput(palette_name, "palette_name", type)
+  .validInput(swatch, "swatch")
 
   # ---------------------------------------------------------------------------
   # Create palette
@@ -129,10 +133,9 @@ palette_permuteDE <- function(type = "discrete",
                            "#616DFF", "#FF9240", "#9B9CA3", "#7DE3FF", "#FF69A3")
     } else if (palette_name == "archr") {
       starting_colors <- c("#D51F26","#272E6A","#208A42","#89288F","#F47D2B",
-                           "#FEE500","#8A9FD1","#C06CAB","#E6C2DC","#90D5E4",
+                           "#FEE500","#8A9FD1","#C06CAB","#D8A767","#90D5E4",
                            "#89C75F","#F37B7D","#9983BD","#D24B27","#3BBCA8",
-                           "#6E4B9E","#0C727C","#7E1416","#D8A767","#3D3D3D")
-
+                           "#6E4B9E","#0C727C","#7E1416","#E6C2DC","#3D3D3D")
     }
     if (is.null(n)) {
       n <- length(starting_colors)
@@ -165,6 +168,24 @@ palette_permuteDE <- function(type = "discrete",
       values <- starting_colors
     }
   }
+
+  # ---------------------------------------------------------------------------
+  # Plot swatch
+  # ---------------------------------------------------------------------------
+  if (swatch == TRUE) {
+    n_rows <- ceiling(n / 10)
+    swatch_data <- data.frame(x = rep(1:10, n_rows)[1:n],
+                              y = rep(n_rows:1, each = 10)[1:n],
+                              color = values)
+    p <- ggplot2::ggplot(swatch_data, ggplot2::aes(x, y)) +
+      ggplot2::geom_tile(ggplot2::aes(fill = color), color = NA) +
+      ggplot2::scale_fill_identity() +
+      ggplot2::coord_fixed() +
+      ggplot2::theme_void() +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.05, vjust = 1, size = 10)) +
+      ggplot2::labs(title = paste0('Palette: "', palette_name, '"'))
+    print(p)
+  }
   return(values)
 }
 
@@ -190,10 +211,10 @@ palette_permuteDE <- function(type = "discrete",
 #' 0 to disregard log fold change when counting hits.
 #' @param use_splits A character string or vector containing the names of splits
 #' to use. Defaults to \code{NULL}, which will try all splits.
-#' @param title Character string indicating the plot title. Default = `NULL`
-#' sets a title automatically for each split.
+#' @param title Character string indicating the plot title. Default =
+#' \code{NULL} sets a title automatically for each split.
 #' @param subtitle Character string indicating the plot subtitle. Default =
-#' `NULL` automatically generates a subtitle describing the DE method used.
+#' \code{NULL} automatically generates a subtitle describing the DE method used.
 #' @param n_max_label A numeric value indicating how many of the top
 #' significant DE features to label. Defaults to 10.
 #' @param center A Boolean value indicating whether to center the x-axis at 0.
@@ -365,10 +386,10 @@ plotVolcano <- function(input,
 #' @param input Output from function \code{permuteDE}.
 #' @param use_splits A character string or vector containing the names of splits
 #' to use. Defaults to \code{NULL}, which will try all splits.
-#' @param title Character string indicating the plot title. Default = `NULL`
-#' sets a title automatically for each split.
+#' @param title Character string indicating the plot title. Default =
+#' \code{NULL} sets a title automatically for each split.
 #' @param subtitle Character string indicating the plot subtitle. Default =
-#' `NULL` automatically generates a subtitle.
+#' \code{NULL} automatically generates a subtitle.
 #' @param label_pvalue A Boolean value indicating whether to label the
 #' permutation test p-value. Defaults to TRUE.
 #'
@@ -518,8 +539,10 @@ plotHistogram <- function(input,
 #' @param normalization_method A character string indicating which normalization
 #' method to apply to the replicate x feature matrix. Permitted values are
 #' "cpm", "log_cpm", and "none". Defaults to "cpm".
-#' @param title A character string indicating the plot title. Default = `NULL`
-#' sets a title automatically for each split.
+#' @param title A character string indicating the plot title. Default =
+#' \code{NULL} sets a title automatically for each split.
+#' @param subtitle Character string indicating the plot subtitle. Default =
+#' \code{NULL} automatically generates a subtitle.
 #' @param label_replicates A Boolean value indicating whether to label the
 #' replicates. Defaults to \code{FALSE}.
 #' @param label_statistics A Boolean value indicating whether to label the
@@ -536,6 +559,7 @@ plotFeature <- function(input,
                         use_splits = NULL,
                         normalization_method = "cpm",
                         title = NULL,
+                        subtitle = NULL,
                         label_replicates = FALSE,
                         label_statistics = TRUE) {
 
@@ -554,6 +578,7 @@ plotFeature <- function(input,
   .validInput(use_splits, "use_splits", list(input, "plotFeature"))
   .validInput(normalization_method, "normalization_method")
   .validInput(title, "title")
+  .validInput(subtitle, "subtitle")
   .validInput(label_replicates, "label_replicates")
   .validInput(label_statistics, "label_statistics")
 
@@ -604,12 +629,16 @@ plotFeature <- function(input,
       y_axis_title <- paste0("Expression of *", feature, "*")
     }
 
-    # Set title
+    # Set title & subtitle
     if (is.null(title)) {
-      current_title <- paste0("Expression of *", feature, "*: ", s)
-      current_title <- paste(strwrap(current_title, 80), collapse = "\n")
+      current_title <- paste0("*", feature, "*")
     } else {
       current_title <- title
+    }
+    if (is.null(subtitle)) {
+      current_subtitle <- s
+    } else {
+      current_subtitle <- subtitle
     }
 
     # If feature is not in matrix, return NULL
@@ -651,6 +680,7 @@ plotFeature <- function(input,
         ggbeeswarm::geom_beeswarm(size = 2, shape = 21) +
         ggplot2::scale_fill_manual(values = c("#AAAAAA", "#EE3751")) +
         ggplot2::labs(title = current_title,
+                      subtitle = current_subtitle,
                       x = "Group",
                       y = y_axis_title)
       # Add replicate labels
@@ -698,7 +728,8 @@ plotFeature <- function(input,
 #' reduction cell coordinates to. Default = \code{NULL} will use all cells.
 #' @param color_by A character vector indicating what metric to use to color
 #' each split. Permitted values are "n_sig", "pvalue", and "split". Default =
-#' \code{NULL} will not color the cells.
+#' "split" will color the cells by the split they belong to if input to
+#' parameter \code{split_labels} is provided.
 #' @param permutation_test_alpha A numeric value indicating the significance
 #' level to apply to the permutation test results. Splits that do not pass this
 #' threshold will be grayed out. Default = 1 applies no threshold.
@@ -710,6 +741,8 @@ plotFeature <- function(input,
 #' values are "choir", "archr", "corces_cold", and "corces_warm". Default =
 #' \code{NULL} will use "choir" for discrete colors and "corces_cold" for
 #' gradient colors.
+#' @param fix_coords A Boolean value indicating whether the aspect ratio of the
+#' x and y axis should be 1.
 #' @param ... Extra parameters passed to \code{Seurat::DimPlot()} or
 #' \code{Seurat::FeaturePlot()}.
 #'
@@ -725,6 +758,7 @@ plotDimReduction <- function(reduction,
                              label_splits = FALSE,
                              label_statistics = FALSE,
                              palette_name = NULL,
+                             fix_coords = TRUE,
                              ...) {
 
   # ---------------------------------------------------------------------------
@@ -739,6 +773,7 @@ plotDimReduction <- function(reduction,
   .validInput(permutation_test_alpha, "permutation_test_alpha")
   .validInput(label_splits, "label_splits")
   .validInput(label_statistics, "label_statistics")
+  .validInput(fix_coords, "fix_coords")
 
   # ---------------------------------------------------------------------------
   # Set up
@@ -805,8 +840,8 @@ plotDimReduction <- function(reduction,
                                      pvalue = NA))
       }
     }
-    tmp_seurat$n_sig <- input$permutation_test_results$runDE_n_sig[match(split_labels, key$split)]
-    tmp_seurat$pvalue <- input$permutation_test_results$pvalue[match(split_labels, key$split)]
+    tmp_seurat$n_sig <- key$runDE_n_sig[match(split_labels, key$split)]
+    tmp_seurat$pvalue <- key$pvalue[match(split_labels, key$split)]
     if (color_by == "n_sig") {
       color_label <- "Number of\nsignificant\nDE features"
       tmp_seurat$color_groups <- tmp_seurat$n_sig
@@ -925,5 +960,11 @@ plotDimReduction <- function(reduction,
                                                                          size = 8)))
     }
   }
+
+  # Fix coords
+  if (fix_coords == TRUE) {
+    p <- p + ggplot2::coord_fixed()
+  }
+
   return(p)
 }
