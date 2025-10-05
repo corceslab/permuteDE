@@ -442,7 +442,7 @@ plotHistogram <- function(input,
     }
 
     # Set color groups & label
-    true_n_sig_s <- dplyr::filter(input$permutation_test_results, split == s)$true_n_sig[1]
+    runDE_n_sig_s <- dplyr::filter(input$permutation_test_results, split == s)$runDE_n_sig[1]
     pvalue_s <- dplyr::filter(input$permutation_test_results, split == s)$pvalue[1]
     if (pvalue_s < 0.0001) {
       pvalue_s <- paste0("*p* < 0.0001")
@@ -450,16 +450,16 @@ plotHistogram <- function(input,
       pvalue_s <- paste0("*p* = ", round(pvalue_s, 4))
     }
     split_results_s <- split_results_s |>
-      dplyr::mutate(fill_group = ifelse(n_sig >= true_n_sig_s, TRUE, FALSE))
+      dplyr::mutate(fill_group = ifelse(n_sig >= runDE_n_sig_s, TRUE, FALSE))
     # Set limits
     y_limits <- c(0, (max(table(split_results_s$n_sig))*1.05))
-    x_max <- max(c(split_results_s$n_sig, true_n_sig_s)) + 1
+    x_max <- max(c(split_results_s$n_sig, runDE_n_sig_s)) + 1
     x_breaks <- floor(pretty(seq(0, x_max, 1)))
-    if (true_n_sig_s/x_max < 0.5) {
-      x_label_position <- true_n_sig_s + x_max*0.025
+    if (runDE_n_sig_s/x_max < 0.5) {
+      x_label_position <- runDE_n_sig_s + x_max*0.025
       x_label_hjust <- "left"
     } else {
-      x_label_position <- true_n_sig_s - x_max*0.025
+      x_label_position <- runDE_n_sig_s - x_max*0.025
       x_label_hjust <- "right"
     }
 
@@ -473,7 +473,7 @@ plotHistogram <- function(input,
       ggplot2::geom_histogram(alpha = 0.6,
                               binwidth = 1,
                               breaks = seq(-0.01, x_max, 1)) +
-      ggplot2::geom_vline(xintercept = true_n_sig_s, linetype = "longdash", color = "#EE3751") +
+      ggplot2::geom_vline(xintercept = runDE_n_sig_s, linetype = "longdash", color = "#EE3751") +
       ggplot2::scale_fill_manual(values = c("#AAAAAA", "#EE3751")) +
       ggplot2::scale_y_continuous(limits = y_limits, expand = c(0,0)) +
       ggplot2::scale_x_continuous(breaks = x_breaks) +
@@ -790,17 +790,27 @@ plotDimReduction <- function(reduction,
     }
   } else if (color_by %in% c("n_sig", "pvalue")) {
     type <- "FeaturePlot"
-    # Extract
+    # Extract data
+    key <- input$permutation_test_results[, c("split", "runDE_n_sig", "pvalue")]
     if (permutation_test_alpha < 1) {
-      input$permutation_test_results$true_n_sig[input$permutation_test_results$pvalue_n_sig >= permutation_test_alpha] <- NA
-      input$permutation_test_results$pvalue_n_sig[input$permutation_test_results$pvalue_n_sig >= permutation_test_alpha] <- NA
+      key$runDE_n_sig[key$pvalue >= permutation_test_alpha] <- NA
+      key$pvalue[key$pvalue >= permutation_test_alpha] <- NA
       na_legend <- paste0("Did not pass\npermutation test\n\u03b1 = ", permutation_test_alpha)
+    } else if (("metadata" %in% names(input) & ("runDE_values" %in% names(input$metadata)))) {
+      # If not all splits were run using permuteDE, pull runDE_n_sig values
+      if (!all(input$metadata$runDE_values$split %in% key$split)) {
+        indices <- which(!(input$metadata$runDE_values$split %in% key$split))
+        key <- rbind(key, data.frame(split = input$metadata$runDE_values$split[indices],
+                                     runDE_n_sig = input$metadata$runDE_values$runDE_n_sig[indices],
+                                     pvalue = NA))
+      }
     }
-    tmp_seurat$n_sig <- input$permutation_test_results$true_n_sig[match(split_labels, input$permutation_test_results$split)]
-    tmp_seurat$pvalue <- input$permutation_test_results$pvalue_n_sig[match(split_labels, input$permutation_test_results$split)]
+    tmp_seurat$n_sig <- input$permutation_test_results$runDE_n_sig[match(split_labels, key$split)]
+    tmp_seurat$pvalue <- input$permutation_test_results$pvalue[match(split_labels, key$split)]
     if (color_by == "n_sig") {
       color_label <- "Number of\nsignificant\nDE features"
       tmp_seurat$color_groups <- tmp_seurat$n_sig
+      # Set NA cutoff
       if(min(tmp_seurat$n_sig, na.rm = TRUE) == 0) {
         na_cutoff <- 1
       } else {
@@ -812,13 +822,8 @@ plotDimReduction <- function(reduction,
       na_cutoff <- NA
     }
     # Color palette
-    n_values <- unique(tmp_seurat$color_groups[!is.na(tmp_seurat$color_groups)])
-    if (length(n_values) == 1) {
-      palette <- c("#482F8E")
-    } else {
-      palette <- palette_permuteDE(type = "gradient",
-                                   palette_name = palette_name)
-    }
+    palette <- palette_permuteDE(type = "gradient",
+                                 palette_name = palette_name)
     # Labels
     if (label_splits == TRUE & label_statistics == TRUE) {
       add_labels <- TRUE
@@ -827,12 +832,18 @@ plotDimReduction <- function(reduction,
     } else if (label_splits == TRUE) {
       add_labels <- TRUE
       tmp_seurat$labels <- paste0(split_labels, "\n", tmp_seurat$n_sig, " DE features\np = ", round(tmp_seurat$pvalue, 4))
-      tmp_seurat$labels[is.na(tmp_seurat$n_sig) | is.na(tmp_seurat$pvalue)] <- split_labels[is.na(tmp_seurat$n_sig) | is.na(tmp_seurat$pvalue)]
+      tmp_seurat$labels[is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- split_labels[is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)]
+      tmp_seurat$labels[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- paste0(split_labels[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)],
+                                                                                       "\n", tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)],
+                                                                                       " DE features")
+
       Seurat::Idents(object = tmp_seurat) <- "labels"
     } else if (label_statistics == TRUE) {
       add_labels <- TRUE
       tmp_seurat$labels <- paste0(tmp_seurat$n_sig, " DE features\np = ", round(tmp_seurat$pvalue, 4))
-      tmp_seurat$labels[is.na(tmp_seurat$n_sig) | is.na(tmp_seurat$pvalue)] <- NA
+      tmp_seurat$labels[is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- NA
+      tmp_seurat$labels[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- paste0(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)],
+                                                                                       " DE features")
       Seurat::Idents(object = tmp_seurat) <- "labels"
     }
   }
@@ -886,6 +897,20 @@ plotDimReduction <- function(reduction,
       ggplot2::ylab("Dim 2")
     # Add NA legend
     if (permutation_test_alpha < 1) {
+      sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
+      sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
+      p <- p + ggplot2::geom_point(x = sample_x,
+                                   y = sample_y,
+                                   alpha = 0,
+                                   ggplot2::aes(fill = "")) +
+        ggplot2::scale_fill_manual(values = NA) +
+        ggplot2::guides(fill = ggplot2::guide_legend(na_legend,
+                                                     override.aes = list(fill=na_color,
+                                                                         alpha = 1,
+                                                                         shape = 22,
+                                                                         size = 8)))
+    } else if (!is.na(na_cutoff)) {
+      na_legend <- "0 DE\nfeatures"
       sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
       sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
       p <- p + ggplot2::geom_point(x = sample_x,

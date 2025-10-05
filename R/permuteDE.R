@@ -121,15 +121,16 @@ permuteDE <- function(input,
   }
 
   # Calculate true number of DE features
-  true_DE_values <- input$DE_results |>
+  runDE_values <- input$DE_results |>
     dplyr::group_by(split) |>
     dplyr::summarise(
-      n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold, na.rm = TRUE))
+      runDE_n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold, na.rm = TRUE)) |>
+    data.frame()
 
   # Remove splits with fewer than the minimum number of DE features
   use_splits <- intersect(use_splits,
-                          dplyr::filter(true_DE_values, n_sig >= min_DE)$split)
-  remove_splits <- dplyr::filter(true_DE_values, n_sig < min_DE)$split
+                          dplyr::filter(runDE_values, runDE_n_sig >= min_DE)$split)
+  remove_splits <- dplyr::filter(runDE_values, runDE_n_sig < min_DE)$split
   if (verbose & length(remove_splits) > 0) {
     message(format(Sys.time(), "%Y-%m-%d %X")," : Will skip ", length(remove_splits), " split label",
             ifelse(length(remove_splits) == 1, "", "s"),
@@ -164,8 +165,8 @@ permuteDE <- function(input,
                                        min_lfc = NULL,
                                        max_lfc = NULL)
   permutation_test_results <- data.frame(split = NULL,
-                                         true_n_sig = NULL,
-                                         pvalue_n_sig = NULL,
+                                         runDE_n_sig = NULL,
+                                         pvalue = NULL,
                                          n_iterations = NULL)
   if (return_all == TRUE) {
     permutation_DE_results <- data.frame(gene = NULL,
@@ -325,12 +326,12 @@ permuteDE <- function(input,
       }
 
       # Conduct permutation test
-      true_n_sig <- dplyr::filter(true_DE_values, split == current_split)$n_sig
+      runDE_n_sig <- dplyr::filter(runDE_values, split == current_split)$runDE_n_sig
 
-      permutation_test_p_value <- sum(c(true_n_sig, permutation_DE_summary_s$n_sig) >= true_n_sig)/current_n_iterations
+      permutation_test_p_value <- sum(c(runDE_n_sig, permutation_DE_summary_s$n_sig) >= runDE_n_sig)/current_n_iterations
       permutation_test_results_s <- data.frame(split = current_split,
-                                               true_n_sig = true_n_sig,
-                                               pvalue_n_sig = permutation_test_p_value,
+                                               runDE_n_sig = runDE_n_sig,
+                                               pvalue = permutation_test_p_value,
                                                n_iterations = current_n_iterations)
       # Add to overall results
       permutation_DE_summary <- rbind(permutation_DE_summary, permutation_DE_summary_s)
@@ -353,9 +354,10 @@ permuteDE <- function(input,
   time3 <- Sys.time()
 
   # Metadata
-  metadata_list <- list("time" = data.frame(total = difftime(time3, time1, units = "secs"),
-                                              step1_setup = difftime(time2, time1, units = "secs"),
-                                              step2_permute = difftime(time3, time2, units = "secs")))
+  metadata_list <- list("runDE_values" = runDE_values,
+                        "time" = data.frame(total = difftime(time3, time1, units = "secs"),
+                                            step1_setup = difftime(time2, time1, units = "secs"),
+                                            step2_permute = difftime(time3, time2, units = "secs")))
 
   parameter_list <- list("alpha" = alpha,
                          "lfc_threshold" = lfc_threshold,
