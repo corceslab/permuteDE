@@ -833,6 +833,8 @@ plotDimReduction <- function(reduction,
       warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
     }
   } else if (color_by %in% c("n_sig", "pvalue")) {
+    legend_barwidth <- NULL
+    legend_barheight <- 1
     type <- "FeaturePlot"
     # Extract data
     key <- input$permutation_test_results[, c("split", "runDE_n_sig", "pvalue")]
@@ -859,6 +861,10 @@ plotDimReduction <- function(reduction,
         na_cutoff <- 1
       } else {
         na_cutoff <- NA
+      }
+      # Set barwidth if only 1 value
+      if (dplyr::n_distinct(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig)]) < 2) {
+        legend_barwidth <- 1
       }
     } else if (color_by == "pvalue") {
       color_legend <- "Permutation<br>test p-value"
@@ -935,7 +941,9 @@ plotDimReduction <- function(reduction,
                                      na.value = na_color,
                                      limits = c(na_cutoff, NA),
                                      guide = ggplot2::guide_colorbar(frame.colour = "black",
-                                                                     ticks.colour = "black")) +
+                                                                     ticks.colour = "black",
+                                                                     barwidth = legend_barwidth,
+                                                                     barheight = legend_barheight)) +
       ggplot2::xlab("Dim 1") +
       ggplot2::ylab("Dim 2")
     # Add NA legend
@@ -945,30 +953,41 @@ plotDimReduction <- function(reduction,
       p <- p + ggplot2::geom_point(x = sample_x,
                                    y = sample_y,
                                    alpha = 0,
-                                   ggplot2::aes(fill = "")) +
-        ggplot2::scale_fill_manual(values = NA) +
-        ggplot2::guides(color = ggplot2::guide_colorbar(color_legend, order = 1),
-                        fill = ggplot2::guide_legend(na_legend,
-                                                     override.aes = list(fill=na_color,
-                                                                         alpha = 1,
-                                                                         shape = 22,
-                                                                         size = 8),
-                                                     order = 2))
+                                   ggplot2::aes(fill = 0)) +
+        ggplot2::scale_fill_gradientn(colors = na_color,
+                                      labels = "",
+                                      guide = ggplot2::guide_colorbar(title = na_legend,
+                                                                      ticks = FALSE,
+                                                                      frame.colour = "black",
+                                                                      barwidth = 1,
+                                                                      barheight = 1,
+                                                                      order = 2)) +
+        ggplot2::guides(color = ggplot2::guide_colorbar(color_legend,
+                                                        frame.colour = "black",
+                                                        ticks.colour = "black",
+                                                        barwidth = legend_barwidth,
+                                                        barheight = legend_barheight,
+                                                        order = 1))
     } else if (!is.na(na_cutoff)) {
       sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
       sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
       p <- p + ggplot2::geom_point(x = sample_x,
                                    y = sample_y,
                                    alpha = 0,
-                                   ggplot2::aes(fill = "")) +
-        ggplot2::scale_fill_manual(values = NA, labels = c("0")) +
-        ggplot2::guides(fill = ggplot2::guide_legend(color_legend,
-                                                     override.aes = list(fill=na_color,
-                                                                         alpha = 1,
-                                                                         shape = 22,
-                                                                         size = 8),
-                                                     order = 1),
-                        color = ggplot2::guide_colorbar("", order = 2))
+                                   ggplot2::aes(fill = 0)) +
+        ggplot2::scale_fill_gradientn(colors = na_color,
+                                      labels = "0",
+                                      guide = ggplot2::guide_colorbar(title = color_legend,
+                                                                      frame.colour = "black",
+                                                                      barwidth = 1,
+                                                                      barheight = 1,
+                                                                      order = 1)) +
+        ggplot2::guides(color = ggplot2::guide_colorbar("",
+                                                        frame.colour = "black",
+                                                        ticks.colour = "black",
+                                                        barwidth = legend_barwidth,
+                                                        barheight = legend_barheight,
+                                                        order = 2))
     } else {
       p <- p + ggplot2::labs(color = color_legend)
     }
