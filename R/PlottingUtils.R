@@ -21,18 +21,18 @@
 #' @param rotate_y_axis_text_90 Boolean value indicating whether to rotate the y-axis text by 90 degrees
 #'
 #' @export
-theme_permuteDE <- function(color = "black",
-                            base_size = 10,
-                            base_line_size = 0.5,
-                            base_rect_size = 0.5,
-                            axis_title_size = 12,
-                            plot_title_size = 14,
-                            plot_margin_cm = 1,
-                            legend_text_size = 10,
-                            legend_position = "bottom",
-                            axis_tick_length_mm = 1,
-                            rotate_x_axis_text_90 = FALSE,
-                            rotate_y_axis_text_90 = FALSE){
+permuteDEtheme <- function(color = "black",
+                           base_size = 10,
+                           base_line_size = 0.5,
+                           base_rect_size = 0.5,
+                           axis_title_size = 12,
+                           plot_title_size = 14,
+                           plot_margin_cm = 1,
+                           legend_text_size = 10,
+                           legend_position = "bottom",
+                           axis_tick_length_mm = 1,
+                           rotate_x_axis_text_90 = FALSE,
+                           rotate_y_axis_text_90 = FALSE){
   custom_theme <- ggplot2::theme(
     text = ggplot2::element_text(color = color, size = base_size),
     axis.text = ggplot2::element_text(color = color, size = base_size),
@@ -89,10 +89,10 @@ theme_permuteDE <- function(color = "black",
 #'
 #' @export
 #'
-palette_permuteDE <- function(type = "discrete",
-                              n = NULL,
-                              palette_name = NULL,
-                              swatch = FALSE) {
+permuteDEpalette <- function(type = "discrete",
+                             n = NULL,
+                             palette_name = NULL,
+                             swatch = FALSE) {
 
   # ---------------------------------------------------------------------------
   # Check parameter input validity
@@ -324,7 +324,7 @@ plotVolcano <- function(input,
     } else {
       x_limits <- c(max(abs(split_results_s$lfc), na.rm = TRUE)*(-1.1), max(abs(split_results_s$lfc), na.rm = TRUE)*1.1)
     }
-    y_limits <- c(0, max(-log10(split_results_s$padj), na.rm = TRUE)*1.1)
+    y_limits <- c(0, max(c(-log10(split_results_s$padj), -log10(alpha)), na.rm = TRUE)*1.1)
 
     # Set color groups & label set
     split_results_s <- split_results_s |>
@@ -341,7 +341,7 @@ plotVolcano <- function(input,
                     ggplot2::aes(x = lfc,
                                  y = -log10(padj),
                                  color = sig_group)) +
-      theme_permuteDE() +
+      permuteDEtheme() +
       ggplot2::theme(plot.title = ggtext::element_markdown(),
                      axis.title.x = ggtext::element_markdown(),
                      axis.title.y = ggtext::element_markdown()) +
@@ -465,15 +465,22 @@ plotHistogram <- function(input,
     # Set color groups & label
     runDE_n_sig_s <- dplyr::filter(input$permutation_test_results, split == s)$runDE_n_sig[1]
     pvalue_s <- dplyr::filter(input$permutation_test_results, split == s)$pvalue[1]
+    if (pvalue_s == 1) {
+      palette <- c("#EE3751")
+    } else {
+      palette <- c("#AAAAAA", "#EE3751")
+    }
     if (pvalue_s < 0.0001) {
       pvalue_s <- paste0("*p* < 0.0001")
     } else {
       pvalue_s <- paste0("*p* = ", round(pvalue_s, 4))
     }
     split_results_s <- split_results_s |>
-      dplyr::mutate(fill_group = ifelse(n_sig >= runDE_n_sig_s, TRUE, FALSE))
+      dplyr::mutate(fill_group = ifelse(n_sig >= runDE_n_sig_s,
+                                        "Permuted \u2265 true\ncomparison",
+                                        "Permuted < true\ncomparison"))
     # Set limits
-    y_limits <- c(0, (max(table(split_results_s$n_sig))*1.05))
+    y_limits <- c(0, (max(table(split_results_s$n_sig))*1.1))
     x_max <- max(c(split_results_s$n_sig, runDE_n_sig_s)) + 1
     x_breaks <- floor(pretty(seq(0, x_max, 1)))
     if (runDE_n_sig_s/x_max < 0.5) {
@@ -488,20 +495,20 @@ plotHistogram <- function(input,
     p <- ggplot2::ggplot(data = split_results_s,
                          ggplot2::aes(x = n_sig,
                                       fill = fill_group)) +
-      theme_permuteDE() +
-      ggplot2::theme(legend.position = "none") +
+      permuteDEtheme() +
       ggplot2::theme(plot.title = ggtext::element_markdown()) +
       ggplot2::geom_histogram(alpha = 0.6,
                               binwidth = 1,
                               breaks = seq(-0.01, x_max, 1)) +
       ggplot2::geom_vline(xintercept = runDE_n_sig_s, linetype = "longdash", color = "#EE3751") +
-      ggplot2::scale_fill_manual(values = c("#AAAAAA", "#EE3751")) +
+      ggplot2::scale_fill_manual(values = palette) +
       ggplot2::scale_y_continuous(limits = y_limits, expand = c(0,0)) +
       ggplot2::scale_x_continuous(breaks = x_breaks) +
       ggplot2::labs(title = current_title,
                     subtitle = current_subtitle,
                     x = "Number of DE features",
-                    y = "Count")
+                    y = "Count",
+                    fill = "")
     # Add p-value label
     if (label_pvalue == TRUE) {
       p + ggtext::geom_richtext(x = x_label_position,
@@ -673,7 +680,7 @@ plotFeature <- function(input,
                            ggplot2::aes(x = group,
                                         y = feature,
                                         fill = group)) +
-        theme_permuteDE() +
+        permuteDEtheme() +
         ggplot2::theme(legend.position = "none") +
         ggplot2::theme(plot.title = ggtext::element_markdown(),
                        axis.title.y = ggtext::element_markdown()) +
@@ -765,6 +772,8 @@ plotDimReduction <- function(reduction,
   # Check input validity
   # ---------------------------------------------------------------------------
 
+  .requirePackage("ggtext", source = "cran")
+
   .validInput(reduction, "reduction")
   .validInput(input, "input", "plotDimReduction")
   .validInput(split_labels, "split_labels", reduction)
@@ -797,12 +806,12 @@ plotDimReduction <- function(reduction,
   # Add color groupings
   na_color <- "#BBBBBB"
   add_labels <- FALSE
-  if (is.null(color_by) | (is.null(split_labels) & color_by == "split")) {
+  if (is.null(color_by) || (is.null(split_labels) && identical(color_by, "split"))) {
     type <- "DimPlot"
     # No groups
     tmp_seurat$color_groups <- "all"
     palette <- c(na_color)
-    color_label <- ""
+    color_legend <- ""
     if (label_splits == TRUE) {
       warning("Input value for 'label_splits' is not used when parameters 'split_labels' or 'color_by' are NULL.")
     }
@@ -813,10 +822,10 @@ plotDimReduction <- function(reduction,
     type <- "DimPlot"
     # Add splits to metadata
     tmp_seurat$color_groups <- split_labels
-    palette <- palette_permuteDE(type = "discrete",
-                                 n = dplyr::n_distinct(split_labels),
-                                 palette_name = palette_name)
-    color_label <- ""
+    palette <- permuteDEpalette(type = "discrete",
+                                n = dplyr::n_distinct(split_labels),
+                                palette_name = palette_name)
+    color_legend <- ""
     if (label_splits == TRUE) {
       add_labels <- TRUE
     }
@@ -830,7 +839,7 @@ plotDimReduction <- function(reduction,
     if (permutation_test_alpha < 1) {
       key$runDE_n_sig[key$pvalue >= permutation_test_alpha] <- NA
       key$pvalue[key$pvalue >= permutation_test_alpha] <- NA
-      na_legend <- paste0("Did not pass\npermutation test\n\u03b1 = ", permutation_test_alpha)
+      na_legend <- paste0("Permutation<br>test *p* \u2265 ", permutation_test_alpha)
     } else if (("metadata" %in% names(input) & ("runDE_values" %in% names(input$metadata)))) {
       # If not all splits were run using permuteDE, pull runDE_n_sig values
       if (!all(input$metadata$runDE_values$split %in% key$split)) {
@@ -843,7 +852,7 @@ plotDimReduction <- function(reduction,
     tmp_seurat$n_sig <- key$runDE_n_sig[match(split_labels, key$split)]
     tmp_seurat$pvalue <- key$pvalue[match(split_labels, key$split)]
     if (color_by == "n_sig") {
-      color_label <- "Number of\nsignificant\nDE features"
+      color_legend <- "Number of<br>significant<br>DE features"
       tmp_seurat$color_groups <- tmp_seurat$n_sig
       # Set NA cutoff
       if(min(tmp_seurat$n_sig, na.rm = TRUE) == 0) {
@@ -852,13 +861,13 @@ plotDimReduction <- function(reduction,
         na_cutoff <- NA
       }
     } else if (color_by == "pvalue") {
-      color_label <- "Permutation\ntest p-value"
+      color_legend <- "Permutation<br>test p-value"
       tmp_seurat$color_groups <- tmp_seurat$pvalue
       na_cutoff <- NA
     }
     # Color palette
-    palette <- palette_permuteDE(type = "gradient",
-                                 palette_name = palette_name)
+    palette <- permuteDEpalette(type = "gradient",
+                                palette_name = palette_name)
     # Labels
     if (label_splits == TRUE & label_statistics == TRUE) {
       add_labels <- TRUE
@@ -893,7 +902,7 @@ plotDimReduction <- function(reduction,
                          label = add_labels,
                          ...) +
       ggplot2::theme_void() +
-      theme_permuteDE() +
+      permuteDEtheme() +
       ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
                      axis.text.x = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
@@ -902,7 +911,7 @@ plotDimReduction <- function(reduction,
                      plot.title = ggplot2::element_blank(),
                      legend.box.margin = ggplot2::margin(5, 5, 5, 5)) +
       ggplot2::scale_color_manual(values = palette) +
-      ggplot2::labs(color = color_label) +
+      ggplot2::labs(color = color_legend) +
       ggplot2::xlab("Dim 1") +
       ggplot2::ylab("Dim 2")
   } else if (type == "FeaturePlot") {
@@ -913,21 +922,20 @@ plotDimReduction <- function(reduction,
                              label.size = 3.5,
                              ...) +
       ggplot2::theme_void() +
-      theme_permuteDE() +
+      permuteDEtheme() +
       ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
                      axis.text.x = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      axis.text.y = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_text(angle = 90, vjust = 0.5),
                      plot.title = ggplot2::element_blank(),
-                     legend.title = ggplot2::element_text(margin = ggplot2::margin(l = 5, r = 5)),
-                     legend.box.margin = ggplot2::margin(5, 5, 5, 5)) +
+                     legend.title = ggtext::element_markdown(margin = ggplot2::margin(l = 5, r = 5)),
+                     legend.box.margin = ggplot2::margin(5, 12, 5, 5)) +
       ggplot2::scale_color_gradientn(colors = palette,
                                      na.value = na_color,
                                      limits = c(na_cutoff, NA),
                                      guide = ggplot2::guide_colorbar(frame.colour = "black",
                                                                      ticks.colour = "black")) +
-      ggplot2::labs(color = color_label) +
       ggplot2::xlab("Dim 1") +
       ggplot2::ylab("Dim 2")
     # Add NA legend
@@ -939,25 +947,30 @@ plotDimReduction <- function(reduction,
                                    alpha = 0,
                                    ggplot2::aes(fill = "")) +
         ggplot2::scale_fill_manual(values = NA) +
-        ggplot2::guides(fill = ggplot2::guide_legend(na_legend,
+        ggplot2::guides(color = ggplot2::guide_colorbar(color_legend, order = 1),
+                        fill = ggplot2::guide_legend(na_legend,
                                                      override.aes = list(fill=na_color,
                                                                          alpha = 1,
                                                                          shape = 22,
-                                                                         size = 8)))
+                                                                         size = 8),
+                                                     order = 2))
     } else if (!is.na(na_cutoff)) {
-      na_legend <- "0 DE\nfeatures"
       sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
       sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
       p <- p + ggplot2::geom_point(x = sample_x,
                                    y = sample_y,
                                    alpha = 0,
                                    ggplot2::aes(fill = "")) +
-        ggplot2::scale_fill_manual(values = NA) +
-        ggplot2::guides(fill = ggplot2::guide_legend(na_legend,
+        ggplot2::scale_fill_manual(values = NA, labels = c("0")) +
+        ggplot2::guides(fill = ggplot2::guide_legend(color_legend,
                                                      override.aes = list(fill=na_color,
                                                                          alpha = 1,
                                                                          shape = 22,
-                                                                         size = 8)))
+                                                                         size = 8),
+                                                     order = 1),
+                        color = ggplot2::guide_colorbar("", order = 2))
+    } else {
+      p <- p + ggplot2::labs(color = color_legend)
     }
   }
 

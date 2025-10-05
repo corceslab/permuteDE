@@ -149,7 +149,7 @@ volcano_plots <- plotVolcano(input = runDE_output)
 volcano_plots[["Inhibitory Neurons"]] | volcano_plots[["Oligodendrocytes"]]
 ```
 
-To generate histograms for each permutation test (or a single split), use function `plotHistogram()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and where the "true" results fall on this distribution.
+To generate histograms for each permutation test (or a single split), use function `plotHistogram()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and a dashed line where the "true" results fall on this distribution.
 
 ```{r, message = FALSE, warning = FALSE}
 # Generate a list of histograms
@@ -296,18 +296,18 @@ In the rare case when a user wants to permute cells regardless of the biological
 
 ## Palettes
 
-Four color palettes are included in this package. They can be called using function `palette_permuteDE()`, and setting parameter `swatch` to `TRUE` will display the palette.
+Four color palettes are included in this package. They can be called using function `permuteDEpalette()`, and setting parameter `swatch` to `TRUE` will display the palette.
 
 ```{r, eval = FALSE}
-palette_permuteDE(type = "discrete", 
+permuteDEpalette(type = "discrete", 
                   n = 10, 
                   palette_name = "choir", 
                   swatch = TRUE)
 ```
 
 ```{r, echo = FALSE, fig.height = 1}
-palette_choir <- palette_permuteDE(type = "discrete", n = 10, palette_name = "choir", swatch = TRUE)
-palette_archr <- palette_permuteDE(type = "discrete", n = 10, palette_name = "archr", swatch = TRUE)
-palette_corces_cold <- palette_permuteDE(type = "gradient", n = 10, palette_name = "corces_cold", swatch = TRUE) 
-palette_corces_warm <- palette_permuteDE(type = "gradient", n = 10, palette_name = "corces_warm", swatch = TRUE)
+palette_choir <- permuteDEpalette(type = "discrete", n = 10, palette_name = "choir", swatch = TRUE)
+palette_archr <- permuteDEpalette(type = "discrete", n = 10, palette_name = "archr", swatch = TRUE)
+palette_corces_cold <- permuteDEpalette(type = "gradient", n = 10, palette_name = "corces_cold", swatch = TRUE) 
+palette_corces_warm <- permuteDEpalette(type = "gradient", n = 10, palette_name = "corces_warm", swatch = TRUE)
 ```
