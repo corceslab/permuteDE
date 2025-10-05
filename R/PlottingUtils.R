@@ -16,6 +16,8 @@
 #' @param plot_margin_cm The margin around the plot in centimeters
 #' @param legend_text_size 0.75*base_size
 #' @param legend_position The placement of the legend in the plot
+#' @param legend_title_hjust Left-right justification of legend title
+#' @param legend_title_vjust Top-bottom justification of legend title
 #' @param axis_tick_length_mm Axis tick length in mm
 #' @param rotate_x_axis_text_90 Boolean value indicating whether to rotate the x-axis text by 90 degrees
 #' @param rotate_y_axis_text_90 Boolean value indicating whether to rotate the y-axis text by 90 degrees
@@ -30,6 +32,8 @@ permuteDEtheme <- function(color = "black",
                            plot_margin_cm = 1,
                            legend_text_size = 10,
                            legend_position = "bottom",
+                           legend_title_hjust = 0,
+                           legend_title_vjust = 0.5,
                            axis_tick_length_mm = 1,
                            rotate_x_axis_text_90 = FALSE,
                            rotate_y_axis_text_90 = FALSE){
@@ -47,7 +51,7 @@ permuteDEtheme <- function(color = "black",
     axis.ticks = ggplot2::element_line(color = color, size = (4/3) * base_line_size),
     legend.key = ggplot2::element_rect(fill = "transparent", colour = NA),
     legend.text = ggplot2::element_text(color = color, size = legend_text_size),
-    legend.title = ggplot2::element_text(color = color, size = legend_text_size),
+    legend.title = ggplot2::element_text(color = color, size = legend_text_size, hjust = legend_title_hjust, vjust = legend_title_vjust),
     legend.box.background = ggplot2::element_rect(fill = "transparent"),
     legend.position = legend_position,
     legend.spacing = ggplot2::unit(15, "pt"),
@@ -928,7 +932,7 @@ plotDimReduction <- function(reduction,
                              label.size = 3.5,
                              ...) +
       ggplot2::theme_void() +
-      permuteDEtheme() +
+      permuteDEtheme(legend_title_vjust = 1) +
       ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
                      axis.text.x = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
@@ -979,6 +983,7 @@ plotDimReduction <- function(reduction,
                                       labels = "0",
                                       guide = ggplot2::guide_colorbar(title = color_legend,
                                                                       frame.colour = "black",
+                                                                      ticks.colour = "black",
                                                                       barwidth = 1,
                                                                       barheight = 1,
                                                                       order = 1)) +
@@ -987,7 +992,8 @@ plotDimReduction <- function(reduction,
                                                         ticks.colour = "black",
                                                         barwidth = legend_barwidth,
                                                         barheight = legend_barheight,
-                                                        order = 2))
+                                                        order = 2)) +
+        ggplot2::theme(legend.spacing = ggplot2::unit(0, "pt"))
     } else {
       p <- p + ggplot2::labs(color = color_legend)
     }

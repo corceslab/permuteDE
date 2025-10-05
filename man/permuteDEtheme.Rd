@@ -14,6 +14,8 @@ permuteDEtheme(
   plot_margin_cm = 1,
   legend_text_size = 10,
   legend_position = "bottom",
+  legend_title_hjust = 0,
+  legend_title_vjust = 0.5,
   axis_tick_length_mm = 1,
   rotate_x_axis_text_90 = FALSE,
   rotate_y_axis_text_90 = FALSE
@@ -37,6 +39,10 @@ permuteDEtheme(
 \item{legend_text_size}{0.75*base_size}
 
 \item{legend_position}{The placement of the legend in the plot}
+
+\item{legend_title_hjust}{Left-right justification of legend title}
+
+\item{legend_title_vjust}{Top-bottom justification of legend title}
 
 \item{axis_tick_length_mm}{Axis tick length in mm}
 
