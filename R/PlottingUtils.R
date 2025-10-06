@@ -82,10 +82,10 @@ permuteDEtheme <- function(color = "black",
 #' are "discrete" and "gradient". Defaults to discrete.
 #' @param n Number of colors. Default = \code{NULL} will return all of the
 #' pre-set colors in the palette.
-#' @param palette_name A character string indicating the palette name. Permitted values
-#' are "choir", "archr", "corces_cold", and "corces_warm". Default =
-#' \code{NULL} will use "choir" when \code{type} is "discrete" and "corces_cold"
-#' when \code{type} is "gradient.
+#' @param palette_name A character string indicating the palette name. Permitted
+#' values are "choir", "archr", "frozen", and "inferno". Default = \code{NULL}
+#' will use "choir" when \code{type} is "discrete" and "inferno" when
+#' \code{type} is "gradient.
 #' @param swatch A Boolean value indicating whether to plot a swatch of the
 #' palette.
 #'
@@ -155,12 +155,12 @@ permuteDEpalette <- function(type = "discrete",
     }
   } else if (type == "gradient") {
     if (is.null(palette_name)) {
-      palette_name <- "corces_cold"
+      palette_name <- "inferno"
     }
-    if (palette_name == "corces_cold") {
-      starting_colors <- c("#61DAFF", "#48ACFF", "#337DFF", "#2E5CEF", "#5F36F2", "#511DCE", "#32217A", "#1E1551")
-    } else if (palette_name == "corces_warm") {
+    if (palette_name == "inferno") {
       starting_colors <- c("#FFC715", "#FF9D33", "#FF7145", "#FF527B", "#ED35B9", "#CB27E2", "#9031FF", "#5939F7", "#2A26EA", "#1A17BA", "#0C0782", "#000A51")
+    } else if (palette_name == "frozen") {
+      starting_colors <- c("#61DAFF", "#48ACFF", "#337DFF", "#2E5CEF", "#5F36F2", "#511DCE", "#32217A", "#1E1551")
     }
     if (is.null(n)) {
       n <- length(starting_colors)
@@ -333,7 +333,7 @@ plotVolcano <- function(input,
     # Set color groups & label set
     split_results_s <- split_results_s |>
       dplyr::mutate(sig_group = ifelse(lfc > lfc_threshold & padj < alpha, paste0("Higher in ", non_reference_group),
-                                       ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Lower in ", non_reference_group),
+                                       ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Higher in ", reference_group),
                                               "Not significant")))
     label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < 0.05, abs(lfc) > lfc_threshold),
                                      padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < 0.05)))]
@@ -362,7 +362,7 @@ plotVolcano <- function(input,
       ggplot2::xlim(x_limits) +
       ggplot2::ylim(y_limits) +
       ggplot2::scale_color_manual(values = c("#3A4BED", "#EE3751", "#BBBBBB"),
-                                  breaks = c(paste0("Lower in ", non_reference_group),
+                                  breaks = c(paste0("Higher in ", reference_group),
                                              paste0("Higher in ", non_reference_group))) +
       ggplot2::labs(title = current_title,
                     subtitle = subtitle,
@@ -664,13 +664,17 @@ plotFeature <- function(input,
       feature_s$group <- stats::relevel(factor(feature_s$group), ref = reference_group)
 
       # If labeling statistics, extract
+      f <- feature
+      feature_statistics <- dplyr::filter(input$DE_results,
+                                          feature == f,
+                                          split == s)
+      if (nrow(feature_statistics) == 0) {
+        label_statistics <- FALSE
+      }
       if (label_statistics == TRUE) {
         if (!("DE_results" %in% names(input))) {
           stop("When parameter 'label_statistics' is set to TRUE, list provided to parameter 'input' must contain an elements named 'DE_results'. Please supply valid input!")
         }
-        feature_statistics <- dplyr::filter(input$DE_results,
-                                            feature == feature,
-                                            split == s)
         if (feature_statistics$padj[1] < 0.0001) {
           statistics_text <- paste0("LFC = ", round(feature_statistics$lfc[1], 4), ", *p* < 0.0001")
         } else {
@@ -749,9 +753,12 @@ plotFeature <- function(input,
 #' @param label_statistics A Boolean value indicating whether to label the
 #' values of the selected metric. Defaults to \code{FALSE}.
 #' @param palette_name A character string indicating the palette name. Permitted
-#' values are "choir", "archr", "corces_cold", and "corces_warm". Default =
-#' \code{NULL} will use "choir" for discrete colors and "corces_cold" for
+#' values are "choir", "archr", "frozen", and "inferno". Default =
+#' \code{NULL} will use "choir" for discrete colors and "frozen" for
 #' gradient colors.
+#' @param color_limits A vector with the minimum and maximum values indicated by
+#' `color_by` ("n_sig" or "pvalue") for display on the color bar legend. Default
+#' = \code{NULL} sets limits automatically.
 #' @param fix_coords A Boolean value indicating whether the aspect ratio of the
 #' x and y axis should be 1.
 #' @param ... Extra parameters passed to \code{Seurat::DimPlot()} or
@@ -769,6 +776,7 @@ plotDimReduction <- function(reduction,
                              label_splits = FALSE,
                              label_statistics = FALSE,
                              palette_name = NULL,
+                             color_limits = NULL,
                              fix_coords = TRUE,
                              ...) {
 
@@ -786,6 +794,7 @@ plotDimReduction <- function(reduction,
   .validInput(permutation_test_alpha, "permutation_test_alpha")
   .validInput(label_splits, "label_splits")
   .validInput(label_statistics, "label_statistics")
+  .validInput(color_limits, "color_limits", color_by)
   .validInput(fix_coords, "fix_coords")
 
   # ---------------------------------------------------------------------------
@@ -809,6 +818,8 @@ plotDimReduction <- function(reduction,
                                                                                        assay = 'tmp'))
   # Add color groupings
   na_color <- "#BBBBBB"
+  na_cutoff_low <- NA
+  na_cutoff_high <- NA
   add_labels <- FALSE
   if (is.null(color_by) || (is.null(split_labels) && identical(color_by, "split"))) {
     type <- "DimPlot"
@@ -864,10 +875,11 @@ plotDimReduction <- function(reduction,
       color_legend <- "Number of<br>significant<br>DE features"
       tmp_seurat$color_groups <- tmp_seurat$n_sig
       # Set NA cutoff
-      if(min(tmp_seurat$n_sig, na.rm = TRUE) == 0) {
-        na_cutoff <- 1
-      } else {
-        na_cutoff <- NA
+      if (!is.null(color_limits)) {
+        na_cutoff_low <- color_limits[1]
+        na_cutoff_high <- color_limits[2]
+      } else if (min(tmp_seurat$n_sig, na.rm = TRUE) == 0) {
+        na_cutoff_low <- 1
       }
       # Set barwidth if only 1 value
       if (dplyr::n_distinct(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig)]) < 2) {
@@ -876,7 +888,11 @@ plotDimReduction <- function(reduction,
     } else if (color_by == "pvalue") {
       color_legend <- "Permutation<br>test p-value"
       tmp_seurat$color_groups <- tmp_seurat$pvalue
-      na_cutoff <- NA
+      # Set NA cutoff
+      if (!is.null(color_limits)) {
+        na_cutoff_low <- color_limits[1]
+        na_cutoff_high <- color_limits[2]
+      }
       # Reverse palette
       palette <- rev(palette)
     }
@@ -945,7 +961,7 @@ plotDimReduction <- function(reduction,
                      legend.box.margin = ggplot2::margin(5, 12, 5, 5)) +
       ggplot2::scale_color_gradientn(colors = palette,
                                      na.value = na_color,
-                                     limits = c(na_cutoff, NA),
+                                     limits = c(na_cutoff_low, na_cutoff_high),
                                      guide = ggplot2::guide_colorbar(frame.colour = "black",
                                                                      ticks.colour = "black",
                                                                      barwidth = legend_barwidth,
@@ -974,7 +990,7 @@ plotDimReduction <- function(reduction,
                                                         barwidth = legend_barwidth,
                                                         barheight = legend_barheight,
                                                         order = 1))
-    } else if (!is.na(na_cutoff)) {
+    } else if (!is.na(na_cutoff_low) && na_cutoff_low == 1) {
       sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
       sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
       p <- p + ggplot2::geom_point(x = sample_x,

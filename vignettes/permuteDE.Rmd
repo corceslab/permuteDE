@@ -186,7 +186,8 @@ Or we can color by the p-values from the permutation test.
 plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  input = permuteDE_output,
                  split_labels = sample_data$cell_type,
-                 color_by = "pvalue")
+                 color_by = "pvalue",
+                 palette_name = "frozen")
 ```
 
 To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.
@@ -309,7 +310,7 @@ permuteDEpalette(type = "discrete",
 ```{r, echo = FALSE, fig.height = 1}
 palette_choir <- permuteDEpalette(type = "discrete", n = 10, palette_name = "choir", swatch = TRUE)
 palette_archr <- permuteDEpalette(type = "discrete", n = 10, palette_name = "archr", swatch = TRUE)
-palette_corces_cold <- permuteDEpalette(type = "gradient", n = 10, palette_name = "corces_cold", swatch = TRUE) 
-palette_corces_warm <- permuteDEpalette(type = "gradient", n = 10, palette_name = "corces_warm", swatch = TRUE)
+palette_inferno <- permuteDEpalette(type = "gradient", n = 10, palette_name = "inferno", swatch = TRUE)
+palette_frozen <- permuteDEpalette(type = "gradient", n = 10, palette_name = "frozen", swatch = TRUE) 
 ```
 

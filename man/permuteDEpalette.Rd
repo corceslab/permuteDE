@@ -18,10 +18,10 @@ are "discrete" and "gradient". Defaults to discrete.}
 \item{n}{Number of colors. Default = \code{NULL} will return all of the
 pre-set colors in the palette.}
 
-\item{palette_name}{A character string indicating the palette name. Permitted values
-are "choir", "archr", "corces_cold", and "corces_warm". Default =
-\code{NULL} will use "choir" when \code{type} is "discrete" and "corces_cold"
-when \code{type} is "gradient.}
+\item{palette_name}{A character string indicating the palette name. Permitted
+values are "choir", "archr", "frozen", and "inferno". Default = \code{NULL}
+will use "choir" when \code{type} is "discrete" and "inferno" when
+\code{type} is "gradient.}
 
 \item{swatch}{A Boolean value indicating whether to plot a swatch of the
 palette.}

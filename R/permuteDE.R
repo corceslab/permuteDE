@@ -200,7 +200,7 @@ permuteDE <- function(input,
       current_replicates <- colnames(current_mat)
       # Subset biological replicates to current matrix
       current_stored_replicates <- stored_replicates[current_replicates]
-      n_replicates <- length(current_stored_replicates)
+      n_replicates <- dplyr::n_distinct(current_stored_replicates)
       true_groups <- input$metadata$group_key[current_replicates, "group"]
       replicate_set <- unique(current_stored_replicates)
     } else {
@@ -257,7 +257,7 @@ permuteDE <- function(input,
                                               # Which replicates are in these indices
                                               replicates_i <- replicate_set[i]
                                               # Which cell indices belong to these replicates
-                                              current_cell_indices <- current_stored_replicates %in% replicates_i
+                                              current_cell_indices <- which(current_stored_replicates %in% replicates_i)
                                               return(current_cell_indices)
                                             })
         # Convert to matrix (make lengths match by padding w/ NA)

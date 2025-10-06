@@ -14,6 +14,7 @@ plotDimReduction(
   label_splits = FALSE,
   label_statistics = FALSE,
   palette_name = NULL,
+  color_limits = NULL,
   fix_coords = TRUE,
   ...
 )
@@ -47,9 +48,13 @@ splits. Defaults to \code{FALSE}.}
 values of the selected metric. Defaults to \code{FALSE}.}
 
 \item{palette_name}{A character string indicating the palette name. Permitted
-values are "choir", "archr", "corces_cold", and "corces_warm". Default =
-\code{NULL} will use "choir" for discrete colors and "corces_cold" for
+values are "choir", "archr", "frozen", and "inferno". Default =
+\code{NULL} will use "choir" for discrete colors and "frozen" for
 gradient colors.}
+
+\item{color_limits}{A vector with the minimum and maximum values indicated by
+\code{color_by} ("n_sig" or "pvalue") for display on the color bar legend. Default
+= \code{NULL} sets limits automatically.}
 
 \item{fix_coords}{A Boolean value indicating whether the aspect ratio of the
 x and y axis should be 1.}
