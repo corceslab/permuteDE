@@ -742,12 +742,12 @@ runDE <- function(object,
     } else {
       pseudocount <- 1
     }
-    lfcs <- log2(rowMeans(mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(mat[, group2_indices, drop = FALSE] + pseudocount))
+    lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
 
-    wilcox_results <- data.frame(feature = rownames(cpm_mat),
+    limma_results <- data.frame(feature = rownames(cpm_mat),
                                  lfc = lfcs,
                                  pvalue = pvalues)
-    rownames(wilcox_results) <- NULL
+    rownames(limma_results) <- NULL
   }
   return(limma_results)
 }
