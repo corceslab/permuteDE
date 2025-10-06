@@ -10,6 +10,7 @@ getPseudobulk(
   split_labels = NULL,
   use_cells = NULL,
   min_cells_per_split = 100,
+  min_cells_per_replicate = 10,
   min_replicates_per_split = 6,
   min_cells_per_feature = 10,
   min_prop_cells_per_feature = 0.1,
@@ -42,6 +43,10 @@ subsequent pseudobulk steps. Default = \code{NULL} will use all cells.}
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
 cells within one split. Pseudobulk steps will not be performed for splits
 with fewer cells. Defaults to 100.}
+
+\item{min_cells_per_replicate}{A numeric value indicating the minimum number
+of cells within one replicate for one split. Pseudobulk steps will not be
+performed for replicates with fewer cells for that split. Defaults to 10.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk steps

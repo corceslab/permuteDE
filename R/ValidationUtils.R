@@ -85,8 +85,9 @@
   }
 
   # Single positive integer
-  # n, n_replicates, n_group1, n_cores, min_cells_per_split, min_replicates_per_split, min_replicates_per_group, min_cells_per_feature, random_seed
-  if (name %in% c("min_cells_per_split", "min_replicates_per_split", "min_replicates_per_group", "min_cells_per_feature",
+  # n, n_replicates, n_group1, n_cores, min_cells_per_split, min_cells_per_replicate, min_replicates_per_split,
+  # min_replicates_per_group, min_cells_per_feature, random_seed
+  if (name %in% c("min_cells_per_split", "min_cells_per_replicate", "min_replicates_per_split", "min_replicates_per_group", "min_cells_per_feature",
                   "n_replicates", "n_group1",
                   "n_combinations", "n_iterations",
                   "random_seed", "n_cores", "n")) {
@@ -106,14 +107,15 @@
           stop("Input value for '", name, "' must be less than input value for 'n_replicates'. Please supply valid input!")
         }
       }
-      # min_cells_per_split, min_cells_per_feature are not applicable when pre-computed pseudobulk matrix is supplied by the user
-      if (name %in% c("min_cells_per_split", "min_cells_per_feature")) {
+      # min_cells_per_split, min_cells_per_replicate, min_cells_per_feature
+      # are not applicable when pre-computed pseudobulk matrix is supplied by the user
+      if (name %in% c("min_cells_per_split", "min_cells_per_replicate", "min_cells_per_feature")) {
         if (other == "supplied") {
           warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
         }
       }
-      # min_replicates_per_split is not applicable when doing cell-level tests
-      if (name %in% c("min_replicates_per_split")) {
+      # min_cells_per_replicate, min_replicates_per_split are not applicable when doing cell-level tests
+      if (name %in% c("min_cells_per_replicate", "min_replicates_per_split")) {
         if (other == "none") {
           warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
         }

@@ -17,6 +17,7 @@ runDE(
   de_params = list(),
   p_adjust_method = "fdr",
   min_cells_per_split = 100,
+  min_cells_per_replicate = 10,
   min_replicates_per_split = 6,
   min_replicates_per_group = 3,
   min_cells_per_feature = 10,
@@ -91,6 +92,10 @@ Defaults to "fdr" (Benjamini & Hochberg, 1995).}
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
 cells within one split. Pseudobulk and differential expression steps will not
 be performed for splits with fewer cells. Defaults to 100.}
+
+\item{min_cells_per_replicate}{A numeric value indicating the minimum number
+of cells within one replicate for one split. Pseudobulk steps will not be
+performed for replicates with fewer cells for that split. Defaults to 10.}
 
 \item{min_replicates_per_split}{A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk expression

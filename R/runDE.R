@@ -59,6 +59,9 @@
 #' @param min_cells_per_split A numeric value indicating the minimum number of
 #' cells within one split. Pseudobulk and differential expression steps will not
 #' be performed for splits with fewer cells. Defaults to 100.
+#' @param min_cells_per_replicate A numeric value indicating the minimum number
+#' of cells within one replicate for one split. Pseudobulk steps will not be
+#' performed for replicates with fewer cells for that split. Defaults to 10.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
 #' and differential expression will not be performed for splits with fewer
@@ -123,6 +126,7 @@ runDE <- function(object,
                   de_params = list(),
                   p_adjust_method = "fdr",
                   min_cells_per_split = 100,
+                  min_cells_per_replicate = 10,
                   min_replicates_per_split = 6,
                   min_replicates_per_group = 3,
                   min_cells_per_feature = 10,
@@ -152,8 +156,9 @@ runDE <- function(object,
   .validInput(de_params, "de_params", list(de_method, de_test))
   .validInput(p_adjust_method, "p_adjust_method")
   .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
+  .validInput(min_cells_per_replicate, "min_cells_per_replicate", pseudobulk)
   .validInput(min_replicates_per_split, "min_replicates_per_split", pseudobulk)
-  .validInput(min_replicates_per_split, "min_replicates_per_group")
+  .validInput(min_replicates_per_group, "min_replicates_per_group")
   .validInput(min_cells_per_feature, "min_cells_per_feature", pseudobulk)
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
   .validInput(force_balance, "force_balance", pseudobulk)
@@ -276,6 +281,7 @@ runDE <- function(object,
                                        split_labels = split_labels,
                                        use_cells = use_cells,
                                        min_cells_per_split = min_cells_per_split,
+                                       min_cells_per_replicate = min_cells_per_replicate,
                                        min_replicates_per_split = min_replicates_per_split,
                                        min_cells_per_feature = min_cells_per_feature,
                                        min_prop_cells_per_feature = min_prop_cells_per_feature,

@@ -23,6 +23,9 @@
 #' @param min_cells_per_split A numeric value indicating the minimum number of
 #' cells within one split. Pseudobulk steps will not be performed for splits
 #' with fewer cells. Defaults to 100.
+#' @param min_cells_per_replicate A numeric value indicating the minimum number
+#' of cells within one replicate for one split. Pseudobulk steps will not be
+#' performed for replicates with fewer cells for that split. Defaults to 10.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk steps
 #' will not be performed for splits with fewer replicates. Defaults to 6.
@@ -60,6 +63,7 @@ getPseudobulk <- function(object,
                           split_labels = NULL,
                           use_cells = NULL,
                           min_cells_per_split = 100,
+                          min_cells_per_replicate = 10,
                           min_replicates_per_split = 6,
                           min_cells_per_feature = 10,
                           min_prop_cells_per_feature = 0.1,
@@ -77,6 +81,7 @@ getPseudobulk <- function(object,
   .validInput(split_labels, "split_labels", object)
   .validInput(use_cells, "use_cells", list(object, "generate"))
   .validInput(min_cells_per_split, "min_cells_per_split", "generate")
+  .validInput(min_cells_per_replicate, "min_cells_per_replicate", "generate")
   .validInput(min_replicates_per_split, "min_replicates_per_split", "generate")
   .validInput(min_cells_per_feature, "min_cells_per_feature", "generate")
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", "generate")
@@ -131,6 +136,22 @@ getPseudobulk <- function(object,
   }
 
   # Filter out splits with too few cells & too few replicates
+  filter_table <- table(splits, replicates)
+
+  # First, filter based on min cells per replicate per split
+  valid_pairs <- filter_table >= min_cells_per_replicate
+  valid_combos <- data.frame(which(valid_pairs, arr.ind = TRUE))
+  valid_combos$splits <- rownames(filter_table)[valid_combos$splits]
+  valid_combos$replicates <- colnames(filter_table)[valid_combos$replicates]
+  keep <- mapply(FUN = function(s, r) {
+    any(valid_combos$splits == s & valid_combos$replicates == r)},
+    splits, replicates)
+  use_cells <- use_cells[keep]
+  replicates <- replicates[keep]
+  splits <- splits[keep]
+
+  # Second, filter based on min (remaining) cells per split
+  # And min (remaining) replicates per split
   filter_table <- table(splits, replicates)
   keep_splits <- rownames(filter_table)[rowSums(filter_table) >= min_cells_per_split &
                                           rowSums(filter_table >= 1) >= min_replicates_per_split]
