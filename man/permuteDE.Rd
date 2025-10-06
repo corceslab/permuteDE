@@ -26,8 +26,8 @@ permutation test comparisons of the number of differentially expressed
 features. Defaults to 0.05.}
 
 \item{lfc_threshold}{A numeric value indicating the minimum absolute value
-log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
-0 to disregard log fold change when counting hits.}
+log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
+to 0 to disregard log fold change when counting hits.}
 
 \item{n_iterations}{A numeric value indicating the number of iterations run
 for the permutation test. Defaults to 1000. Computational time increases
@@ -42,7 +42,7 @@ below which permutations will not be run. Defaults to 1. Set to 0 to run
 permutation test for all splits, regardless of the true number of DEGs.}
 
 \item{return_all}{A Boolean value indicating whether to store and return all
-DE results (log fold changes and p-values per gene per split) for every
+DE results (log fold changes and p-values per feature per split) for every
 single permutation. Defaults = \code{FALSE} will return only high-level
 permutation test results. Note that setting this to \code{TRUE} will
 substantially increase the size of the returned output.}
@@ -89,8 +89,8 @@ Permutation is always performed at the replicate level, rather than the cell
 level, and is performed without replacement, such that each iteration is a
 unique permutation of the group labels.
 
-Notably, this permutation test does not pass judgment on any individual gene,
-rather, it is intended to assess how many false positive significant
+Notably, this permutation test does not pass judgment on any individual
+feature, rather, it is intended to assess how many false positive significant
 differentially expressed features can be expected by chance. In addition, it
 can be used to characterize the log fold change and significance observed for
 such false positives to help users prioritize reliable DE results.

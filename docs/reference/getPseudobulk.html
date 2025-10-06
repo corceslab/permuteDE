@@ -81,9 +81,12 @@ a dataset, such as cell types.</p>
 <span>  split_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use_cells <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_cells_per_split <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  min_cells_per_replicate <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  min_replicates_per_split <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  min_cells_per_feature <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  min_prop_cells_per_feature <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  filter <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  pseudobulk <span class="op">=</span> <span class="st">"generate"</span>,</span>
 <span>  use_assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use_layer <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_cores <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -126,6 +129,12 @@ cells within one split. Pseudobulk steps will not be performed for splits
 with fewer cells. Defaults to 100.</p></dd>
 
 
+<dt>min_cells_per_replicate</dt>
+<dd><p>A numeric value indicating the minimum number
+of cells within one replicate for one split. Pseudobulk steps will not be
+performed for replicates with fewer cells for that split. Defaults to 10.</p></dd>
+
+
 <dt>min_replicates_per_split</dt>
 <dd><p>A numeric value indicating the minimum number
 of distinct replicates represented within one split. Pseudobulk steps
@@ -135,7 +144,7 @@ will not be performed for splits with fewer replicates. Defaults to 6.</p></dd>
 <dt>min_cells_per_feature</dt>
 <dd><p>A numeric value indicating the minimum number
 of cells (within a split) with expression of a feature. Pseudobulk expression
-will not be calculated for genes expressed in fewer cells. Defaults to 10.</p></dd>
+will not be calculated for features expressed in fewer cells. Defaults to 10.</p></dd>
 
 
 <dt>min_prop_cells_per_feature</dt>
@@ -143,6 +152,19 @@ will not be calculated for genes expressed in fewer cells. Defaults to 10.</p></
 proportion of cells (within a split) with expression of a feature. Pseudobulk
 expression will not be calculated for features expressed in fewer cells.
 Defaults to 0.1.</p></dd>
+
+
+<dt>filter</dt>
+<dd><p>A Boolean value indicating whether to remove features from
+the matrices in the output (<code>TRUE</code>) or simply list features that do not
+meet the criteria as part of the metadata (<code>FALSE</code>). Defaults to
+<code>TRUE</code>.</p></dd>
+
+
+<dt>pseudobulk</dt>
+<dd><p>A string indicating whether to actually pseudobulk
+("generate"), or simply apply the filtering thresholds ("none"). Defaults to
+"generate".</p></dd>
 
 
 <dt>use_assay</dt>
@@ -175,6 +197,10 @@ Can be set to <code>FALSE</code> for a cleaner output.</p></dd>
     
 
 <p>Returns a list containing the following elements:</p><dl><dt>PB_values</dt>
+<dd><p>A list of feature x replicate matri(ces) containing
+pseudobulk values for each feature, one matrix per split</p></dd>
+
+<dt>exclude_features</dt>
 <dd><p>A list of feature x replicate matri(ces) containing
 pseudobulk values for each feature, one matrix per split</p></dd>
 

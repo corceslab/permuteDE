@@ -15,6 +15,7 @@ runDE(
   de_method = "edgeR",
   de_test = "LRT",
   de_params = list(),
+  normalize_prefilter = FALSE,
   p_adjust_method = "fdr",
   min_cells_per_split = 100,
   min_cells_per_replicate = 10,
@@ -77,13 +78,18 @@ Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
 
 \item{de_test}{Which test to use for differential expression analysis.
 Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
-"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom"),
-"presto" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".}
+"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
+"wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
+Defaults to "LRT".}
 
 \item{de_params}{A list of lists containing additional parameters to be
 passed to specific DE functions. The name of each element must be the
 specific DE function to which those parameters are passed. Defaults to an
 empty list.}
+
+\item{normalize_prefilter}{A Boolean value indicating whether
+normalization should be applied before (\code{TRUE}) or after (\code{FALSE})
+filtering out features with low counts. Defaults to \code{FALSE}.}
 
 \item{p_adjust_method}{A string indicating which multiple comparison
 adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
@@ -108,14 +114,14 @@ Pseudobulk and differential expression steps will not be performed for
 splits with fewer replicates. Defaults to 3.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
-of cells (within a split) with expression of a gene. Pseudobulk and
-differential expression will not be calculated for genes expressed in
+of cells (within a split) with expression of a feature. Pseudobulk and
+differential expression will not be calculated for features expressed in
 fewer cells. Defaults to 10.}
 
 \item{min_prop_cells_per_feature}{A numeric value indicating the minimum
-proportion of cells (within a split) with expression of a gene. Pseudobulk
-and differential expression will not be calculated for genes
-expressed in fewer cells. Defaults to 0.1.}
+proportion of cells (within a split) with expression of a feature. Pseudobulk
+and differential expression will not be calculated for features expressed in
+fewer cells. Defaults to 0.1.}
 
 \item{force_balance}{A boolean indicating whether to force the two comparison
 groups to have the same sample size. Defaults to \code{FALSE}. If

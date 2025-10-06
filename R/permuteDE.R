@@ -15,8 +15,8 @@
 #' level, and is performed without replacement, such that each iteration is a
 #' unique permutation of the group labels.
 #'
-#' Notably, this permutation test does not pass judgment on any individual gene,
-#' rather, it is intended to assess how many false positive significant
+#' Notably, this permutation test does not pass judgment on any individual
+#' feature, rather, it is intended to assess how many false positive significant
 #' differentially expressed features can be expected by chance. In addition, it
 #' can be used to characterize the log fold change and significance observed for
 #' such false positives to help users prioritize reliable DE results.
@@ -27,8 +27,8 @@
 #' permutation test comparisons of the number of differentially expressed
 #' features. Defaults to 0.05.
 #' @param lfc_threshold A numeric value indicating the minimum absolute value
-#' log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
-#' 0 to disregard log fold change when counting hits.
+#' log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
+#' to 0 to disregard log fold change when counting hits.
 #' @param n_iterations A numeric value indicating the number of iterations run
 #' for the permutation test. Defaults to 1000. Computational time increases
 #' approximately linearly with the number of iterations.
@@ -39,7 +39,7 @@
 #' below which permutations will not be run. Defaults to 1. Set to 0 to run
 #' permutation test for all splits, regardless of the true number of DEGs.
 #' @param return_all A Boolean value indicating whether to store and return all
-#' DE results (log fold changes and p-values per gene per split) for every
+#' DE results (log fold changes and p-values per feature per split) for every
 #' single permutation. Defaults = \code{FALSE} will return only high-level
 #' permutation test results. Note that setting this to \code{TRUE} will
 #' substantially increase the size of the returned output.
@@ -176,9 +176,9 @@ permuteDE <- function(input,
                                          runDE_n_sig = NULL,
                                          pvalue = NULL,
                                          n_iterations = NULL)
-  # Full per-gene DE results for each iteration
+  # Full per-feature DE results for each iteration
   if (return_all == TRUE) {
-    permutation_DE_results <- data.frame(gene = NULL,
+    permutation_DE_results <- data.frame(feature = NULL,
                                          lfc = NULL,
                                          pvalue = NULL,
                                          padj = NULL,

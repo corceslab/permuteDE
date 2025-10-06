@@ -201,18 +201,18 @@ permuteDEpalette <- function(type = "discrete",
 #' @param input Output from function \code{runDE} or a list containing
 #'  (at minimum) a dataframe named "DE_results" including columns:
 #'   \describe{
-#'     \item{gene}{Gene identifiers (character).}
+#'     \item{feature}{Feature identifiers (character).}
 #'     \item{lfc}{Log2 fold change values (numeric).}
 #'     \item{padj}{Adjusted p-values (numeric).}
-#'     \item{split}{(Optionally) Grouping variable used to subset results
+#'     \item{split}{Grouping variable used to subset results
 #'     (character or factor).}
 #'   }
 #' @param alpha A numeric value indicating the significance level used for
 #' permutation test comparisons of the number of differentially expressed
 #' features. Defaults to 0.05.
 #' @param lfc_threshold A numeric value indicating the minimum absolute value
-#' log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
-#' 0 to disregard log fold change when counting hits.
+#' log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
+#' to 0 to disregard log fold change when counting hits.
 #' @param use_splits A character string or vector containing the names of splits
 #' to use. Defaults to \code{NULL}, which will try all splits.
 #' @param title Character string indicating the plot title. Default =
@@ -336,9 +336,9 @@ plotVolcano <- function(input,
                                        ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Lower in ", non_reference_group),
                                               "Not significant")))
     label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < 0.05, abs(lfc) > lfc_threshold),
-                                     padj, -abs(lfc))$gene[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < 0.05)))]
+                                     padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < 0.05)))]
     label_split_results_s <- split_results_s |>
-      dplyr::filter(gene %in% label_features)
+      dplyr::filter(feature %in% label_features)
 
     # Plot
     ggplot2::ggplot(data = split_results_s,
@@ -356,7 +356,7 @@ plotVolcano <- function(input,
       ggplot2::geom_hline(yintercept = -log10(alpha),
                           linetype = "dashed") +
       ggrepel::geom_text_repel(data = label_split_results_s,
-                               ggplot2::aes(label = gene),
+                               ggplot2::aes(label = feature),
                                color = "black",
                                max.overlaps = Inf) +
       ggplot2::xlim(x_limits) +
@@ -669,7 +669,7 @@ plotFeature <- function(input,
           stop("When parameter 'label_statistics' is set to TRUE, list provided to parameter 'input' must contain an elements named 'DE_results'. Please supply valid input!")
         }
         feature_statistics <- dplyr::filter(input$DE_results,
-                                            gene == feature,
+                                            feature == feature,
                                             split == s)
         if (feature_statistics$padj[1] < 0.0001) {
           statistics_text <- paste0("LFC = ", round(feature_statistics$lfc[1], 4), ", *p* < 0.0001")

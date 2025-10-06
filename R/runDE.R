@@ -47,12 +47,16 @@
 #' "edgeR".
 #' @param de_test Which test to use for differential expression analysis.
 #' Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
-#' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom"),
-#' "presto" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".
+#' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
+#' "wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
+#' Defaults to "LRT".
 #' @param de_params A list of lists containing additional parameters to be
 #' passed to specific DE functions. The name of each element must be the
 #' specific DE function to which those parameters are passed. Defaults to an
 #' empty list.
+#' @param normalize_prefilter A Boolean value indicating whether
+#' normalization should be applied before (\code{TRUE}) or after (\code{FALSE})
+#' filtering out features with low counts. Defaults to \code{FALSE}.
 #' @param p_adjust_method A string indicating which multiple comparison
 #' adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
 #' Defaults to "fdr" (Benjamini & Hochberg, 1995).
@@ -71,13 +75,13 @@
 #' Pseudobulk and differential expression steps will not be performed for
 #' splits with fewer replicates. Defaults to 3.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
-#' of cells (within a split) with expression of a gene. Pseudobulk and
-#' differential expression will not be calculated for genes expressed in
+#' of cells (within a split) with expression of a feature. Pseudobulk and
+#' differential expression will not be calculated for features expressed in
 #' fewer cells. Defaults to 10.
 #' @param min_prop_cells_per_feature A numeric value indicating the minimum
-#' proportion of cells (within a split) with expression of a gene. Pseudobulk
-#' and differential expression will not be calculated for genes
-#' expressed in fewer cells. Defaults to 0.1.
+#' proportion of cells (within a split) with expression of a feature. Pseudobulk
+#' and differential expression will not be calculated for features expressed in
+#' fewer cells. Defaults to 0.1.
 #' @param force_balance A boolean indicating whether to force the two comparison
 #' groups to have the same sample size. Defaults to \code{FALSE}. If
 #' \code{TRUE}, the larger group will be randomly downsampled to the size of the
@@ -124,6 +128,7 @@ runDE <- function(object,
                   de_method = "edgeR",
                   de_test = "LRT",
                   de_params = list(),
+                  normalize_prefilter = FALSE,
                   p_adjust_method = "fdr",
                   min_cells_per_split = 100,
                   min_cells_per_replicate = 10,
@@ -154,6 +159,7 @@ runDE <- function(object,
   .validInput(de_method, "de_method")
   .validInput(de_test, "de_test", de_method)
   .validInput(de_params, "de_params", list(de_method, de_test))
+  .validInput(normalize_prefilter, "normalize_prefilter")
   .validInput(p_adjust_method, "p_adjust_method")
   .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
   .validInput(min_cells_per_replicate, "min_cells_per_replicate", pseudobulk)
@@ -273,25 +279,36 @@ runDE <- function(object,
 
   time2 <- Sys.time()
 
-  if (pseudobulk == "generate") {
-    # Generate pseudobulk matri(ces)
-    # Returns a list containing one pseudobulk matrix (gene x replicate) per split
-    pseudobulk_output <- getPseudobulk(object = object,
-                                       replicate_labels = replicate_labels,
-                                       split_labels = split_labels,
-                                       use_cells = use_cells,
-                                       min_cells_per_split = min_cells_per_split,
-                                       min_cells_per_replicate = min_cells_per_replicate,
-                                       min_replicates_per_split = min_replicates_per_split,
-                                       min_cells_per_feature = min_cells_per_feature,
-                                       min_prop_cells_per_feature = min_prop_cells_per_feature,
-                                       n_cores = n_cores,
-                                       verbose = verbose)
-    matrix_list <- pseudobulk_output[["PB_values"]]
-    pseudobulk_metadata <- pseudobulk_output[["metadata"]]
+  exclude_features <- NULL
+
+  if (pseudobulk %in% c("generate", "none")) {
+    # Generate pseudobulk matri(ces) or filter count matrix
+    # Returns a list containing one matrix per split
+    output_list <- getPseudobulk(object = object,
+                                 replicate_labels = replicate_labels,
+                                 split_labels = split_labels,
+                                 use_cells = use_cells,
+                                 min_cells_per_split = min_cells_per_split,
+                                 min_cells_per_replicate = min_cells_per_replicate,
+                                 min_replicates_per_split = min_replicates_per_split,
+                                 min_cells_per_feature = min_cells_per_feature,
+                                 min_prop_cells_per_feature = min_prop_cells_per_feature,
+                                 filter = !normalize_prefilter,
+                                 pseudobulk = pseudobulk,
+                                 n_cores = n_cores,
+                                 verbose = verbose)
+    if (pseudobulk == "generate") {
+      matrix_list <- output_list[["PB_values"]]
+    } else {
+      matrix_list <- output_list[["cell_values"]]
+    }
+    feature_metrics <- output_list[["metadata"]][["metrics"]]
+    if (normalize_prefilter == TRUE) {
+      exclude_features <- output_list[["metadata"]][["exclude_features"]]
+    }
   } else {
     # If necessary, separate the supplied pseudobulk matrix by split
-    # Returns a list containing one pseudobulk matrix (gene x replicate) per split
+    # Returns a list containing one pseudobulk matrix (feature x replicate) per split
     if (is.null(split_labels)) {
       split_labels <- rep("all", length(replicates))
     } else if (length(split_labels) != length(replicates)) { # Check length
@@ -303,59 +320,22 @@ runDE <- function(object,
     }
     split_indices <- split(seq_along(split_labels), split_labels)
     # Filter
-    if (pseudobulk == "supplied") {
-      keep_indices <- split_indices[lengths(split_indices) >= min_replicates_per_split]
-      n_splits <- length(keep_indices)
-      # Progress
-      if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Extracting ", n_splits,
-                           " pseudobulk ", ifelse(n_splits == 1, "matrix..", "matrices.."))
-      # Create matrix list
-      matrix_list <- lapply(keep_indices, function(i) object[, i, drop = FALSE])
-      # Progress
-      if (verbose & n_splits != dplyr::n_distinct(split_labels)) {
-        message("Skipped ", dplyr::n_distinct(split_labels) - n_splits, " split label",
-                ifelse((dplyr::n_distinct(split_labels) - n_splits) == 1, "", "s"),
-                " due to insufficient cells/replicates: ",
-                paste0(setdiff(unique(split_labels), names(matrix_list)),
-                       collapse = ", "))
-      }
-    } else if (pseudobulk == "none") {
-      keep_indices <- split_indices[lengths(split_indices) >= min_cells_per_split]
-      n_splits <- length(keep_indices)
-      # Extract matrix
-      count_matrix <- .getMatrix(object = object,
-                                 use_assay = use_assay,
-                                 use_layer = use_layer,
-                                 use_cells = use_cells,
-                                 verbose = verbose)
-      # Progress
-      if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Extracting ", n_splits,
-                           " pseudobulk ", ifelse(n_splits == 1, "matrix..", "matrices.."))
-      # Create matrix list
-      matrix_list <- lapply(keep_indices, function(i) {
-        keep_genes_count <- Matrix::rowSums(count_matrix[, i, drop = FALSE] > 0) >= min_cells_per_feature
-        prop_nonzero <- Matrix::rowMeans((count_matrix[, i, drop = FALSE] > 0))
-        keep_genes_prop <- prop_nonzero >= min_prop_cells_per_feature
-        keep_genes <- which(keep_genes_count & keep_genes_prop)
-        filtered_mat <- count_matrix[keep_genes, i, drop = FALSE]
-
-        # Warn if excluded genes are >10% of all genes
-        prop_genes_excluded <- 1 - (length(keep_genes)/nrow(count_matrix) )
-        if (prop_genes_excluded > 0.1) {
-          message("Warning: Excluded ", round(prop_genes_excluded*100, 2),"% of genes in split ",
-                  unique(split_labels[i]))
-        }
-
-        return(filtered_mat)
-      })
-
-      if (verbose & n_splits != dplyr::n_distinct(split_labels)) {
-        message("Skipped ", dplyr::n_distinct(split_labels) - n_splits, " split label",
-                ifelse((dplyr::n_distinct(split_labels) - n_splits) == 1, "", "s"),
-                " due to insufficient cells/replicates: ",
-                paste0(setdiff(unique(split_labels), names(matrix_list)),
-                       collapse = ", "))
-      }
+    keep_indices <- split_indices[lengths(split_indices) >= min_replicates_per_split]
+    n_splits <- length(keep_indices)
+    # Progress
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Extracting ", n_splits,
+                         " pseudobulk ", ifelse(n_splits == 1, "matrix..", "matrices.."))
+    # Create matrix list & remove features with 0 counts in a split
+    matrix_list <- lapply(keep_indices, FUN = function(i) {
+      object[Matrix::rowSums(object[,i]) > 0, i, drop = FALSE]
+    })
+    # Progress
+    if (verbose & n_splits != dplyr::n_distinct(split_labels)) {
+      message("Skipped ", dplyr::n_distinct(split_labels) - n_splits, " split label",
+              ifelse((dplyr::n_distinct(split_labels) - n_splits) == 1, "", "s"),
+              " due to insufficient cells/replicates: ",
+              paste0(setdiff(unique(split_labels), names(matrix_list)),
+                     collapse = ", "))
     }
   }
 
@@ -425,21 +405,29 @@ runDE <- function(object,
                                                                                            targets = target_list[[i]],
                                                                                            design = design_i,
                                                                                            de_test = de_test,
-                                                                                           de_params = de_params),
+                                                                                           de_params = de_params,
+                                                                                           normalize_prefilter = normalize_prefilter,
+                                                                                           exclude_features = exclude_features[[i]]),
                                                                       DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
                                                                                              design = design_i,
                                                                                              de_test = de_test,
-                                                                                             de_params = de_params),
+                                                                                             de_params = de_params,
+                                                                                             normalize_prefilter = normalize_prefilter,
+                                                                                             exclude_features = exclude_features[[i]]),
                                                                       limma = .runDE.limma(mat = matrix_list[[i]],
                                                                                            targets = target_list[[i]],
                                                                                            design = design_i,
                                                                                            de_test = de_test,
-                                                                                           de_params = de_params),
+                                                                                           de_params = de_params,
+                                                                                           normalize_prefilter = normalize_prefilter,
+                                                                                           exclude_features = exclude_features[[i]]),
                                                                       presto = .runDE.presto(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
                                                                                              de_test = de_test,
-                                                                                             de_params = de_params))
+                                                                                             de_params = de_params,
+                                                                                             normalize_prefilter = normalize_prefilter,
+                                                                                             exclude_features = exclude_features[[i]]))
                                                de_results_i <- de_results_i |>
                                                  dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                                                                split = names(matrix_list)[i]) |>
@@ -468,7 +456,7 @@ runDE <- function(object,
   # Metadata
   if (pseudobulk == "generate") {
     metadata_list <- list("group_key" = group_key,
-                          "PB_metadata" = pseudobulk_metadata,
+                          "feature_metrics" = feature_metrics,
                           "time" = data.frame(total = difftime(time4, time1, units = "secs"),
                                               step1_setup = difftime(time2, time1, units = "secs"),
                                               step2_get_matrices = difftime(time3, time2, units = "secs"),
@@ -492,8 +480,10 @@ runDE <- function(object,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "de_params" = de_params,
+                         "normalize_prefilter" = normalize_prefilter,
                          "p_adjust_method" = p_adjust_method,
                          "min_cells_per_split" = min_cells_per_split,
+                         "min_cells_per_replicate" = min_cells_per_replicate,
                          "min_replicates_per_split" = min_replicates_per_split,
                          "min_replicates_per_group" = min_replicates_per_group,
                          "min_cells_per_feature" = min_cells_per_feature,
@@ -527,55 +517,66 @@ runDE <- function(object,
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
 # de_params -- Additional parameters to pass
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.edgeR <- function(mat,
                          targets,
                          design,
                          de_test = "LRT",
-                         de_params = list()) {
-  tryCatch({
-    # Normalization
-    dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
-                                          "group" = targets$group),
-                                     de_params[["DGEList"]]))
-    dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
-                                             de_params[["calcNormFactors"]]))
-    y <- do.call(edgeR::estimateDisp, c(list("y" = dge,
-                                             "design" = design),
-                                        de_params[["estimateDisp"]]))
-    # Run test
-    fit <- switch(de_test,
-                  QLF = do.call(edgeR::glmQLFit, c(list("y" = y,
-                                                        "design" = design),
-                                                   de_params[["glmQLFit"]])),
-                  LRT = do.call(edgeR::glmFit, c(list("y" = y,
-                                                      "design" = design),
-                                                 de_params[["glmFit"]])),
-                  exact = do.call(edgeR::exactTest, c(list("object" = y),
-                                                      de_params[["exactTest"]])))
-    test <- switch(de_test,
-                   QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit,
-                                                           "coef" = 2),
-                                                    de_params[["glmQLFTest"]])),
-                   LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit,
-                                                       "coef" = 2),
-                                                  de_params[["glmLRT"]])),
-                   exact = fit)
-    # Compile results
-    edgeR_results <- edgeR::topTags(object = test,
-                                    n = Inf,
-                                    adjust.method = "none") |>
-      data.frame()
-    edgeR_results <- edgeR_results |>
-      dplyr::transmute(gene = rownames(edgeR_results),
-                       lfc = logFC,
-                       pvalue = PValue)
-    rownames(edgeR_results) <- NULL
-  }, error = function(e) message(e))
+                         de_params = list(),
+                         normalize_prefilter = FALSE,
+                         exclude_features = NULL) {
 
-  if (!exists("edgeR_results")) {
-    edgeR_results <- NULL
+  # Create edgeR object
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
+  # Get size factors
+  dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
+                                           de_params[["calcNormFactors"]]))
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+    dge_filtered <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                                   "group" = targets$group),
+                                              de_params[["DGEList"]]))
+    dge_filtered$samples <- dge$samples
+    dge <- dge_filtered
   }
+  # Estimate dispersion
+  y <- do.call(edgeR::estimateDisp, c(list("y" = dge,
+                                           "design" = design),
+                                      de_params[["estimateDisp"]]))
+  # Run test
+  fit <- switch(de_test,
+                QLF = do.call(edgeR::glmQLFit, c(list("y" = y,
+                                                      "design" = design),
+                                                 de_params[["glmQLFit"]])),
+                LRT = do.call(edgeR::glmFit, c(list("y" = y,
+                                                    "design" = design),
+                                               de_params[["glmFit"]])),
+                exact = do.call(edgeR::exactTest, c(list("object" = y),
+                                                    de_params[["exactTest"]])))
+  test <- switch(de_test,
+                 QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit,
+                                                         "coef" = 2),
+                                                    de_params[["glmQLFTest"]])),
+                 LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit,
+                                                     "coef" = 2),
+                                                de_params[["glmLRT"]])),
+                 exact = fit)
+  # Compile results
+  edgeR_results <- edgeR::topTags(object = test,
+                                  n = Inf,
+                                  adjust.method = "none") |>
+    data.frame()
+  edgeR_results <- edgeR_results |>
+    dplyr::transmute(feature = rownames(edgeR_results),
+                     lfc = logFC,
+                     pvalue = PValue)
+  rownames(edgeR_results) <- NULL
+
   return(edgeR_results)
 }
 
@@ -586,21 +587,35 @@ runDE <- function(object,
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
 # de_params -- Additional parameters to pass
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.DESeq2 <- function(mat,
                           targets,
                           design,
                           de_test = "LRT",
-                          de_params = list()) {
+                          de_params = list(),
+                          normalize_prefilter = FALSE,
+                          exclude_features = NULL) {
 
   .requirePackage("DESeq2", source = "bioc")
 
   # Construct DESeq2 dataset
-  dds <- DESeq2::DESeqDataSetFromMatrix(
-    countData = mat,
-    colData = targets,
-    design = design
-  )
+  dds <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
+                                        colData = targets,
+                                        design = design)
+  # Estimate size factors
+  dds <- do.call(DESeq2::estimateSizeFactors, c(list("object" = dds),
+                                                de_params[["estimateSizeFactors"]]))
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+    dds_filtered <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
+                                                   colData = targets,
+                                                   design = design)
+    sizeFactors(dds_filtered) <- sizeFactors(dds)
+    dds <- dds_filtered
+  }
 
   # Run DESeq
   if (de_test == "LRT") {
@@ -618,7 +633,7 @@ runDE <- function(object,
   DESeq2_results <- DESeq2::results(dds) |>
     data.frame()
   DESeq2_results <- DESeq2_results |>
-    dplyr::transmute(gene = rownames(DESeq2_results),
+    dplyr::transmute(feature = rownames(DESeq2_results),
                      lfc = log2FoldChange,
                      pvalue = pvalue)
   rownames(DESeq2_results) <- NULL
@@ -633,25 +648,41 @@ runDE <- function(object,
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
 # de_params -- Additional parameters to pass
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.limma <- function(mat,
                          targets,
                          design,
                          de_test = "voom",
-                         de_params = list()) {
+                         de_params = list(),
+                         normalize_prefilter = FALSE,
+                         exclude_features = NULL) {
 
   .requirePackage("limma", source = "bioc")
 
+  # Create edgeR object
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
+
   if (de_test %in% c("trend", "voom")) {
-    # Create a DGE list
-    dge <- do.call(edgeR::DGEList, c(list("counts" = mat),
-                                     de_params[["DGEList"]]))
-    # Apply TMM normalization
+    # Get size factors
     dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
                                              de_params[["calcNormFactors"]]))
+    # If filtering, do so
+    if (normalize_prefilter & !is.null(exclude_features)) {
+      mat <- mat[!(rownames(mat) %in% exclude_features),]
+      dge_filtered <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                                     "group" = targets$group),
+                                                de_params[["DGEList"]]))
+      dge_filtered$samples <- dge$samples
+      dge <- dge_filtered
+    }
+
     # Transform
     if (de_test == "trend") {
-      # Apply logCPM
+      # Apply logCPM (uses stored $samples$lib.size)
       transformed_dge <- do.call(edgeR::cpm, c(list("y" = dge,
                                                     "log" = TRUE),
                                                de_params[["cpm"]]))
@@ -671,17 +702,25 @@ runDE <- function(object,
     limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
       data.frame()
     limma_results <- limma_results |>
-      dplyr::transmute(gene = rownames(limma_results),
+      dplyr::transmute(feature = rownames(limma_results),
                        lfc = logFC,
                        pvalue = P.Value)
     rownames(limma_results) <- NULL
   } else if (de_test %in% c("wilcox_cpm", "wilcox_log_cpm")) {
+    # Get library sizes
+    lib_sizes <- dge$samples[colnames(mat), "lib.size"]
+    # If filtering, do so
+    if (normalize_prefilter & !is.null(exclude_features)) {
+      mat <- mat[!(rownames(mat) %in% exclude_features),]
+    }
     # Normalization
     if (de_test == "wilcox_cpm") {
-      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat),
+      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                            "lib.size" = lib_sizes),
                                        de_params[["cpm"]]))
     } else if (de_test == "wilcox_log_cpm") {
       cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                            "lib.size" = lib_sizes,
                                             "log" = TRUE),
                                        de_params[["cpm"]]))
     }
@@ -705,7 +744,7 @@ runDE <- function(object,
     }
     lfcs <- log2(rowMeans(mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(mat[, group2_indices, drop = FALSE] + pseudocount))
 
-    wilcox_results <- data.frame(gene = rownames(cpm_mat),
+    wilcox_results <- data.frame(feature = rownames(cpm_mat),
                                  lfc = lfcs,
                                  pvalue = pvalues)
     rownames(wilcox_results) <- NULL
@@ -719,20 +758,35 @@ runDE <- function(object,
 # targets -- A dataframe containing sample to group key
 # de_test -- Which test to use for differential expression
 # de_params -- Additional parameters to pass to cpm and/or wilcoxauc
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.presto <- function(mat,
                           targets,
                           de_test = "wilcox_cpm",
-                          de_params = list()) {
+                          de_params = list(),
+                          normalize_prefilter = FALSE,
+                          exclude_features = NULL) {
 
   .requirePackage("presto", installInfo = 'devtools::install_github("immunogenomics/presto")')
 
+  # Get library sizes
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
+  lib_sizes <- dge$samples[colnames(mat), "lib.size"]
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+  }
   # Normalization
   if (de_test == "wilcox_cpm") {
-    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat),
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "lib.size" = lib_sizes),
                                      de_params[["cpm"]]))
   } else if (de_test == "wilcox_log_cpm") {
     cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "lib.size" = lib_sizes,
                                           "log" = TRUE),
                                      de_params[["cpm"]]))
   }
@@ -742,7 +796,7 @@ runDE <- function(object,
                                                  de_params[["wilcoxauc"]]))
 
   wilcox_results <- wilcox_results |>
-    dplyr::transmute(gene = feature,
+    dplyr::transmute(feature,
                      lfc = logFC,
                      pvalue = pval)
   rownames(wilcox_results) <- NULL

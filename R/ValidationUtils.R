@@ -137,9 +137,10 @@
   }
 
   # Single Boolean value
-  # center, force_balance, label_pvalue, label_replicates, label_splits, label_statistics, return_all, verbose, swatch, fix_coords
+  # center, force_balance, label_pvalue, label_replicates, label_splits, label_statistics,
+  # return_all, verbose, swatch, fix_coords, normalize_prefilter, filter
   if (name %in% c("center", "force_balance", "label_pvalue", "label_replicates", "label_splits", "label_statistics",
-                  "return_all", "verbose", "swatch", "fix_coords")) {
+                  "return_all", "verbose", "swatch", "fix_coords", "normalize_prefilter", "filter")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
@@ -453,17 +454,17 @@
           allowed_functions <- c("DGEList", "calcNormFactors", "estimateDisp", "exactTest")
         }
       } else if (other[[1]] == "DESeq2") {
-        allowed_functions <- c("DESeq")
+        allowed_functions <- c("estimateSizeFactors", "DESeq")
       } else if (other[[1]] == "limma") {
         if (other[[2]] == "trend") {
           allowed_functions <- c("DGEList", "calcNormFactors", "cpm", "lmFit", "eBayes")
         } else if (other[[2]] == "voom") {
           allowed_functions <- c("DGEList", "calcNormFactors", "voom", "lmFit", "eBayes")
         } else if (other[[2]] %in% c("wilcox_cpm", "wilcox_log_cpm")) {
-          allowed_functions <- c("cpm", "rankSumTestWithCorrelation", "lfc")
+          allowed_functions <- c("DGEList", "cpm", "rankSumTestWithCorrelation", "lfc")
         }
       } else if (other[[1]] == "presto") {
-        allowed_functions <- c("cpm", "wilcoxauc")
+        allowed_functions <- c("DGEList", "cpm", "wilcoxauc")
       }
       if (!all(names(input) %in% allowed_functions)) {
         stop("When supplying additional parameters to '", name, "' for use",
@@ -471,18 +472,6 @@
              " please provide a list of lists, where each secondary list is named according to",
              " the allowed functions (", paste0(allowed_functions, collapse = ", "), ").")
       }
-    }
-  }
-
-  # normalization_method
-  if (name == "normalization_method") {
-    # Should be of class 'character'
-    if (!methods::is(input, "character") | length(input) != 1) {
-      stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
-    }
-    # Must be among permitted values
-    if (!(input %in% c("cpm", "log_cpm", "none"))) {
-        stop("Input for '", name, "' must be among permitted values (", paste0(c("cpm", "log_cpm", "none"), collapse = ", "), "), please supply valid input!")
     }
   }
 
@@ -554,4 +543,17 @@
       }
     }
   }
+
+  # normalization_method
+  if (name == "normalization_method") {
+    # Should be of class 'character'
+    if (!methods::is(input, "character") | length(input) != 1) {
+      stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+    }
+    # Must be among permitted values
+    if (!(input %in% c("cpm", "log_cpm", "none"))) {
+      stop("Input for '", name, "' must be among permitted values (", paste0(c("cpm", "log_cpm", "none"), collapse = ", "), "), please supply valid input!")
+    }
+  }
+
 }

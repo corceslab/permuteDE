@@ -223,13 +223,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:44 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:44 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
-<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
-<span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:08 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:08 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (310 features) and 69.6% (1200 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
-<span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:44 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:08 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -251,13 +251,13 @@ runtime</li>
 </ul>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">runDE_output</span><span class="op">$</span><span class="va">DE_results</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     gene        lfc       pvalue       padj      split</span></span>
-<span><span class="co">#&gt; 1  Stmn1  2.1530904 7.127649e-05 0.04077015 Astrocytes</span></span>
-<span><span class="co">#&gt; 2   Pan3 -1.5612588 2.635217e-04 0.07536720 Astrocytes</span></span>
-<span><span class="co">#&gt; 3 Slc4a4 -0.6058453 9.404665e-04 0.17931562 Astrocytes</span></span>
-<span><span class="co">#&gt; 4  Pcsk2  1.7141881 1.798391e-03 0.25716996 Astrocytes</span></span>
-<span><span class="co">#&gt; 5   Rpl3  1.4697542 2.957641e-03 0.32330591 Astrocytes</span></span>
-<span><span class="co">#&gt; 6   Fat3 -0.8415779 3.565231e-03 0.32330591 Astrocytes</span></span></code></pre></div>
+<span><span class="co">#&gt;   feature        lfc       pvalue       padj      split</span></span>
+<span><span class="co">#&gt; 1   Stmn1  2.1530904 7.127649e-05 0.04077015 Astrocytes</span></span>
+<span><span class="co">#&gt; 2    Pan3 -1.5612588 2.635217e-04 0.07536720 Astrocytes</span></span>
+<span><span class="co">#&gt; 3  Slc4a4 -0.6058453 9.404665e-04 0.17931562 Astrocytes</span></span>
+<span><span class="co">#&gt; 4   Pcsk2  1.7141881 1.798391e-03 0.25716996 Astrocytes</span></span>
+<span><span class="co">#&gt; 5    Rpl3  1.4697542 2.957641e-03 0.32330591 Astrocytes</span></span>
+<span><span class="co">#&gt; 6    Fat3 -0.8415779 3.565231e-03 0.32330591 Astrocytes</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-2-permutede">Step 2: <code>permuteDE()</code><a class="anchor" aria-label="anchor" href="#step-2-permutede"></a>
@@ -283,19 +283,19 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:45 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:45 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:45 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:47 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:47 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:51 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:51 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:55 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:55 : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:58 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:49:58 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:00 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:00 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-06 02:35:09 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:09 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:09 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:11 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:11 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:15 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:15 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:19 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:19 : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:21 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:21 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:23 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:23 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -468,12 +468,12 @@ feature x cell matrix:</p>
 <span>                      split_labels <span class="op">=</span> <span class="va">splits</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:06 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
-<span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:29 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (310 features) and 69.6% (1200 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
-<span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:06 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:29 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>Or a pre-generated pseudobulk matrix:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Pre-generate pseudobulk matrix</span></span>
@@ -481,12 +481,12 @@ feature x cell matrix:</p>
 <span>                                replicate_labels <span class="op">=</span> <span class="st">"sample"</span>,</span>
 <span>                                split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                                n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:06 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:06 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
-<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
-<span><span class="co">#&gt; Highest % of features were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:30 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:30 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (310 features) and 69.6% (1200 features) of features in each split.</span></span>
+<span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
-<span><span class="co">#&gt; Highest % of reads were excluded in split 'Microglia'.</span></span>
+<span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
 <span><span class="va">pb_matrix</span> <span class="op">&lt;-</span> <span class="va">pb_matrix_list</span><span class="op">$</span><span class="va">PB_values</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
 <span><span class="co"># Extract relevant metadata as a vector</span></span>
@@ -500,8 +500,8 @@ feature x cell matrix:</p>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      pseudobulk <span class="op">=</span> <span class="st">"supplied"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:06 : Extracting 1 pseudobulk matrix..</span></span>
-<span><span class="co">#&gt; 2025-10-05 14:50:06 : Running DE on 1 matrix..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-10-06 02:35:30 : Extracting 1 pseudobulk matrix..</span></span>
+<span><span class="co">#&gt; 2025-10-06 02:35:30 : Running DE on 1 matrix..</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -526,6 +526,9 @@ comparisons:</p>
 <ul>
 <li>Parameter <code>min_cells_per_split</code> indicates the minimum
 number of cells within one split. Defaults to 100.</li>
+<li>Parameter <code>min_cells_per_replicate</code> indicates the minimum
+number of cells within one replicate for each split. Defaults to
+10.</li>
 <li>Parameter <code>min_replicates_per_split</code> indicates minimum
 number of distinct replicates represented within one split. Defaults to
 6.</li>

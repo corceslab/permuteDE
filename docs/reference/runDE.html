@@ -80,8 +80,10 @@ using indicated differential expression analysis methods.</p>
 <span>  de_method <span class="op">=</span> <span class="st">"edgeR"</span>,</span>
 <span>  de_test <span class="op">=</span> <span class="st">"LRT"</span>,</span>
 <span>  de_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  normalize_prefilter <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  p_adjust_method <span class="op">=</span> <span class="st">"fdr"</span>,</span>
 <span>  min_cells_per_split <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  min_cells_per_replicate <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  min_replicates_per_split <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  min_replicates_per_group <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  min_cells_per_feature <span class="op">=</span> <span class="fl">10</span>,</span>
@@ -160,8 +162,9 @@ Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
 <dt>de_test</dt>
 <dd><p>Which test to use for differential expression analysis.
 Available values are dependent on the <code>de_method</code>: "edgeR" ("LRT",
-"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom"),
-"presto" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".</p></dd>
+"QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
+"wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
+Defaults to "LRT".</p></dd>
 
 
 <dt>de_params</dt>
@@ -169,6 +172,12 @@ Available values are dependent on the <code>de_method</code>: "edgeR" ("LRT",
 passed to specific DE functions. The name of each element must be the
 specific DE function to which those parameters are passed. Defaults to an
 empty list.</p></dd>
+
+
+<dt>normalize_prefilter</dt>
+<dd><p>A Boolean value indicating whether
+normalization should be applied before (<code>TRUE</code>) or after (<code>FALSE</code>)
+filtering out features with low counts. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt>p_adjust_method</dt>
@@ -181,6 +190,12 @@ Defaults to "fdr" (Benjamini &amp; Hochberg, 1995).</p></dd>
 <dd><p>A numeric value indicating the minimum number of
 cells within one split. Pseudobulk and differential expression steps will not
 be performed for splits with fewer cells. Defaults to 100.</p></dd>
+
+
+<dt>min_cells_per_replicate</dt>
+<dd><p>A numeric value indicating the minimum number
+of cells within one replicate for one split. Pseudobulk steps will not be
+performed for replicates with fewer cells for that split. Defaults to 10.</p></dd>
 
 
 <dt>min_replicates_per_split</dt>
@@ -199,16 +214,16 @@ splits with fewer replicates. Defaults to 3.</p></dd>
 
 <dt>min_cells_per_feature</dt>
 <dd><p>A numeric value indicating the minimum number
-of cells (within a split) with expression of a gene. Pseudobulk and
-differential expression will not be calculated for genes expressed in
+of cells (within a split) with expression of a feature. Pseudobulk and
+differential expression will not be calculated for features expressed in
 fewer cells. Defaults to 10.</p></dd>
 
 
 <dt>min_prop_cells_per_feature</dt>
 <dd><p>A numeric value indicating the minimum
-proportion of cells (within a split) with expression of a gene. Pseudobulk
-and differential expression will not be calculated for genes
-expressed in fewer cells. Defaults to 0.1.</p></dd>
+proportion of cells (within a split) with expression of a feature. Pseudobulk
+and differential expression will not be calculated for features expressed in
+fewer cells. Defaults to 0.1.</p></dd>
 
 
 <dt>force_balance</dt>

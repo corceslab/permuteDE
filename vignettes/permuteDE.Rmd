@@ -281,6 +281,7 @@ The default significance level used by permuteDE is `alpha = 0.05` with multiple
 permuteDE uses various filters to reduce the number of DE comparisons:
 
 *  Parameter `min_cells_per_split` indicates the minimum number of cells within one split. Defaults to 100.
+*  Parameter `min_cells_per_replicate` indicates the minimum number of cells within one replicate for each split. Defaults to 10.
 *  Parameter `min_replicates_per_split` indicates minimum number of distinct replicates represented within one split. Defaults to 6.
 *  Parameter `min_replicates_per_group` indicates the minimum number of distinct replicates represented within each of the two comparison groups. Defaults to 3.
 *  Parameter `min_cells_per_feature` indicates the minimum number of cells (within a split) with expression of a feature. Defaults to 10.

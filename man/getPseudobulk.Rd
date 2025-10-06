@@ -14,6 +14,8 @@ getPseudobulk(
   min_replicates_per_split = 6,
   min_cells_per_feature = 10,
   min_prop_cells_per_feature = 0.1,
+  filter = TRUE,
+  pseudobulk = "generate",
   use_assay = NULL,
   use_layer = NULL,
   n_cores = NULL,
@@ -54,12 +56,21 @@ will not be performed for splits with fewer replicates. Defaults to 6.}
 
 \item{min_cells_per_feature}{A numeric value indicating the minimum number
 of cells (within a split) with expression of a feature. Pseudobulk expression
-will not be calculated for genes expressed in fewer cells. Defaults to 10.}
+will not be calculated for features expressed in fewer cells. Defaults to 10.}
 
 \item{min_prop_cells_per_feature}{A numeric value indicating the minimum
 proportion of cells (within a split) with expression of a feature. Pseudobulk
 expression will not be calculated for features expressed in fewer cells.
 Defaults to 0.1.}
+
+\item{filter}{A Boolean value indicating whether to remove features from
+the matrices in the output (\code{TRUE}) or simply list features that do not
+meet the criteria as part of the metadata (\code{FALSE}). Defaults to
+\code{TRUE}.}
+
+\item{pseudobulk}{A string indicating whether to actually pseudobulk
+("generate"), or simply apply the filtering thresholds ("none"). Defaults to
+"generate".}
 
 \item{use_assay}{A string indicating the assay to use in the
 provided object. Default = \code{NULL} will choose the current active assay
@@ -81,6 +92,8 @@ Can be set to \code{FALSE} for a cleaner output.}
 \value{
 Returns a list containing the following elements: \describe{
 \item{PB_values}{A list of feature x replicate matri(ces) containing
+pseudobulk values for each feature, one matrix per split}
+\item{exclude_features}{A list of feature x replicate matri(ces) containing
 pseudobulk values for each feature, one matrix per split}
 \item{metadata}{Dataframe record of quality control metrics for each split}
 \item{parameters}{List recording parameter values used}

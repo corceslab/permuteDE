@@ -110,8 +110,8 @@ features. Defaults to 0.05.</p></dd>
 
 <dt>lfc_threshold</dt>
 <dd><p>A numeric value indicating the minimum absolute value
-log fold change for a gene to be counted as a "hit". Defaults to 0.5. Set to
-0 to disregard log fold change when counting hits.</p></dd>
+log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
+to 0 to disregard log fold change when counting hits.</p></dd>
 
 
 <dt>n_iterations</dt>
@@ -134,7 +134,7 @@ permutation test for all splits, regardless of the true number of DEGs.</p></dd>
 
 <dt>return_all</dt>
 <dd><p>A Boolean value indicating whether to store and return all
-DE results (log fold changes and p-values per gene per split) for every
+DE results (log fold changes and p-values per feature per split) for every
 single permutation. Defaults = <code>FALSE</code> will return only high-level
 permutation test results. Note that setting this to <code>TRUE</code> will
 substantially increase the size of the returned output.</p></dd>
@@ -191,8 +191,8 @@ differential expression results for the true group labels.</p>
 <p>Permutation is always performed at the replicate level, rather than the cell
 level, and is performed without replacement, such that each iteration is a
 unique permutation of the group labels.</p>
-<p>Notably, this permutation test does not pass judgment on any individual gene,
-rather, it is intended to assess how many false positive significant
+<p>Notably, this permutation test does not pass judgment on any individual
+feature, rather, it is intended to assess how many false positive significant
 differentially expressed features can be expected by chance. In addition, it
 can be used to characterize the log fold change and significance observed for
 such false positives to help users prioritize reliable DE results.</p>
