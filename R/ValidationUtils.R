@@ -337,6 +337,10 @@
       if (other == "supplied") {
         warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
       }
+    } else if (name %in% c("permutation_test_alpha")) {
+      if (!(other %in% c("pvalue", "split"))) {
+        warning("Input value for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
+      }
     }
   }
 
@@ -556,4 +560,18 @@
     }
   }
 
+  # color_limits
+  if (name == "color_limits") {
+    # If not NULL
+    if (!is.null(input)) {
+      if (!(other %in% c("pvalue", "n_sig"))) {
+        warning("Input values for '", name, "' are not used when parameter 'color_by' is set to '", other, "'.")
+      } else {
+        # Should be of class 'numeric'
+        if (!methods::is(input, "numeric") | length(input) != 2) {
+          stop("Input for '", name, "' must be a vector containing two values of class 'numeric', please supply valid input!")
+        }
+      }
+    }
+  }
 }

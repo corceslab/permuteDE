@@ -282,10 +282,10 @@ plotVolcano <- function(input,
   if (is.null(subtitle)) {
     subtitle <- paste0("DE using", de_method,
                        switch(de_test,
-                              wilcox_cpm = "Wilcoxon Rank Sum Test with CPM normalization, ",
-                              wilcox_log_cpm = "Wilcoxon Rank Sum Test with log CPM normalization, ",
-                              paste0(de_test, ", ")),
-                       switch(p_adjust_method,
+                              wilcox_cpm = "Wilcoxon Rank Sum Test with CPM normalization\n",
+                              wilcox_log_cpm = "Wilcoxon Rank Sum Test with log CPM normalization\n",
+                              paste0(de_test, "\n")),
+                       switch("fdr",
                               holm =  paste0("Holm method, \u03b1 = ", alpha),
                               hochberg = paste0("Hochberg adjustment, \u03b1 = ", alpha),
                               hommel = paste0("Hommel procedure, \u03b1 = ", alpha),
@@ -293,9 +293,11 @@ plotVolcano <- function(input,
                               BH = paste0("FDR = ", alpha),
                               fdr = paste0("FDR = ", alpha),
                               BY = paste0("Benjamini & Yekutieli, FDR = ", alpha),
-                              paste0("no multiple comparison correction, \u03b1 = ", alpha)),
+                              paste0("No multiple comparison correction, \u03b1 = ", alpha)),
                        ", |LFC| > ", lfc_threshold)
-    subtitle <- paste(strwrap(subtitle, 80), collapse = "\n")
+    if (nchar(subtitle) < 50) {
+      subtitle <- gsub("\n", ", ", subtitle)
+    }
   }
 
   # Separate results from each split
@@ -791,7 +793,7 @@ plotDimReduction <- function(reduction,
   .validInput(split_labels, "split_labels", reduction)
   .validInput(use_cells, "use_cells", list(t(reduction), "none"))
   .validInput(color_by, "color_by", list(split_labels, input))
-  .validInput(permutation_test_alpha, "permutation_test_alpha")
+  .validInput(permutation_test_alpha, "permutation_test_alpha", color_by)
   .validInput(label_splits, "label_splits")
   .validInput(label_statistics, "label_statistics")
   .validInput(color_limits, "color_limits", color_by)
@@ -873,6 +875,9 @@ plotDimReduction <- function(reduction,
                                 palette_name = palette_name)
     if (color_by == "n_sig") {
       color_legend <- "Number of<br>significant<br>DE features"
+      if (all(is.na(tmp_seurat$n_sig))) {
+        tmp_seurat$n_sig <- 0
+      }
       tmp_seurat$color_groups <- tmp_seurat$n_sig
       # Set NA cutoff
       if (!is.null(color_limits)) {
@@ -882,16 +887,28 @@ plotDimReduction <- function(reduction,
         na_cutoff_low <- 1
       }
       # Set barwidth if only 1 value
-      if (dplyr::n_distinct(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig)]) < 2) {
-        legend_barwidth <- 1
+      if ((dplyr::n_distinct(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig)]) < 2)) {
+        if (is.null(color_limits) || (color_limits[1] == color_limits[2])) {
+          legend_barwidth <- 1
+        }
       }
     } else if (color_by == "pvalue") {
       color_legend <- "Permutation<br>test p-value"
+      if (all(is.na(tmp_seurat$pvalue))) {
+        tmp_seurat$n_sig <- 2
+        na_cutoff_high <- 1
+      }
       tmp_seurat$color_groups <- tmp_seurat$pvalue
       # Set NA cutoff
       if (!is.null(color_limits)) {
-        na_cutoff_low <- color_limits[1]
-        na_cutoff_high <- color_limits[2]
+        na_cutoff_low <- max(0, color_limits[1])
+        na_cutoff_high <- min(1, color_limits[2])
+      }
+      # Set barwidth if only 1 value
+      if ((dplyr::n_distinct(tmp_seurat$pvalue[!is.na(tmp_seurat$pvalue)]) < 2)) {
+        if (is.null(color_limits) || (color_limits[1] == color_limits[2])) {
+          legend_barwidth <- 1
+        }
       }
       # Reverse palette
       palette <- rev(palette)
