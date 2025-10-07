@@ -418,13 +418,18 @@
     }
   }
 
-  # title, subtitle
-  if (name %in% c("title", "subtitle")) {
+  # title, subtitle, feature_name
+  if (name %in% c("title", "subtitle", "feature_name")) {
     # If not NULL
     if (!is.null(input)) {
       # Should be of class 'character'
       if (!methods::is(input, "character") | length(input) != 1) {
         stop("Input for '", name, "' must be a single value of class 'character'. Please supply valid input!")
+      }
+      if (name == "feature_name") {
+        if (other != "feature") {
+          warning("Input for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
+        }
       }
     }
   }
@@ -512,11 +517,11 @@
         stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
       }
       # Must be among permitted values
-      if (!(input %in% c("split", "n_sig", "pvalue"))) {
-        stop("Input for '", name, "' must be among permitted values (", paste0(c("split", "n_sig", "pvalue"), collapse = ", "), "), please supply valid input!")
+      if (!(input %in% c("split", "n_sig", "pvalue", "feature"))) {
+        stop("Input for '", name, "' must be among permitted values (", paste0(c("split", "n_sig", "pvalue", "feature"), collapse = ", "), "), please supply valid input!")
       }
       # Other input can't be NULL
-      if (is.null(other[[1]])) {
+      if (input != "feature" & is.null(other[[1]])) {
         stop("Input for 'split_labels' cannot be NULL when input for '", name, "' is '", input, "', please supply valid input!")
       }
       if (input %in% c("n_sig", "pvalue") & is.null(other[[2]])) {
@@ -564,13 +569,43 @@
   if (name == "color_limits") {
     # If not NULL
     if (!is.null(input)) {
-      if (!(other %in% c("pvalue", "n_sig"))) {
+      if (!(other %in% c("pvalue", "n_sig", "feature"))) {
         warning("Input values for '", name, "' are not used when parameter 'color_by' is set to '", other, "'.")
       } else {
         # Should be of class 'numeric'
         if (!methods::is(input, "numeric") | length(input) != 2) {
           stop("Input for '", name, "' must be a vector containing two values of class 'numeric', please supply valid input!")
         }
+      }
+    }
+  }
+
+  # feature_values
+  if (name %in% c("feature_values")) {
+    # If not NULL
+    if (!is.null(input)) {
+      if (other[[3]] != "feature") {
+        warning("Input values for '", name, "' are not used when parameter 'color_by' is set to '", other[[3]], "'.")
+      } else {
+        # Should be of class "numeric"
+        if (!methods::is(input, "numeric")) {
+          stop("Input value for '", name, "' must be of class 'numeric', please supply valid input!")
+        }
+        # Must be of same length as either use cells or reduction matrix
+        if (!is.null(other[[2]])) {
+          if (length(input) != length(other[[2]])) {
+            stop("Input value for '", name, "' must be the same length as input to parameter 'use_cells', please supply valid input!")
+          }
+        } else {
+          if (length(input) != nrow(other[[1]])) {
+            stop("Input value for '", name, "' must be the same length as there are rows in the input to parameter 'reduction', please supply valid input!")
+          }
+        }
+      }
+    } else {
+      # feature_values are required when color_by = "feature"
+      if (other[[3]] == "feature") {
+        stop("Input value for '", name, "' cannot be NULL when parameter 'color_by' is set to '", other[[3]], "'. Please supply valid input!")
       }
     }
   }

@@ -741,12 +741,18 @@ plotFeature <- function(input,
 #' @param split_labels An character vector containing the split labels for each
 #' cell in order. Default = \code{NULL} will assume all cells belong to the same
 #' split.
+#' @param feature_values A vector containing the value for a feature for each
+#' cell in order, used if \code{color_by} = "feature".
+#' @param feature_name A string indicating the name of the plotted feature if
+#' \code{color_by} = "feature". Used for legend title.
 #' @param use_cells A vector of cell names to subset the dimensionality
 #' reduction cell coordinates to. Default = \code{NULL} will use all cells.
 #' @param color_by A character vector indicating what metric to use to color
-#' each split. Permitted values are "n_sig", "pvalue", and "split". Default =
-#' "split" will color the cells by the split they belong to if input to
-#' parameter \code{split_labels} is provided.
+#' each split. Permitted values are "n_sig" (number of significant DE features),
+#' "pvalue" (permutation test p-value), "split" (values provided to parameter
+#' \code{split_labels}), and "feature" (values provided to parameter
+#' \code{feature_values}). Default = "split" will color the cells by the split
+#' they belong to if input to parameter \code{split_labels} is provided.
 #' @param permutation_test_alpha A numeric value indicating the significance
 #' level to apply to the permutation test results. Splits that do not pass this
 #' threshold will be grayed out. Default = 1 applies no threshold.
@@ -772,6 +778,8 @@ plotFeature <- function(input,
 plotDimReduction <- function(reduction,
                              input = NULL,
                              split_labels = NULL,
+                             feature_values = NULL,
+                             feature_name = NULL,
                              use_cells = NULL,
                              color_by = NULL,
                              permutation_test_alpha = 1,
@@ -793,6 +801,8 @@ plotDimReduction <- function(reduction,
   .validInput(split_labels, "split_labels", reduction)
   .validInput(use_cells, "use_cells", list(t(reduction), "none"))
   .validInput(color_by, "color_by", list(split_labels, input))
+  .validInput(feature_values, "feature_values", list(reduction, use_cells, color_by))
+  .validInput(feature_name, "feature_name", color_by)
   .validInput(permutation_test_alpha, "permutation_test_alpha", color_by)
   .validInput(label_splits, "label_splits")
   .validInput(label_statistics, "label_statistics")
@@ -822,6 +832,7 @@ plotDimReduction <- function(reduction,
   na_color <- "#BBBBBB"
   na_cutoff_low <- NA
   na_cutoff_high <- NA
+  na_zero_legend <- FALSE
   add_labels <- FALSE
   if (is.null(color_by) || (is.null(split_labels) && identical(color_by, "split"))) {
     type <- "DimPlot"
@@ -883,8 +894,12 @@ plotDimReduction <- function(reduction,
       if (!is.null(color_limits)) {
         na_cutoff_low <- color_limits[1]
         na_cutoff_high <- color_limits[2]
+        if (na_cutoff_low == 1) {
+          na_zero_legend <- TRUE
+        }
       } else if (min(tmp_seurat$n_sig, na.rm = TRUE) == 0) {
         na_cutoff_low <- 1
+        na_zero_legend <- TRUE
       }
       # Set barwidth if only 1 value
       if ((dplyr::n_distinct(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig)]) < 2)) {
@@ -916,16 +931,16 @@ plotDimReduction <- function(reduction,
     # Labels
     if (label_splits == TRUE & label_statistics == TRUE) {
       add_labels <- TRUE
-      tmp_seurat$labels <- split_labels
-      Seurat::Idents(object = tmp_seurat) <- "labels"
-    } else if (label_splits == TRUE) {
-      add_labels <- TRUE
       tmp_seurat$labels <- paste0(split_labels, "\n", tmp_seurat$n_sig, " DE features\np = ", round(tmp_seurat$pvalue, 4))
       tmp_seurat$labels[is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- split_labels[is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)]
       tmp_seurat$labels[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- paste0(split_labels[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)],
                                                                                        "\n", tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)],
                                                                                        " DE features")
 
+      Seurat::Idents(object = tmp_seurat) <- "labels"
+    } else if (label_splits == TRUE) {
+      add_labels <- TRUE
+      tmp_seurat$labels <- split_labels
       Seurat::Idents(object = tmp_seurat) <- "labels"
     } else if (label_statistics == TRUE) {
       add_labels <- TRUE
@@ -934,6 +949,47 @@ plotDimReduction <- function(reduction,
       tmp_seurat$labels[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)] <- paste0(tmp_seurat$n_sig[!is.na(tmp_seurat$n_sig) & is.na(tmp_seurat$pvalue)],
                                                                                        " DE features")
       Seurat::Idents(object = tmp_seurat) <- "labels"
+    }
+  } else if (color_by == "feature") {
+    legend_barwidth <- NULL
+    legend_barheight <- 1
+    type <- "FeaturePlot"
+    # Add feature values to metadata
+    tmp_seurat$color_groups <- feature_values
+    # Color palette
+    palette <- permuteDEpalette(type = "gradient",
+                                palette_name = palette_name)
+    # Set NA cutoff
+    if (!is.null(color_limits)) {
+      na_cutoff_low <- color_limits[1]
+      na_cutoff_high <- color_limits[2]
+    } else if (min(tmp_seurat$color_groups, na.rm = TRUE) == 0) {
+      na_cutoff_low <- 0.00001
+      na_zero_legend <- TRUE
+    }
+    # Set barwidth if only 1 value
+    if ((dplyr::n_distinct(tmp_seurat$color_groups[!is.na(tmp_seurat$color_groups)]) < 2)) {
+      if (is.null(color_limits) || (color_limits[1] == color_limits[2])) {
+        legend_barwidth <- 1
+      }
+    }
+    # Color legend
+    if (is.null(feature_name)) {
+      color_legend <- ""
+    } else {
+      color_legend <- feature_name
+    }
+    # Labels
+    if (label_splits == TRUE & !is.null(split_labels)) {
+      add_labels <- TRUE
+      tmp_seurat$labels <- split_labels
+      Seurat::Idents(object = tmp_seurat) <- "labels"
+    }
+    if (label_statistics == TRUE) {
+      warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
+    }
+    if (permutation_test_alpha < 1) {
+      permutation_test_alpha <- 1
     }
   }
 
@@ -1007,7 +1063,7 @@ plotDimReduction <- function(reduction,
                                                         barwidth = legend_barwidth,
                                                         barheight = legend_barheight,
                                                         order = 1))
-    } else if (!is.na(na_cutoff_low) && na_cutoff_low == 1) {
+    } else if (na_zero_legend == TRUE) {
       sample_x <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,1])
       sample_y <- min(tmp_seurat@reductions$dim_reduction@cell.embeddings[,2])
       p <- p + ggplot2::geom_point(x = sample_x,
