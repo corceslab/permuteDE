@@ -10,33 +10,42 @@ permuteDE(
   lfc_threshold = 0.5,
   n_iterations = 1000,
   use_splits = NULL,
-  min_DE = 2,
+  min_DE = 1,
+  return_all = FALSE,
   random_seed = 1,
   n_cores = NULL,
   verbose = TRUE
 )
 }
 \arguments{
-\item{input}{Output from function 'runDE' containing differential expression
-results, pseudobulk values, and parameters used.}
+\item{input}{Output from function \code{runDE}: a list containing
+differential expression results, pseudobulk values, and parameters used.}
 
 \item{alpha}{A numeric value indicating the significance level used for
 permutation test comparisons of the number of differentially expressed
 features. Defaults to 0.05.}
 
-\item{lfc_threshold}{A numeric value indicating the log2 Fold Change level
-used to define statistically significant genes.}
+\item{lfc_threshold}{A numeric value indicating the minimum absolute value
+log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
+to 0 to disregard log fold change when counting hits.}
 
 \item{n_iterations}{A numeric value indicating the number of iterations run
-for the permutation test. Defaults to 1000.}
+for the permutation test. Defaults to 1000. Computational time increases
+approximately linearly with the number of iterations.}
 
 \item{use_splits}{A vector containing the names of splits to use. Defaults to
-\code{NULL}.}
+\code{NULL}, which will try all splits.}
 
 \item{min_DE}{A numeric value indicating the minimum number of
 differentially expressed features between the true group labels for a split,
-below which permutations will not be run. Defaults to 2. Set to 0 to run
+below which permutations will not be run. Defaults to 1. Set to 0 to run
 permutation test for all splits, regardless of the true number of DEGs.}
+
+\item{return_all}{A Boolean value indicating whether to store and return all
+DE results (log fold changes and p-values per feature per split) for every
+single permutation. Defaults = \code{FALSE} will return only high-level
+permutation test results. Note that setting this to \code{TRUE} will
+substantially increase the size of the returned output.}
 
 \item{random_seed}{A numeric value indicating the random seed to be used.
 Defaults to 1.}
@@ -45,7 +54,7 @@ Defaults to 1.}
 parallelization. Default = \code{NULL} will use the number of available cores
 minus 2.}
 
-\item{verbose}{A boolean value indicating whether to use verbose output
+\item{verbose}{A Boolean value indicating whether to use verbose output
 during the execution of this function. Defaults to \code{TRUE}.
 Can be set to \code{FALSE} for a cleaner output.}
 }
@@ -53,9 +62,14 @@ Can be set to \code{FALSE} for a cleaner output.}
 Returns a list containing the following elements: \describe{
 \item{permutation_test_results}{Dataframe containing the permutation test
 results by split}
-\item{permutation_summary}{Dataframe containing the permutation DE summary
-metrics by split}
-\item{parameters}{Dataframe record of parameter values used}
+\item{permutation_DE_summary}{Dataframe containing the permutation DE
+summary metrics by split}
+\item{permutation_DE_results}{If parameter 'return_all' is TRUE,
+dataframe DE results for each feature, by split, for each iteration}
+\item{metadata}{List recording additional characteristics of the data: the
+number of significant DE features from runDE, the group indices for each
+iteration of the permutation test, and runtime}
+\item{parameters}{List recording parameter values used}
 }
 }
 \description{
@@ -63,20 +77,21 @@ This function performs a permutation test by shuffling the group labels for
 the given set of replicates and performing pseudobulk differential expression
 between those permuted groups. The metric used by the permutation test is the
 number of significantly differentially expressed features for a given
-significance level 'alpha'.
+significance level \code{alpha} and log fold change threshold
+\code{lfc_threshold}.
 }
 \details{
 As input, this function requires the output from function \code{runDE}
-containing the pseudobulk values for each feature and the differential
-expression results for the true group labels.
+containing the pseudobulk (or cell-level) values for each feature and the
+differential expression results for the true group labels.
 
-Permutation is performed at the replicate level, rather than the cell level,
-and is performed without replacement, such that each iteration is a unique
-permutation of the group labels.
+Permutation is always performed at the replicate level, rather than the cell
+level, and is performed without replacement, such that each iteration is a
+unique permutation of the group labels.
 
-Notably, this permutation test is not performed to identify the true
-differentially expressed features, but rather to assess how many false
-positive significant differentially expressed features can be expected by
-chance, and to characterize the log fold change and significance observed for
-such false positives.
+Notably, this permutation test does not pass judgment on any individual
+feature, rather, it is intended to assess how many false positive significant
+differentially expressed features can be expected by chance. In addition, it
+can be used to characterize the log fold change and significance observed for
+such false positives to help users prioritize reliable DE results.
 }

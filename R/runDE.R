@@ -1,100 +1,145 @@
-#' Run pseudobulk differential expression
+#' Run differential expression analysis to compare two groups
 #'
-#' Generate pseudobulk matri(ces) and run pseudobulk differential expression
-#' between two groups for each using existing tools: \code{edgeR},
-#' \code{DESeq2}, or \code{limma}.
+#' This function identifies differentially expressed features between two groups
+#' using indicated differential expression analysis methods.
 #'
-#' This function was inspired by R package neurorestore/Libra and some aspects
-#' are adapted therefrom (Squair et al. 2021).
+#' By default, pseudobulk matri(ces) are generated or supplied by the user, then
+#' used to run pseudobulk differential expression. The following existing tools
+#' are supported: \code{edgeR}, \code{DESeq2}, \code{limma}, and the Wilcoxon
+#' rank-sum test. Alternately, users may skip pseudobulking and run cell-level
+#' differential expression (not recommended in most cases).
 #'
-#' @param object An object of class 'Seurat' or 'SingleCellExperiment'.
-#' @param replicate_labels A character string or vector indicating the name of the
-#' column containing the replicate labels.
-#' @param group_labels A character string or vector indicating the name of the
-#' column containing the two comparison group labels.
-#' @param split_labels A character string or vector indicating the name of a
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{matrix}. Data supplied as class \code{matrix} may be either a
+#' feature x cell matrix or a pre-computed pseudobulk feature x replicate
+#' matrix. Note that raw counts are expected, and the normalization method
+#' applied during differential expression analysis differs across the methods
+#' and tests.
+#' @param replicate_labels A string indicating the name of the
+#' metadata column containing the biological replicate labels or a character
+#' vector containing the biological replicate labels in order. For pseudobulk DE
+#' analysis, the biological replicate labels are used to construct/define the
+#' pseudobulks. For cell-level DE analysis, the biological replicate labels are
+#' not used in this function, but will be passed on to function permuteDE so
+#' that the permutation of group labels keeps replicates intact.
+#' @param group_labels A string indicating the name of the
+#' column containing the two comparison group labels or a character vector
+#' containing the comparison labels in order.
+#' @param split_labels A string indicating the name of a
 #' column by which to split the cells prior to pseudobulking and performing
-#' differential expression (e.g., cell types). Results will be returned for
-#' each unique value in the column indicated by 'split_labels'. Default =
-#' \code{NULL} will run pseudobulk differential expression on all cells
-#' together.
-#' @param force_balance A boolean indicating whether to force the two comparison
-#' groups to have the same sample size. Defaults to \code{FALSE}. If
-#' \code{TRUE}, the larger group will be randomly downsampled to the size of the
-#' smaller group.
+#' differential expression (e.g., cell types). Alternately, a character vector
+#' containing the split labels for each cell in order. Results will be returned
+#' for each unique value indicated by \code{split_labels}. Default = \code{NULL}
+#' will run pseudobulk differential expression on all cells together.
 #' @param reference_group A string specifying the reference group. Defaults to
-#' \code{NULL}, in which case the first value in the group column is used as the
+#' \code{NULL}, in which case the first value alphabetically is used as the
 #' reference.
-#' @param use_cells A vector of cell names subset to. Default = \code{NULL} will
-#' use all cells.
+#' @param use_cells A vector of cell names to subset the object to prior to
+#' subsequent pseudobulk and differential expression steps. Default =
+#' \code{NULL} will use all cells.
+#' @param pseudobulk A string indicating pseudobulk handling. Permitted values
+#' are: "generate" (pseudobulk matrices will be generated), "supplied"
+#' (pseudobulk matrix was supplied by the user to parameter \code{object}), or
+#' "none" (pseudobulking will not be used, cell-level differential expression
+#' analysis will be run). Defaults to "generate".
+#' @param de_method Which tool to use for differential expression analysis.
+#' Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
+#' "edgeR".
+#' @param de_test Which test to use for differential expression analysis.
+#' Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
+#' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
+#' "wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
+#' Defaults to "LRT".
+#' @param de_params A list of lists containing additional parameters to be
+#' passed to specific DE functions. The name of each element must be the
+#' specific DE function to which those parameters are passed. Defaults to an
+#' empty list.
+#' @param normalize_prefilter A Boolean value indicating whether
+#' normalization should be applied before (\code{TRUE}) or after (\code{FALSE})
+#' filtering out features with low counts. Defaults to \code{FALSE}.
+#' @param p_adjust_method A string indicating which multiple comparison
+#' adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
+#' Defaults to "fdr" (Benjamini & Hochberg, 1995).
 #' @param min_cells_per_split A numeric value indicating the minimum number of
-#' cells within one split. Pseudobulk expression and differential expression
-#' will not be performed for splits with fewer cells. Defaults to 100.
+#' cells within one split. Pseudobulk and differential expression steps will not
+#' be performed for splits with fewer cells. Defaults to 100.
+#' @param min_cells_per_replicate A numeric value indicating the minimum number
+#' of cells within one replicate for one split. Pseudobulk steps will not be
+#' performed for replicates with fewer cells for that split. Defaults to 10.
 #' @param min_replicates_per_split A numeric value indicating the minimum number
 #' of distinct replicates represented within one split. Pseudobulk expression
 #' and differential expression will not be performed for splits with fewer
 #' replicates. Defaults to 6.
 #' @param min_replicates_per_group A numeric value indicating the minimum number
 #' of distinct replicates represented within each of the two comparison groups.
-#' Pseudobulk expression and differential expression will not be performed for
+#' Pseudobulk and differential expression steps will not be performed for
 #' splits with fewer replicates. Defaults to 3.
 #' @param min_cells_per_feature A numeric value indicating the minimum number
-#' of cells (within a split) with expression of a gene. Pseudobulk expression
-#' and differential expression will not be calculated for genes expressed in
+#' of cells (within a split) with expression of a feature. Pseudobulk and
+#' differential expression will not be calculated for features expressed in
 #' fewer cells. Defaults to 10.
 #' @param min_prop_cells_per_feature A numeric value indicating the minimum
-#' proportion of cells (within a split) with expression of a gene. Pseudobulk
-#' expression and differential expression will not be calculated for genes
-#' expressed in fewer cells. Defaults to 0.1.
-#' @param de_method Which tool to use for differential expression. Permitted
-#' values are 'edgeR', 'DESeq2', and 'limma'. Defaults to 'edgeR'.
-#' @param de_test Which test to use for differential expression. Defaults to
-#' 'LRT'.
-#' @param p_adjust_method A string indicating which multiple comparison
-#' adjustment to use. For permitted values, see \code{stats::p.adjust}. Defaults
-#' to 'fdr' (Benjamini & Hochberg, 1995).
-#' @param use_assay A character string indicating the assay to use in the
+#' proportion of cells (within a split) with expression of a feature. Pseudobulk
+#' and differential expression will not be calculated for features expressed in
+#' fewer cells. Defaults to 0.1.
+#' @param force_balance A boolean indicating whether to force the two comparison
+#' groups to have the same sample size. Defaults to \code{FALSE}. If
+#' \code{TRUE}, the larger group will be randomly downsampled to the size of the
+#' smaller group.
+#' @param use_assay A string indicating the assay to use in the
 #' provided object. Default = \code{NULL} will choose the current active assay
-#' for Seurat objects and the \code{counts} assay for SingleCellExperiment
-#' objects.
-#' @param use_layer For Seurat objects, a character string or vector indicating
-#' the layer — previously known as slot — to use in the provided object.
+#' for \code{Seurat} objects and the \code{counts} assay for
+#' \code{SingleCellExperiment} objects.
+#' @param use_layer For \code{Seurat} objects, a string or vector
+#' indicating the layer—previously known as slot—to use in the provided object.
 #' Default = \code{NULL} will use the \code{counts} layer.
+#' @param random_seed A numerical value indicating the random seed to be used.
+#' Defaults to 1. Only relevant in this function when parameter
+#' \code{force_balance = TRUE}.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
-#' @param verbose A boolean value indicating whether to use verbose output
+#' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of this function. Defaults to \code{TRUE}.
 #' Can be set to \code{FALSE} for a cleaner output.
 #'
 #' @return Returns a list containing the following elements: \describe{
 #'   \item{DE_results}{Dataframe containing DE results for each feature, by
 #'   split}
-#'   \item{PB_values}{List of feature x replicate matri(ces) containing
-#'   pseudobulk values for each feature, one per split}
-#'   \item{group_key}{Dataframe record of group labels corresponding to each replicate}
-#'   \item{parameters}{Dataframe record of parameter values used}
+#'   \item{PB_values}{If using pseudobulk data, a list of feature x replicate
+#'   matri(ces) containing pseudobulk values for each feature, one matrix per
+#'   split}
+#'   \item{cell_values}{Alternately, if using cell-level data, a list of feature x
+#'   cell matri(ces) containing counts for each feature, one matrix per
+#'   split}
+#'   \item{metadata}{List recording characteristics of the data and runtime}
+#'   \item{parameters}{List recording parameter values used}
 #'   }
 #'
 #' @export
 #'
 runDE <- function(object,
-                  replicate_labels,
+                  replicate_labels = NULL,
                   group_labels,
                   split_labels = NULL,
-                  force_balance = FALSE,
                   reference_group = NULL,
                   use_cells = NULL,
+                  pseudobulk = "generate",
+                  de_method = "edgeR",
+                  de_test = "LRT",
+                  de_params = list(),
+                  normalize_prefilter = FALSE,
+                  p_adjust_method = "fdr",
                   min_cells_per_split = 100,
+                  min_cells_per_replicate = 10,
                   min_replicates_per_split = 6,
                   min_replicates_per_group = 3,
                   min_cells_per_feature = 10,
                   min_prop_cells_per_feature = 0.1,
-                  de_method = "edgeR",
-                  de_test = "LRT",
-                  p_adjust_method = "fdr",
+                  force_balance = FALSE,
                   use_assay = NULL,
                   use_layer = NULL,
+                  random_seed = 1,
                   n_cores = NULL,
                   verbose = TRUE) {
 
@@ -102,178 +147,294 @@ runDE <- function(object,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(object, "object", "countCombinations")
-  .validInput(replicate_labels, "replicate_labels", object)
+  time1 <- Sys.time()
+
+  .validInput(object, "object", "runDE")
+  .validInput(pseudobulk, "pseudobulk", object)
+  .validInput(replicate_labels, "replicate_labels", list(object, pseudobulk))
   .validInput(group_labels, "group_labels", object)
   .validInput(split_labels, "split_labels", object)
-  .validInput(use_cells, "use_cells", object)
-  .validInput(min_cells_per_split, "min_cells_per_split")
-  .validInput(min_replicates_per_split, "min_replicates_per_split")
-  .validInput(min_replicates_per_split, "min_replicates_per_group")
-  .validInput(min_cells_per_feature, "min_cells_per_feature")
-  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature")
+  .validInput(use_cells, "use_cells", list(object, pseudobulk))
+  .validInput(reference_group, "reference_group", list(object, group_labels, use_cells))
   .validInput(de_method, "de_method")
   .validInput(de_test, "de_test", de_method)
+  .validInput(de_params, "de_params", list(de_method, de_test))
+  .validInput(normalize_prefilter, "normalize_prefilter")
   .validInput(p_adjust_method, "p_adjust_method")
+  .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
+  .validInput(min_cells_per_replicate, "min_cells_per_replicate", pseudobulk)
+  .validInput(min_replicates_per_split, "min_replicates_per_split", pseudobulk)
+  .validInput(min_replicates_per_group, "min_replicates_per_group")
+  .validInput(min_cells_per_feature, "min_cells_per_feature", pseudobulk)
+  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
+  .validInput(force_balance, "force_balance", pseudobulk)
   .validInput(use_assay, "use_assay", object)
   .validInput(use_slot, "use_slot", list(object, use_assay))
+  .validInput(random_seed, "random_seed")
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
+
+  # ---------------------------------------------------------------------------
+  # Set up
+  # ---------------------------------------------------------------------------
 
   # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
   }
 
-  # ensure each test works for that method
-  if (de_method == 'edgeR') {
-    if (!(de_test %in% c('LRT', 'QLF', 'exact'))) {
-      stop(paste0('edgeR does not take ', de_test, '.'))
-    }
-  } else if (de_method == 'DESeq2') {
-    if (!(de_test %in% c('LRT', 'Wald'))) {
-      stop(paste0('DESeq2 does not take ', de_test, '.'))
-    }
-  } else if (de_method == 'limma') {
-    if (!(de_test %in% c('voom'))) { # TODO: add in other tests if implemented
-      stop(paste0('limma does not take ', de_test, '.'))
-    }
-  } else {
-    stop(paste0(de_method, ' is not supported.'))
+  # Random seed reproducibility
+  if (force_balance == TRUE) {
+    RNGkind("L'Ecuyer-CMRG")
+    set.seed(random_seed)
   }
 
   # Retrieve metadata
-  replicates <- .retrieveData(object = object,
-                              type = "cell_metadata",
-                              name = replicate_labels,
-                              use_cells = use_cells)
-  groups <- .retrieveData(object = object,
-                          type = "cell_metadata",
-                          name = group_labels,
-                          use_cells = use_cells)
-
-  if (dplyr::n_distinct(groups) != 2) {
-    stop("Input value '", group_labels,
-         "' for parameter 'group_labels' must represent a cell metadata column that contains exactly 2 groups for the selected cells, please supply valid input!")
+  # Set cells to use
+  if (is.null(use_cells) & pseudobulk != "supplied") {
+    use_cells <- .getCellIDs(object)
   }
 
-
-  # ---------------------------------------------------------------------------
-  # Calculate pseudobulk values
-  # ---------------------------------------------------------------------------
-
-  # Pseudobulk matri(ces)
-  ## a list containing a matrix per split
-  ## matrix format: gene x replicate
-  pb_list <- getPseudobulk(object = object,
-                           replicate_labels = replicate_labels,
-                           split_labels = split_labels,
-                           use_cells = use_cells,
-                           min_cells_per_split = min_cells_per_split,
-                           min_replicates_per_split = min_replicates_per_split,
-                           min_cells_per_feature = min_cells_per_feature,
-                           min_prop_cells_per_feature = min_prop_cells_per_feature,
-                           n_cores = n_cores,
-                           verbose = verbose)
-
-  # Group labels for each replicate, by split
-  ## two columns: replicate, group
-  group_key <- data.frame(replicate = paste0("rep_", replicates),
-                          group = groups) %>%
-    dplyr::group_by(replicate, group) %>%
-    dplyr::summarise(n = dplyr::n()) %>%
-    dplyr::select(-n) %>%
-    data.frame()
-
-  rownames(group_key) <- group_key$replicate
-
-  if (force_balance) {
-    group_counts <- table(group_key$group)
-
-    if (length(group_counts) > 1) {
-      min_size <- min(group_counts)
-
-      # Downsample the bigger group to the same size
-      balanced_indices <- unlist(lapply(names(group_counts), function(grp) {
-        grp_indices <- which(group_key$group == grp)
-        if (length(grp_indices) > min_size) {
-          sample(grp_indices, min_size)
+  # Replicate labels
+  stored_replicates <- NULL
+  if (!is.null(replicate_labels)) {
+    if (length(replicate_labels) == 1) {
+      replicates <- .retrieveData(object = object,
+                                  type = "cell_metadata",
+                                  name = replicate_labels,
+                                  use_cells = use_cells)
+    } else {
+      replicates <- replicate_labels
+      # Check length
+      if (!is.null(use_cells) & pseudobulk != "supplied") {
+        target_length <- length(use_cells)
+      } else {
+        target_length <- ncol(object)
+      }
+      if (length(replicates) != target_length) {
+        if (pseudobulk == "supplied") {
+          stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
         } else {
-          grp_indices
+          stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied cells.")
         }
-      }))
+      }
+    }
+    if (pseudobulk == "none") {
+      # Store biological replicates for use later if output is passed to permuteDE
+      stored_replicates <- replicates
+      replicates <- use_cells
+      names(stored_replicates) <- replicates
+    }
+  } else if (pseudobulk == "none") {
+    replicates <- use_cells
+  }
 
-      # Subset group_key accordingly
-      group_key <- group_key[balanced_indices, , drop = FALSE]
+  # Group labels
+  if (length(group_labels) == 1) {
+    groups <- .retrieveData(object = object,
+                            type = "cell_metadata",
+                            name = group_labels,
+                            use_cells = use_cells)
+  } else {
+    groups <- group_labels
+    # Check length
+    if (length(groups) != length(replicates)) {
+      if (pseudobulk == "supplied") {
+        stop("When a vector is provided for 'group_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
+      } else {
+        stop("When a vector is provided for 'group_labels', it must be the same length and in the same order as the supplied cells.")
+      }
     }
   }
 
-  target_list <- lapply(pb_list, FUN = function(i) {
+  # There must be exactly two comparison groups
+  if (dplyr::n_distinct(groups) != 2) {
+    stop("Input value for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
+  }
+
+  # Reference group
+  if (is.null(reference_group)) {
+    reference_group <- sort(unique(groups))[1]
+  }
+  non_reference_group <- unique(groups)[unique(groups) != reference_group]
+
+  # Group labels for each replicate
+  # Returns a dataframe with two columns: replicate, group
+  if (pseudobulk == "generate") {
+    replicate_prefix <- "rep_"
+  } else {
+    replicate_prefix <- ""
+  }
+  group_key <- data.frame(replicate = paste0(replicate_prefix, replicates),
+                          group = groups) |>
+    dplyr::group_by(replicate, group) |>
+    dplyr::summarise(n = dplyr::n()) |>
+    dplyr::select(-n) |>
+    data.frame()
+  rownames(group_key) <- group_key$replicate
+
+  # ---------------------------------------------------------------------------
+  # Obtain matrices for DE
+  # ---------------------------------------------------------------------------
+
+  time2 <- Sys.time()
+
+  exclude_features <- NULL
+
+  if (pseudobulk %in% c("generate", "none")) {
+    # Generate pseudobulk matri(ces) or filter count matrix
+    # Returns a list containing one matrix per split
+    output_list <- getPseudobulk(object = object,
+                                 replicate_labels = replicate_labels,
+                                 split_labels = split_labels,
+                                 use_cells = use_cells,
+                                 min_cells_per_split = min_cells_per_split,
+                                 min_cells_per_replicate = min_cells_per_replicate,
+                                 min_replicates_per_split = min_replicates_per_split,
+                                 min_cells_per_feature = min_cells_per_feature,
+                                 min_prop_cells_per_feature = min_prop_cells_per_feature,
+                                 filter = !normalize_prefilter,
+                                 pseudobulk = pseudobulk,
+                                 n_cores = n_cores,
+                                 verbose = verbose)
+    if (pseudobulk == "generate") {
+      matrix_list <- output_list[["PB_values"]]
+    } else {
+      matrix_list <- output_list[["cell_values"]]
+    }
+    feature_metrics <- output_list[["metadata"]][["metrics"]]
+    if (normalize_prefilter == TRUE) {
+      exclude_features <- output_list[["metadata"]][["exclude_features"]]
+    }
+  } else {
+    # If necessary, separate the supplied pseudobulk matrix by split
+    # Returns a list containing one pseudobulk matrix (feature x replicate) per split
+    if (is.null(split_labels)) {
+      split_labels <- rep("all", length(replicates))
+    } else if (length(split_labels) != length(replicates)) { # Check length
+      if (pseudobulk == "supplied") {
+        stop("When a vector is provided for 'split_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
+      } else {
+        stop("When a vector is provided for 'split_labels', it must be the same length and in the same order as the supplied cells.")
+      }
+    }
+    split_indices <- split(seq_along(split_labels), split_labels)
+    # Filter
+    keep_indices <- split_indices[lengths(split_indices) >= min_replicates_per_split]
+    n_splits <- length(keep_indices)
+    # Progress
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Extracting ", n_splits,
+                         " pseudobulk ", ifelse(n_splits == 1, "matrix..", "matrices.."))
+    # Create matrix list & remove features with 0 counts in a split
+    matrix_list <- lapply(keep_indices, FUN = function(i) {
+      object[Matrix::rowSums(object[,i]) > 0, i, drop = FALSE]
+    })
+    # Progress
+    if (verbose & n_splits != dplyr::n_distinct(split_labels)) {
+      message("Skipped ", dplyr::n_distinct(split_labels) - n_splits, " split label",
+              ifelse((dplyr::n_distinct(split_labels) - n_splits) == 1, "", "s"),
+              " due to insufficient cells/replicates: ",
+              paste0(setdiff(unique(split_labels), names(matrix_list)),
+                     collapse = ", "))
+    }
+  }
+
+  # Run through each matrix
+  # Downsample when appropriate if parameter force_balance = TRUE
+  # Check group composition against min_replicates_per_group
+  pre_labels <- names(matrix_list)
+  matrix_list <- lapply(matrix_list, function(m) {
+    current_replicates <- colnames(m)
+    current_groups <- group_key$group[match(current_replicates, group_key$replicate)]
+    replicates_per_group <- table(current_groups)
+    # Check whether either group is < min_replicates_per_group or only 1 group is present
+    if (any(replicates_per_group < min_replicates_per_group) | (length(replicates_per_group) < 2)) {
+      m <- NULL
+    } else if (force_balance == TRUE) {
+      # If force balancing, downsample larger group to match size of smaller group
+      if (any(replicates_per_group > min(replicates_per_group))) {
+        n_exclude <- max(replicates_per_group) - min(replicates_per_group)
+        downsample_group <- names(replicates_per_group[replicates_per_group == max(replicates_per_group)])
+        exclude_indices <- sample(which(current_groups == downsample_group), n_exclude)
+        m <- m[, -exclude_replicates, drop = FALSE]
+        current_groups <- current_groups[-exclude_replicates]
+      }
+    }
+    return(m)
+  })
+  # Remove NULL elements
+  matrix_list <- matrix_list[lengths(matrix_list) > 0]
+  if (verbose & any(lengths(matrix_list) == 0)) {
+    message("Skipped ", sum(lengths(matrix_list) == 0), " split label",
+            ifelse((lengths(matrix_list) == 0) == 1, "", "s"),
+            " due to insufficient replicates per group: ",
+            paste0(setdiff(pre_labels, names(matrix_list)),
+                   collapse = ", "))
+  }
+
+  # Create corresponding list of replicates/groups
+  target_list <- lapply(matrix_list, FUN = function(i) {
     replicates_i <- colnames(i)
     groups_i <- group_key[replicates_i, c("replicate", "group")]
     return(groups_i)
   })
-  names(target_list) <- names(pb_list)
-
-  # Remove splits with fewer than required number of replicates per group
-  keep_splits <- c()
-  remove_splits <- c()
-  for (i in 1:length(target_list)) {
-    if (min(table(target_list[[i]]$group)) >= min_replicates_per_group) {
-      keep_splits <- c(keep_splits, names(pb_list)[i])
-    } else {
-      remove_splits <- c(remove_splits, names(pb_list)[i])
-    }
-  }
-  if (length(keep_splits) < length(pb_list)) {
-    pb_list <- pb_list[keep_splits]
-    target_list <- target_list[keep_splits]
-    message("Skipped ", length(remove_splits), " split label",
-            ifelse(length(remove_splits) == 1, "", "s"),
-            " due to insufficient replicates per group: ",
-            paste0(remove_splits,
-                   collapse = ", "))
-  }
+  names(target_list) <- names(matrix_list)
 
   # ---------------------------------------------------------------------------
   # Perform pseudobulk differential expression
   # ---------------------------------------------------------------------------
 
-  # for each item in pb_list
-  de_results_list <- pbmcapply::pbmclapply(seq_len(length(pb_list)),
+  time3 <- Sys.time()
+
+  # Progress
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),
+                       ifelse(length(matrix_list) == 1, " matrix..", " matrices.."))
+
+  # for each item in matrix_list
+  de_results_list <- pbmcapply::pbmclapply(seq_len(length(matrix_list)),
                                            FUN = function(i) {
                                              n_groups <- dplyr::n_distinct(target_list[[i]]$group)
                                              if (n_groups == 2) {
-                                               # specify reference group
-                                               if (!is.null(reference_group) && !(reference_group %in% target_list[[i]]$group)) {
-                                                 stop("The specified reference group does not exist in the 'group' column.")
-                                               }
                                                group_factor <- factor(target_list[[i]]$group)
-                                               if (!is.null(reference_group)) {
-                                                 group_factor <- relevel(group_factor, ref = reference_group)
-                                               }
+                                               group_factor <- stats::relevel(group_factor, ref = reference_group)
                                                target_list[[i]]$group <- group_factor
 
                                                design_i <- stats::model.matrix(~ group, data = target_list[[i]])
                                                de_results_i <- switch(de_method,
-                                                                      edgeR = .runDE.edgeR(pseudobulk = pb_list[[i]],
-                                                                                          targets = target_list[[i]],
-                                                                                          design = design_i,
-                                                                                          de_test = de_test),
-                                                                      DESeq2 = .runDE.DESeq2(pseudobulk = pb_list[[i]],
-                                                                                            targets = target_list[[i]],
-                                                                                            de_test = de_test),
-                                                                      limma = .runDE.limma(pseudobulk = pb_list[[i]],
-                                                                                          targets = target_list[[i]],
-                                                                                          design = design_i,
-                                                                                          de_test = de_test))
-                                               de_results_i <- de_results_i %>%
+                                                                      edgeR = .runDE.edgeR(mat = matrix_list[[i]],
+                                                                                           targets = target_list[[i]],
+                                                                                           design = design_i,
+                                                                                           de_test = de_test,
+                                                                                           de_params = de_params,
+                                                                                           normalize_prefilter = normalize_prefilter,
+                                                                                           exclude_features = exclude_features[[i]]),
+                                                                      DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
+                                                                                             targets = target_list[[i]],
+                                                                                             design = design_i,
+                                                                                             de_test = de_test,
+                                                                                             de_params = de_params,
+                                                                                             normalize_prefilter = normalize_prefilter,
+                                                                                             exclude_features = exclude_features[[i]]),
+                                                                      limma = .runDE.limma(mat = matrix_list[[i]],
+                                                                                           targets = target_list[[i]],
+                                                                                           design = design_i,
+                                                                                           de_test = de_test,
+                                                                                           de_params = de_params,
+                                                                                           normalize_prefilter = normalize_prefilter,
+                                                                                           exclude_features = exclude_features[[i]]),
+                                                                      presto = .runDE.presto(mat = matrix_list[[i]],
+                                                                                             targets = target_list[[i]],
+                                                                                             de_test = de_test,
+                                                                                             de_params = de_params,
+                                                                                             normalize_prefilter = normalize_prefilter,
+                                                                                             exclude_features = exclude_features[[i]]))
+                                               de_results_i <- de_results_i |>
                                                  dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
-                                                               split = names(pb_list)[i]) %>%
+                                                               split = names(matrix_list)[i]) |>
                                                  dplyr::arrange(padj)
                                              } else {
                                                de_results_i <- NULL
-                                               if (verbose) message("Skipped split label ", names(pb_list)[i],
+                                               if (verbose) message("Skipped split label ", names(matrix_list)[i],
                                                                     ", only ", n_groups,
                                                                     " group (", unique(target_list[[i]]$group),
                                                                     ") present.")
@@ -283,145 +444,362 @@ runDE <- function(object,
                                            mc.cores = n_cores,
                                            mc.set.seed = TRUE)
   de_results <- do.call(rbind, de_results_list)
-  de_results <- de_results %>%
-    tibble::as_tibble()
+  de_results <- de_results |>
+    data.frame()
 
   # ---------------------------------------------------------------------------
   # Wrap up
   # ---------------------------------------------------------------------------
 
+  time4 <- Sys.time()
+
+  # Metadata
+  if (pseudobulk == "generate") {
+    metadata_list <- list("group_key" = group_key,
+                          "feature_metrics" = feature_metrics,
+                          "time" = data.frame(total = difftime(time4, time1, units = "secs"),
+                                              step1_setup = difftime(time2, time1, units = "secs"),
+                                              step2_get_matrices = difftime(time3, time2, units = "secs"),
+                                              step3_DE = difftime(time4, time3, units = "secs")))
+  } else {
+    metadata_list <- list("group_key" = group_key,
+                          "time" = data.frame(total = difftime(time4, time1, units = "secs"),
+                                              step1_setup = difftime(time2, time1, units = "secs"),
+                                              step2_get_matrices = difftime(time3, time2, units = "secs"),
+                                              step3_DE = difftime(time4, time3, units = "secs")))
+  }
+
+  # Parameters
   parameter_list <- list("replicate_labels" = replicate_labels,
                          "group_labels" = group_labels,
                          "split_labels" = split_labels,
+                         "reference_group" = reference_group,
+                         "non_reference_group" = non_reference_group,
                          "use_cells" = use_cells,
+                         "pseudobulk" = pseudobulk,
+                         "de_method" = de_method,
+                         "de_test" = de_test,
+                         "de_params" = de_params,
+                         "normalize_prefilter" = normalize_prefilter,
+                         "p_adjust_method" = p_adjust_method,
                          "min_cells_per_split" = min_cells_per_split,
+                         "min_cells_per_replicate" = min_cells_per_replicate,
                          "min_replicates_per_split" = min_replicates_per_split,
                          "min_replicates_per_group" = min_replicates_per_group,
                          "min_cells_per_feature" = min_cells_per_feature,
                          "min_prop_cells_per_feature" = min_prop_cells_per_feature,
-                         "de_method" = de_method,
-                         "de_test" = de_test,
-                         "p_adjust_method" = p_adjust_method)
+                         "force_balance" = force_balance,
+                         "use_assay" = use_assay,
+                         "use_layer" = use_layer,
+                         "stored_replicates" = stored_replicates,
+                         "random_seed" = random_seed,
+                         "n_cores" = n_cores)
 
   # Return output
-  return(list("DE_results" = de_results,
-              "PB_values" = pb_list,
-              "group_key" = group_key,
-              "parameters" = parameter_list))
+  if (pseudobulk == "none") {
+    return(list("DE_results" = de_results,
+                "cell_values" = matrix_list,
+                "metadata" = metadata_list,
+                "parameters" = parameter_list))
+  } else {
+    return(list("DE_results" = de_results,
+                "PB_values" = matrix_list,
+                "metadata" = metadata_list,
+                "parameters" = parameter_list))
+  }
 }
 
 
 # Run edgeR differential expression ---------------------------
 #
-# pseudobulk -- A feature x replicate pseudobulk matrix
+# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
 # targets -- A dataframe containing sample to group key
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
-.runDE.edgeR <- function(pseudobulk,
-                        targets,
-                        design,
-                        de_test = "LRT") {
-  tryCatch({
-    y <- edgeR::DGEList(counts = pseudobulk, group = targets$group) %>%
-      edgeR::calcNormFactors(method = 'TMM') %>%
-      edgeR::estimateDisp(design)
+.runDE.edgeR <- function(mat,
+                         targets,
+                         design,
+                         de_test = "LRT",
+                         de_params = list(),
+                         normalize_prefilter = FALSE,
+                         exclude_features = NULL) {
 
-    fit <- switch(de_test,
-                  QLF = edgeR::glmQLFit(y, design),
-                  LRT = edgeR::glmFit(y, design = design),
-                  exact = edgeR::exactTest(y))
-    test <- switch(de_test,
-                   QLF = edgeR::glmQLFTest(fit, coef = 2),
-                   LRT = edgeR::glmLRT(fit, coef = 2),
-                   exact = fit)
-    edgeR_results <- edgeR::topTags(object = test,
-                                    n = Inf,
-                                    adjust.method = "none") %>%
-      data.frame()
-    edgeR_results <- edgeR_results %>%
-      dplyr::transmute(gene = rownames(edgeR_results),
-                       lfc = logFC,
-                       pvalue = PValue)
-    rownames(edgeR_results) <- NULL
-  }, error = function(e) message(e))
-
-  if (!exists("edgeR_results")) {
-    edgeR_results <- NULL
+  # Create edgeR object
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
+  # Get size factors
+  dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
+                                           de_params[["calcNormFactors"]]))
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+    dge_filtered <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                                   "group" = targets$group),
+                                              de_params[["DGEList"]]))
+    dge_filtered$samples <- dge$samples
+    dge <- dge_filtered
   }
+  # Estimate dispersion
+  y <- do.call(edgeR::estimateDisp, c(list("y" = dge,
+                                           "design" = design),
+                                      de_params[["estimateDisp"]]))
+  # Run test
+  fit <- switch(de_test,
+                QLF = do.call(edgeR::glmQLFit, c(list("y" = y,
+                                                      "design" = design),
+                                                 de_params[["glmQLFit"]])),
+                LRT = do.call(edgeR::glmFit, c(list("y" = y,
+                                                    "design" = design),
+                                               de_params[["glmFit"]])),
+                exact = do.call(edgeR::exactTest, c(list("object" = y),
+                                                    de_params[["exactTest"]])))
+  test <- switch(de_test,
+                 QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit,
+                                                         "coef" = 2),
+                                                    de_params[["glmQLFTest"]])),
+                 LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit,
+                                                     "coef" = 2),
+                                                de_params[["glmLRT"]])),
+                 exact = fit)
+  # Compile results
+  edgeR_results <- edgeR::topTags(object = test,
+                                  n = Inf,
+                                  adjust.method = "none") |>
+    data.frame()
+  edgeR_results <- edgeR_results |>
+    dplyr::transmute(feature = rownames(edgeR_results),
+                     lfc = logFC,
+                     pvalue = PValue)
+  rownames(edgeR_results) <- NULL
+
   return(edgeR_results)
 }
 
 # Run DESeq2 differential expression ---------------------------
 #
-# pseudobulk -- A feature x replicate pseudobulk matrix
+# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
 # targets -- A dataframe containing sample to group key (splits to keep)
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
-.runDE.DESeq2 <- function(pseudobulk,
-                         targets,
-                         design,
-                         de_test = "LRT") {
+.runDE.DESeq2 <- function(mat,
+                          targets,
+                          design,
+                          de_test = "LRT",
+                          de_params = list(),
+                          normalize_prefilter = FALSE,
+                          exclude_features = NULL) {
+
+  .requirePackage("DESeq2", source = "bioc")
 
   # Construct DESeq2 dataset
-  dds <- DESeq2::DESeqDataSetFromMatrix(
-    countData = pseudobulk,
-    colData = targets,
-    design = design
-  )
+  dds <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
+                                        colData = targets,
+                                        design = design)
+  # Estimate size factors
+  dds <- do.call(DESeq2::estimateSizeFactors, c(list("object" = dds),
+                                                de_params[["estimateSizeFactors"]]))
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+    dds_filtered <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
+                                                   colData = targets,
+                                                   design = design)
+    sizeFactors(dds_filtered) <- sizeFactors(dds)
+    dds <- dds_filtered
+  }
 
   # Run DESeq
   if (de_test == "LRT") {
-    reduced_design <- model.matrix(~ 1, data = targets)
-    dds <- DESeq2::DESeq(dds, test = "LRT", reduced = reduced_design)
+    reduced_design <- stats::model.matrix(~ 1, data = targets)
+    dds <- do.call(DESeq2::DESeq, c(list("object" = dds,
+                                         "test" = "LRT",
+                                         "reduced" = reduced_design),
+                                    de_params[["DESeq"]]))
   } else if (de_test == "Wald") {
-    dds <- DESeq2::DESeq(dds, test = "Wald")
+    dds <- do.call(DESeq2::DESeq, c(list("object" = dds,
+                                         "test" = "Wald"),
+                                    de_params[["DESeq"]]))
   }
 
-  res <- DESeq2::results(dds) |>
-    as.data.frame() |>
-    rename(lfc = log2FoldChange) |>
-    rownames_to_column(var = "gene")
+  DESeq2_results <- DESeq2::results(dds) |>
+    data.frame()
+  DESeq2_results <- DESeq2_results |>
+    dplyr::transmute(feature = rownames(DESeq2_results),
+                     lfc = log2FoldChange,
+                     pvalue = pvalue)
+  rownames(DESeq2_results) <- NULL
 
-  return(res)
+  return(DESeq2_results)
 }
 
 # Run limma differential expression ---------------------------
 #
-# pseudobulk -- A feature x replicate pseudobulk matrix
+# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
 # targets -- A dataframe containing sample to group key
 # design -- A model.matrix design object
 # de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
-.runDE.limma <- function(pseudobulk,
-                        targets,
-                        design,
-                        de_test = "voom") {
+.runDE.limma <- function(mat,
+                         targets,
+                         design,
+                         de_test = "voom",
+                         de_params = list(),
+                         normalize_prefilter = FALSE,
+                         exclude_features = NULL) {
 
-  # voom
-  if (de_test == 'voom') {
-    # create a DGE list using pseudobulk data
-    dge <- edgeR::DGEList(counts = pseudobulk)
-    # remove rows that consistently have zero or very low counts
-    keep <- edgeR::filterByExpr(dge, design)
-    dge <- dge[keep,,keep.lib.sizes=FALSE]
-    # apply TMM normalization
-    dge <- edgeR::calcNormFactors(dge)
+  .requirePackage("limma", source = "bioc")
 
-    # apply voom transformation
-    v <- limma::voom(dge, design, plot = TRUE)
+  # Create edgeR object
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
 
-    # usual limma pipelines for differential expression
-    fit <- limma::lmFit(v, design)
-    fit <- limma::eBayes(fit)
-    res <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
-      rownames_to_column(var = "gene") |>
-      rename(
-        lfc = logFC,
-        pvalue = P.Value
-      )
+  if (de_test %in% c("trend", "voom")) {
+    # Get size factors
+    dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
+                                             de_params[["calcNormFactors"]]))
+    # If filtering, do so
+    if (normalize_prefilter & !is.null(exclude_features)) {
+      mat <- mat[!(rownames(mat) %in% exclude_features),]
+      dge_filtered <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                                     "group" = targets$group),
+                                                de_params[["DGEList"]]))
+      dge_filtered$samples <- dge$samples
+      dge <- dge_filtered
+    }
+
+    # Transform
+    if (de_test == "trend") {
+      # Apply logCPM (uses stored $samples$lib.size)
+      transformed_dge <- do.call(edgeR::cpm, c(list("y" = dge,
+                                                    "log" = TRUE),
+                                               de_params[["cpm"]]))
+    } else if (de_test == "voom") {
+      # Apply voom transformation
+      transformed_dge <- do.call(limma::voom, c(list("counts" = dge,
+                                                     "design" = design),
+                                                de_params[["voom"]]))
+    }
+    # limma DE
+    fit <- do.call(limma::lmFit, c(list("object" = transformed_dge,
+                                        "design" = design),
+                                   de_params[["lmFit"]]))
+    fit <- do.call(limma::eBayes, c(list("fit" = fit),
+                                    de_params[["eBayes"]]))
+
+    limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
+      data.frame()
+    limma_results <- limma_results |>
+      dplyr::transmute(feature = rownames(limma_results),
+                       lfc = logFC,
+                       pvalue = P.Value)
+    rownames(limma_results) <- NULL
+  } else if (de_test %in% c("wilcox_cpm", "wilcox_log_cpm")) {
+    # Get library sizes
+    lib_sizes <- dge$samples[colnames(mat), "lib.size"]
+    # If filtering, do so
+    if (normalize_prefilter & !is.null(exclude_features)) {
+      mat <- mat[!(rownames(mat) %in% exclude_features),]
+    }
+    # Normalization
+    if (de_test == "wilcox_cpm") {
+      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                            "lib.size" = lib_sizes),
+                                       de_params[["cpm"]]))
+    } else if (de_test == "wilcox_log_cpm") {
+      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                            "lib.size" = lib_sizes,
+                                            "log" = TRUE),
+                                       de_params[["cpm"]]))
+    }
+    # Group indices
+    group1_indices <- which(targets$group == levels(targets$group)[1])
+    group2_indices <- which(targets$group == levels(targets$group)[2])
+
+    # Wilcoxon rank sum test p-values
+    pvalues <- apply(cpm_mat, 1,
+      FUN = function(x) {
+        return(min(2 * min(do.call(limma::rankSumTestWithCorrelation, c(list("index" = group1_indices,
+                                                                             "statistics" = x),
+                                                                        de_params[["rankSumTestWithCorrelation"]]))), 1))
+      }
+    )
+    # LFC
+    if ("pseudocount" %in% de_params[["lfc"]]) {
+      pseudocount <- de_params$lfc$pseudocount
+    } else {
+      pseudocount <- 1
+    }
+    lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
+
+    limma_results <- data.frame(feature = rownames(cpm_mat),
+                                 lfc = lfcs,
+                                 pvalue = pvalues)
+    rownames(limma_results) <- NULL
   }
-  return(res)
+  return(limma_results)
 }
 
+# Run Wilcoxon rank sum test differential expression using presto ---------------------------
+#
+# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
+# targets -- A dataframe containing sample to group key
+# de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass to cpm and/or wilcoxauc
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+
+.runDE.presto <- function(mat,
+                          targets,
+                          de_test = "wilcox_cpm",
+                          de_params = list(),
+                          normalize_prefilter = FALSE,
+                          exclude_features = NULL) {
+
+  .requirePackage("presto", installInfo = 'devtools::install_github("immunogenomics/presto")')
+
+  # Get library sizes
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
+  lib_sizes <- dge$samples[colnames(mat), "lib.size"]
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+  }
+  # Normalization
+  if (de_test == "wilcox_cpm") {
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "lib.size" = lib_sizes),
+                                     de_params[["cpm"]]))
+  } else if (de_test == "wilcox_log_cpm") {
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "lib.size" = lib_sizes,
+                                          "log" = TRUE),
+                                     de_params[["cpm"]]))
+  }
+  # Run Wilcoxon rank sum test
+  wilcox_results <- do.call(presto::wilcoxauc, c(list("X" = cpm_mat,
+                                                      "y" = targets$group),
+                                                 de_params[["wilcoxauc"]]))
+
+  wilcox_results <- wilcox_results |>
+    dplyr::transmute(feature,
+                     lfc = logFC,
+                     pvalue = pval)
+  rownames(wilcox_results) <- NULL
+
+  return(wilcox_results)
+}

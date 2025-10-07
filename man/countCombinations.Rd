@@ -14,22 +14,27 @@ countCombinations(
 )
 }
 \arguments{
-\item{object}{A 'Seurat' or 'SingleCellExperiment' object.}
+\item{object}{An optional 'Seurat' or 'SingleCellExperiment' object. If
+\code{NULL}, \code{countCombinations} will expect either (1) vector input to
+parameters \code{replicate_label} and \code{group_label} or (2) numeric input
+to parameters \code{n_replicates} and \code{n_group1}.}
 
-\item{use_cells}{A vector of cell names to subset. Defaults to \code{NULL},
-which includes all cells.}
+\item{replicate_labels}{A string indicating the name of the
+metadata column containing the biological replicate labels or a character
+vector containing the biological replicate labels in order.}
 
-\item{n_replicates}{A numeric value indicating the total number of replicates.
-Defaults to \code{NULL}.}
+\item{group_labels}{A string indicating the name of the
+column containing the two comparison group labels or a character vector
+containing the comparison labels in order.}
+
+\item{use_cells}{A vector of cell names to subset prior to calculating
+possible group comibinations. Default = \code{NULL} will use all cells.}
+
+\item{n_replicates}{A numeric value indicating the total number of
+replicates. Defaults to \code{NULL}.}
 
 \item{n_group1}{A numeric value indicating the number of replicates in one
 group (doesn't matter which). Defaults to \code{NULL}.}
-
-\item{replicate_label}{A string or character vector indicating the column
-containing replicate labels. Defaults to \code{NULL}.}
-
-\item{group_label}{A string or character vector indicating the column
-containing two comparison group labels. Defaults to \code{NULL}.}
 }
 \value{
 Returns a numeric value indicating the number of all possible group
@@ -38,10 +43,16 @@ combinations.
 \description{
 Given two groups of replicates, this function calculates the number of unique
 ways to divide the replicates into two groups while preserving group sizes.
-The formula is: C = n!/(k!(n-k)!). The input takes two forms: (1) replicate
-and group column names; (2) total number of replicates (n) and the number of
-replicates in one group (k)(doesn't matter which).
+The formula is: C = n!/(k!(n-k)!). (see base function \code{choose})
 }
 \details{
-(see base function \code{choose})
+Users may provide input in three ways:
+
+(1) A vector of replicate labels and a vector of group labels (in order)
+
+(2) The total number of replicates (n) and the number of
+replicates in one group (k) (doesn't matter which group).
+
+(3) Column names indicating replicate and group metadata columns in a
+provided 'Seurat' or 'SingleCellExperiment' object.
 }
