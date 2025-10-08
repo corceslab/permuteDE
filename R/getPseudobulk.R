@@ -234,12 +234,17 @@ getPseudobulk <- function(object,
       keep_features_prop <- prop_nonzero >= min_prop_cells_per_feature
       exclude_features <- rownames(count_matrix_s)[-which(keep_features_count & keep_features_prop)]
 
+      # Pseudobulk
       if (pseudobulk == "generate") {
         model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
         output_mat <- count_matrix_s %*% model_mat
       } else {
         output_mat <- count_matrix_s
       }
+
+      # Convert so we can calculate sums etc
+      count_matrix_s <- as(count_matrix_s,"dgCMatrix")
+      output_mat <- as(output_mat,"dgCMatrix")
 
       # Metadata values
       n_all_features <- nrow(count_matrix)

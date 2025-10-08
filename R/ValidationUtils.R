@@ -337,7 +337,7 @@
       if (other == "supplied") {
         warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
       }
-    } else if (name %in% c("permutation_test_alpha")) {
+    } else if ((name == "permutation_test_alpha") & (input < 1)) {
       if (!(other %in% c("pvalue", "split"))) {
         warning("Input value for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
       }
