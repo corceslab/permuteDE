@@ -318,8 +318,10 @@ plotVolcano <- function(input,
 
     # Set title
     if (is.null(title)) {
-      current_title <- paste0(non_reference_group, " *vs.* ", reference_group,": ", s)
-      current_title <- paste(strwrap(current_title, 50), collapse = "<br>")
+      current_title <- paste0(non_reference_group, " *vs.* ", reference_group,"<br>", s)
+      if (nchar(current_title) < 50) {
+        subtitle <- gsub("<br>", ": ", subtitle)
+      }
     } else {
       current_title <- title
     }
