@@ -1,3 +1,8 @@
+# permuteDE 0.1.1
+
+* BPCells compatibility
+* Minor plotting changes
+
 # permuteDE 0.1.0
 
 * Created package
