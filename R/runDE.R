@@ -613,7 +613,7 @@ runDE <- function(object,
     dds_filtered <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
                                                    colData = targets,
                                                    design = design)
-    sizeFactors(dds_filtered) <- sizeFactors(dds)
+    DESeq2::sizeFactors(dds_filtered) <- DESeq2::sizeFactors(dds)
     dds <- dds_filtered
   }
 

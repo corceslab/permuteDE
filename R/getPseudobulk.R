@@ -243,8 +243,8 @@ getPseudobulk <- function(object,
       }
 
       # Convert so we can calculate sums etc
-      count_matrix_s <- as(count_matrix_s,"dgCMatrix")
-      output_mat <- as(output_mat,"dgCMatrix")
+      count_matrix_s <- methods::as(count_matrix_s,"dgCMatrix")
+      output_mat <- methods::as(output_mat,"dgCMatrix")
 
       # Metadata values
       n_all_features <- nrow(count_matrix)
