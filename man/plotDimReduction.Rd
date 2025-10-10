@@ -8,6 +8,8 @@ plotDimReduction(
   reduction,
   input = NULL,
   split_labels = NULL,
+  feature_values = NULL,
+  feature_name = NULL,
   use_cells = NULL,
   color_by = NULL,
   permutation_test_alpha = 1,
@@ -29,13 +31,21 @@ more than two columns, only the first two will be used.}
 cell in order. Default = \code{NULL} will assume all cells belong to the same
 split.}
 
+\item{feature_values}{A vector containing the value for a feature for each
+cell in order, used if \code{color_by} = "feature".}
+
+\item{feature_name}{A string indicating the name of the plotted feature if
+\code{color_by} = "feature". Used for legend title.}
+
 \item{use_cells}{A vector of cell names to subset the dimensionality
 reduction cell coordinates to. Default = \code{NULL} will use all cells.}
 
 \item{color_by}{A character vector indicating what metric to use to color
-each split. Permitted values are "n_sig", "pvalue", and "split". Default =
-"split" will color the cells by the split they belong to if input to
-parameter \code{split_labels} is provided.}
+each split. Permitted values are "n_sig" (number of significant DE features),
+"pvalue" (permutation test p-value), "split" (values provided to parameter
+\code{split_labels}), and "feature" (values provided to parameter
+\code{feature_values}). Default = "split" will color the cells by the split
+they belong to if input to parameter \code{split_labels} is provided.}
 
 \item{permutation_test_alpha}{A numeric value indicating the significance
 level to apply to the permutation test results. Splits that do not pass this

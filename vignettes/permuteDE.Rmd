@@ -190,6 +190,16 @@ plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  palette_name = "frozen")
 ```
 
+This function can also be used analogously to `Seurat::FeaturePlot()` to show the values for a single feature across the cells.
+
+```{r, message = FALSE, warning = FALSE, fig.height = 5}
+# Example UMAP showing permutation testing p-value for each split
+plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
+                 feature_values = sample_data@assays$RNA$counts["App",],
+                 feature_name = "*App*",
+                 color_by = "feature")
+```
+
 To plot the results for a single feature, use function `plotFeature()`. By default, this function will apply CPM normalization (using `edgeR::cpm()`), but this can be changed using the parameter `normalization_method`.
 
 ```{r, message = FALSE, warning = FALSE}
