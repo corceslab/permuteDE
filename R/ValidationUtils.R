@@ -531,7 +531,7 @@
   }
 
   # name
-  if (name == "name") {
+  if (name == "palette_name") {
     # If not NULL
     if (!is.null(input)) {
       # Should be of class 'character'
@@ -545,9 +545,9 @@
                paste0(c("choir", "archr"), collapse = ", "), "), please supply valid input!")
         }
       } else if (other == "gradient") {
-        if (!(input %in% c("corces_cold", "corces_warm"))) {
+        if (!(input %in% c("frozen", "inferno"))) {
           stop("When input for 'type' is 'gradient', input for '", name, "' must be among permitted values (",
-               paste0(c("corces_cold", "corces_warm"), collapse = ", "), "), please supply valid input!")
+               paste0(c("frozen", "inferno"), collapse = ", "), "), please supply valid input!")
         }
       }
     }
