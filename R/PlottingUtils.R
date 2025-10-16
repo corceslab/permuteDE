@@ -333,7 +333,12 @@ plotVolcano <- function(input,
       x_limits <- c(max(abs(split_results_s$lfc), na.rm = TRUE)*(-1.1), max(abs(split_results_s$lfc), na.rm = TRUE)*1.1)
     }
     y_limits <- c(0, max(c(-log10(split_results_s$padj), -log10(alpha)), na.rm = TRUE)*1.1)
-
+    
+    # Prevent Inf in y_limits
+    if (any(is.infinite(y_limits))) {
+      y_limits <- c(0, 300)
+    }
+    
     # Set color groups & label set
     split_results_s <- split_results_s |>
       dplyr::mutate(sig_group = ifelse(lfc > lfc_threshold & padj < alpha, paste0("Higher in ", non_reference_group),
