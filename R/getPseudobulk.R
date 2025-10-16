@@ -171,8 +171,8 @@ getPseudobulk <- function(object,
     # Second, filter based on min (remaining) cells per split
     # And min (remaining) replicates per split
     filter_table <- table(splits, replicates)
-    keep_splits <- rownames(filter_table)[rowSums(filter_table) >= min_cells_per_split &
-                                            rowSums(filter_table >= 1) >= min_replicates_per_split]
+    keep_splits <- rownames(filter_table)[Matrix::rowSums(filter_table) >= min_cells_per_split &
+                                            Matrix::rowSums(filter_table >= 1) >= min_replicates_per_split]
     keep <- splits %in% keep_splits
     use_cells <- use_cells[keep]
     replicates <- replicates[keep]
@@ -242,18 +242,14 @@ getPseudobulk <- function(object,
         output_mat <- count_matrix_s
       }
 
-      # Convert so we can calculate sums etc
-      count_matrix_s <- methods::as(count_matrix_s,"dgCMatrix")
-      output_mat <- methods::as(output_mat,"dgCMatrix")
-
       # Metadata values
       n_all_features <- nrow(count_matrix)
       n_nonzero_features <- nrow(output_mat)
       n_features_exclude <- length(exclude_features)
       n_features_for_DE <- n_nonzero_features-n_features_exclude
       prop_features_exclude <- (n_all_features-n_features_for_DE)/n_all_features
-      n_all_reads <- sum(count_matrix_s)
-      n_reads_exclude <- sum(output_mat[exclude_features,])
+      n_all_reads <- sum(Matrix::rowSums(count_matrix_s))
+      n_reads_exclude <- sum(Matrix::rowSums(output_mat[exclude_features,]))
       n_reads_for_DE <- n_all_reads - n_reads_exclude
       prop_reads_exclude <- n_reads_exclude/n_all_reads
 
