@@ -427,7 +427,8 @@ runDE <- function(object,
                                                                                              de_test = de_test,
                                                                                              de_params = de_params,
                                                                                              normalize_prefilter = normalize_prefilter,
-                                                                                             exclude_features = exclude_features[[i]]))
+                                                                                             exclude_features = exclude_features[[i]],
+                                                                                             non_reference_group = non_reference_group))
                                                de_results_i <- de_results_i |>
                                                  dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                                                                split = names(matrix_list)[i]) |>
@@ -766,7 +767,8 @@ runDE <- function(object,
                           de_test = "wilcox_cpm",
                           de_params = list(),
                           normalize_prefilter = FALSE,
-                          exclude_features = NULL) {
+                          exclude_features = NULL,
+                          non_reference_group) {
 
   .requirePackage("presto", installInfo = 'devtools::install_github("immunogenomics/presto")')
 
@@ -794,6 +796,7 @@ runDE <- function(object,
   wilcox_results <- do.call(presto::wilcoxauc, c(list("X" = cpm_mat,
                                                       "y" = targets$group),
                                                  de_params[["wilcoxauc"]]))
+  wilcox_results <- wilcox_results |> filter(group == non_reference_group)
 
   wilcox_results <- wilcox_results |>
     dplyr::transmute(feature,
