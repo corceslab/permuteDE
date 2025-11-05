@@ -772,6 +772,8 @@ runDE <- function(object,
 
   .requirePackage("presto", installInfo = 'devtools::install_github("immunogenomics/presto")')
 
+  mat <- as(mat, "dgCMatrix")
+  
   # Get library sizes
   dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
                                         "group" = targets$group),
