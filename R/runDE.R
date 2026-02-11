@@ -772,8 +772,8 @@ runDE <- function(object,
 
   .requirePackage("presto", installInfo = 'devtools::install_github("immunogenomics/presto")')
 
-  mat <- as(mat, "dgCMatrix")
-  
+  mat <- methods::as(mat, "dgCMatrix")
+
   # Get library sizes
   dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
                                         "group" = targets$group),
@@ -798,7 +798,7 @@ runDE <- function(object,
   wilcox_results <- do.call(presto::wilcoxauc, c(list("X" = cpm_mat,
                                                       "y" = targets$group),
                                                  de_params[["wilcoxauc"]]))
-  wilcox_results <- wilcox_results |> filter(group == non_reference_group)
+  wilcox_results <- wilcox_results |> dplyr::filter(group == non_reference_group)
 
   wilcox_results <- wilcox_results |>
     dplyr::transmute(feature,

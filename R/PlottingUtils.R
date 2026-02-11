@@ -244,7 +244,6 @@ plotVolcano <- function(input,
   # ---------------------------------------------------------------------------
 
   .requirePackage("ggrepel", source = "cran")
-  .requirePackage("ggtext", source = "cran")
 
   .validInput(input, "input", "plotVolcano")
   .validInput(alpha, "alpha")
@@ -320,10 +319,17 @@ plotVolcano <- function(input,
     if (is.null(title)) {
       current_title <- paste0(non_reference_group, " *vs.* ", reference_group,"<br>", s)
       if (nchar(current_title) < 50) {
-        subtitle <- gsub("<br>", ": ", subtitle)
+        current_title <- gsub("<br>", ": ", current_title)
       }
     } else {
       current_title <- title
+    }
+
+    # Set subtitle
+    if (sum(split_results_s$padj < alpha) == 1) {
+      current_subtitle <- paste0(subtitle, "\n", sum(split_results_s$padj < alpha), " significant DE feature")
+    } else {
+      current_subtitle <- paste0(subtitle, "\n", sum(split_results_s$padj < alpha), " significant DE features")
     }
 
     # Set limits
@@ -333,19 +339,15 @@ plotVolcano <- function(input,
       x_limits <- c(max(abs(split_results_s$lfc), na.rm = TRUE)*(-1.1), max(abs(split_results_s$lfc), na.rm = TRUE)*1.1)
     }
     y_limits <- c(0, max(c(-log10(split_results_s$padj), -log10(alpha)), na.rm = TRUE)*1.1)
-    
-    # Prevent Inf in y_limits
-    if (any(is.infinite(y_limits))) {
-      y_limits <- c(0, 300)
-    }
-    
+    y_limits[y_limits == Inf] <- NA
+
     # Set color groups & label set
     split_results_s <- split_results_s |>
       dplyr::mutate(sig_group = ifelse(lfc > lfc_threshold & padj < alpha, paste0("Higher in ", non_reference_group),
                                        ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Higher in ", reference_group),
                                               "Not significant")))
-    label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < 0.05, abs(lfc) > lfc_threshold),
-                                     padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < 0.05)))]
+    label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < alpha, abs(lfc) > lfc_threshold),
+                                     padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < alpha)))]
     label_split_results_s <- split_results_s |>
       dplyr::filter(feature %in% label_features)
 
@@ -374,7 +376,7 @@ plotVolcano <- function(input,
                                   breaks = c(paste0("Higher in ", reference_group),
                                              paste0("Higher in ", non_reference_group))) +
       ggplot2::labs(title = current_title,
-                    subtitle = subtitle,
+                    subtitle = current_subtitle,
                     color = "",
                     x = "Log<sub>2</sub> Fold Change",
                     y = "-Log<sub>10</sub> Adjusted P Value")
@@ -421,8 +423,6 @@ plotHistogram <- function(input,
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
-
-  .requirePackage("ggtext", source = "cran")
 
   .validInput(input, "input", "plotHistogram")
   .validInput(use_splits, "use_splits", list(input, "plotHistogram"))
@@ -587,7 +587,6 @@ plotFeature <- function(input,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .requirePackage("ggtext", source = "cran")
   .requirePackage("ggbeeswarm", source = "cran")
   if (label_replicates == TRUE) {
     .requirePackage("ggrepel", source = "cran")
@@ -800,8 +799,6 @@ plotDimReduction <- function(reduction,
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
-
-  .requirePackage("ggtext", source = "cran")
 
   .validInput(reduction, "reduction")
   .validInput(input, "input", "plotDimReduction")
