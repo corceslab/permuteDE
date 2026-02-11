@@ -221,6 +221,8 @@ permuteDEpalette <- function(type = "discrete",
 #' \code{NULL} automatically generates a subtitle describing the DE method used.
 #' @param n_max_label A numeric value indicating how many of the top
 #' significant DE features to label. Defaults to 10.
+#' @param label_features An optional vector containing feature names to label.
+#' Default = \code{NULL} will label top significant DE features.
 #' @param center A Boolean value indicating whether to center the x-axis at 0.
 #' Defaults to \code{TRUE}.
 #'
@@ -237,6 +239,7 @@ plotVolcano <- function(input,
                         title = NULL,
                         subtitle = NULL,
                         n_max_label = 10,
+                        label_features = NULL,
                         center = TRUE){
 
   # ---------------------------------------------------------------------------
@@ -252,6 +255,7 @@ plotVolcano <- function(input,
   .validInput(title, "title")
   .validInput(subtitle, "subtitle")
   .validInput(n_max_label, "n_max_label")
+  .validInput(label_features, "label_features", n_max_label)
   .validInput(center, "center")
 
   # ---------------------------------------------------------------------------
@@ -346,8 +350,10 @@ plotVolcano <- function(input,
       dplyr::mutate(sig_group = ifelse(lfc > lfc_threshold & padj < alpha, paste0("Higher in ", non_reference_group),
                                        ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Higher in ", reference_group),
                                               "Not significant")))
-    label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < alpha, abs(lfc) > lfc_threshold),
-                                     padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < alpha)))]
+    if (is.null(label_features)) {
+      label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < alpha, abs(lfc) > lfc_threshold),
+                                       padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < alpha)))]
+    }
     label_split_results_s <- split_results_s |>
       dplyr::filter(feature %in% label_features)
 

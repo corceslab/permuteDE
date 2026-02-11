@@ -12,6 +12,7 @@ plotVolcano(
   title = NULL,
   subtitle = NULL,
   n_max_label = 10,
+  label_features = NULL,
   center = TRUE
 )
 }
@@ -45,6 +46,9 @@ to use. Defaults to \code{NULL}, which will try all splits.}
 
 \item{n_max_label}{A numeric value indicating how many of the top
 significant DE features to label. Defaults to 10.}
+
+\item{label_features}{An optional vector containing feature names to label.
+Default = \code{NULL} will label top significant DE features.}
 
 \item{center}{A Boolean value indicating whether to center the x-axis at 0.
 Defaults to \code{TRUE}.}

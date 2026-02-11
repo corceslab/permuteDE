@@ -609,4 +609,19 @@
       }
     }
   }
+
+  # label_features
+  if (name %in% c("label_features")) {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'character'
+      if (!methods::is(input, "character")) {
+        stop("Input for '", name, "' must be of class 'character', please supply valid input!")
+      }
+      # If n_max_label < length(input), issue warning
+      if (other < length(input)) {
+        warning("When input to parameter '", name, "' is provided, input to parameter 'n_max_label' is disregarded.")
+      }
+    }
+  }
 }
