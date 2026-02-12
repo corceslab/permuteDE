@@ -152,8 +152,8 @@ runDE <- function(object,
   .validInput(object, "object", "runDE")
   .validInput(pseudobulk, "pseudobulk", object)
   .validInput(replicate_labels, "replicate_labels", list(object, pseudobulk))
-  .validInput(group_labels, "group_labels", object)
-  .validInput(split_labels, "split_labels", object)
+  .validInput(group_labels, "group_labels", list(object))
+  .validInput(split_labels, "split_labels", list(object))
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
   .validInput(reference_group, "reference_group", list(object, group_labels, use_cells))
   .validInput(de_method, "de_method")
@@ -387,66 +387,77 @@ runDE <- function(object,
   time3 <- Sys.time()
 
   # Progress
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),
+  proceed <- TRUE
+  if (length(matrix_list) == 0) {
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : No matrices had sufficient cells/replicates, DE will not be run.")
+    warning("No matrices had sufficient cells/replicates, DE was not run.")
+    proceed <- FALSE
+  } else if (verbose) {
+    message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),
                        ifelse(length(matrix_list) == 1, " matrix..", " matrices.."))
+  }
 
-  # for each item in matrix_list
-  de_results_list <- pbmcapply::pbmclapply(seq_len(length(matrix_list)),
-                                           FUN = function(i) {
-                                             n_groups <- dplyr::n_distinct(target_list[[i]]$group)
-                                             if (n_groups == 2) {
-                                               group_factor <- factor(target_list[[i]]$group)
-                                               group_factor <- stats::relevel(group_factor, ref = reference_group)
-                                               target_list[[i]]$group <- group_factor
+  if (proceed == TRUE) {
+    # for each item in matrix_list
+    de_results_list <- pbmcapply::pbmclapply(seq_len(length(matrix_list)),
+                                             FUN = function(i) {
+                                               n_groups <- dplyr::n_distinct(target_list[[i]]$group)
+                                               if (n_groups == 2) {
+                                                 group_factor <- factor(target_list[[i]]$group)
+                                                 group_factor <- stats::relevel(group_factor, ref = reference_group)
+                                                 target_list[[i]]$group <- group_factor
 
-                                               design_i <- stats::model.matrix(~ group, data = target_list[[i]])
-                                               de_results_i <- switch(de_method,
-                                                                      edgeR = .runDE.edgeR(mat = matrix_list[[i]],
-                                                                                           targets = target_list[[i]],
-                                                                                           design = design_i,
-                                                                                           de_test = de_test,
-                                                                                           de_params = de_params,
-                                                                                           normalize_prefilter = normalize_prefilter,
-                                                                                           exclude_features = exclude_features[[i]]),
-                                                                      DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
+                                                 design_i <- stats::model.matrix(~ group, data = target_list[[i]])
+                                                 de_results_i <- switch(de_method,
+                                                                        edgeR = .runDE.edgeR(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
                                                                                              design = design_i,
                                                                                              de_test = de_test,
                                                                                              de_params = de_params,
                                                                                              normalize_prefilter = normalize_prefilter,
                                                                                              exclude_features = exclude_features[[i]]),
-                                                                      limma = .runDE.limma(mat = matrix_list[[i]],
-                                                                                           targets = target_list[[i]],
-                                                                                           design = design_i,
-                                                                                           de_test = de_test,
-                                                                                           de_params = de_params,
-                                                                                           normalize_prefilter = normalize_prefilter,
-                                                                                           exclude_features = exclude_features[[i]]),
-                                                                      presto = .runDE.presto(mat = matrix_list[[i]],
+                                                                        DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
+                                                                                               targets = target_list[[i]],
+                                                                                               design = design_i,
+                                                                                               de_test = de_test,
+                                                                                               de_params = de_params,
+                                                                                               normalize_prefilter = normalize_prefilter,
+                                                                                               exclude_features = exclude_features[[i]]),
+                                                                        limma = .runDE.limma(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
+                                                                                             design = design_i,
                                                                                              de_test = de_test,
                                                                                              de_params = de_params,
                                                                                              normalize_prefilter = normalize_prefilter,
-                                                                                             exclude_features = exclude_features[[i]],
-                                                                                             non_reference_group = non_reference_group))
-                                               de_results_i <- de_results_i |>
-                                                 dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
-                                                               split = names(matrix_list)[i]) |>
-                                                 dplyr::arrange(padj)
-                                             } else {
-                                               de_results_i <- NULL
-                                               if (verbose) message("Skipped split label ", names(matrix_list)[i],
-                                                                    ", only ", n_groups,
-                                                                    " group (", unique(target_list[[i]]$group),
-                                                                    ") present.")
-                                             }
-                                             return(de_results_i)
-                                           },
-                                           mc.cores = n_cores,
-                                           mc.set.seed = TRUE)
-  de_results <- do.call(rbind, de_results_list)
-  de_results <- de_results |>
-    data.frame()
+                                                                                             exclude_features = exclude_features[[i]]),
+                                                                        presto = .runDE.presto(mat = matrix_list[[i]],
+                                                                                               targets = target_list[[i]],
+                                                                                               de_test = de_test,
+                                                                                               de_params = de_params,
+                                                                                               normalize_prefilter = normalize_prefilter,
+                                                                                               exclude_features = exclude_features[[i]],
+                                                                                               non_reference_group = non_reference_group))
+                                                 de_results_i <- de_results_i |>
+                                                   dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
+                                                                 split = names(matrix_list)[i]) |>
+                                                   dplyr::arrange(padj)
+                                               } else {
+                                                 de_results_i <- NULL
+                                                 if (verbose) message("Skipped split label ", names(matrix_list)[i],
+                                                                      ", only ", n_groups,
+                                                                      " group (", unique(target_list[[i]]$group),
+                                                                      ") present.")
+                                               }
+                                               return(de_results_i)
+                                             },
+                                             mc.cores = n_cores,
+                                             mc.set.seed = TRUE)
+    de_results <- do.call(rbind, de_results_list)
+    de_results <- de_results |>
+      data.frame()
+  } else {
+    de_results <- NULL
+  }
 
   # ---------------------------------------------------------------------------
   # Wrap up
