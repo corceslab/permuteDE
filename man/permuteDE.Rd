@@ -7,9 +7,11 @@
 permuteDE(
   input,
   alpha = 0.05,
-  lfc_threshold = 0.5,
+  lfc_threshold = 0,
   n_iterations = 1000,
   use_splits = NULL,
+  permute_by = NULL,
+  permute_within = NULL,
   min_DE = 1,
   return_all = FALSE,
   random_seed = 1,
@@ -26,8 +28,8 @@ permutation test comparisons of the number of differentially expressed
 features. Defaults to 0.05.}
 
 \item{lfc_threshold}{A numeric value indicating the minimum absolute value
-log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
-to 0 to disregard log fold change when counting hits.}
+log fold change for a feature to be counted as a "hit". Default = 0
+disregards log fold change when counting hits.}
 
 \item{n_iterations}{A numeric value indicating the number of iterations run
 for the permutation test. Defaults to 1000. Computational time increases
@@ -35,6 +37,20 @@ approximately linearly with the number of iterations.}
 
 \item{use_splits}{A vector containing the names of splits to use. Defaults to
 \code{NULL}, which will try all splits.}
+
+\item{permute_by}{An optional character string indicating the name of the
+column in \code{input$metadata$group_key} indicating partitions of the data
+within which group labels should be shuffled together as a unit. Alternately,
+a vector ordered according to the values in \code{input$metadata$group_key}.
+Only for specific use cases such as cell-level tests. Default = \code{NULL}
+will shuffle group labels across all replicates.}
+
+\item{permute_within}{An optional character string indicating the name of the
+column in \code{input$metadata$group_key} indicating partitions of the data
+within which group labels should be shuffled separately. Alternately, a
+vector ordered according to the values in \code{input$metadata$group_key}.
+Only for specific use cases such as cell-level tests. Default = \code{NULL}
+will shuffle group labels across all replicates.}
 
 \item{min_DE}{A numeric value indicating the minimum number of
 differentially expressed features between the true group labels for a split,

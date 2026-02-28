@@ -6,10 +6,12 @@
 \usage{
 runDE(
   object,
+  metadata = NULL,
   replicate_labels = NULL,
   group_labels,
   split_labels = NULL,
   reference_group = NULL,
+  design = NULL,
   use_cells = NULL,
   pseudobulk = "generate",
   de_method = "edgeR",
@@ -39,28 +41,35 @@ matrix. Note that raw counts are expected, and the normalization method
 applied during differential expression analysis differs across the methods
 and tests.}
 
+\item{metadata}{An optional dataframe containing relevant metadata columns
+corresponding to the data provided to parameter \code{object}. Default =
+\code{NULL} looks for metadata in \code{object} or other provided inputs.}
+
 \item{replicate_labels}{A string indicating the name of the
-metadata column containing the biological replicate labels or a character
-vector containing the biological replicate labels in order. For pseudobulk DE
+metadata column containing the biological replicate labels or a vector
+containing the biological replicate labels in order. For pseudobulk DE
 analysis, the biological replicate labels are used to construct/define the
-pseudobulks. For cell-level DE analysis, the biological replicate labels are
-not used in this function, but will be passed on to function permuteDE so
-that the permutation of group labels keeps replicates intact.}
+pseudobulks. Input is not required for cell-level DE analysis.}
 
-\item{group_labels}{A string indicating the name of the
-column containing the two comparison group labels or a character vector
-containing the comparison labels in order.}
+\item{group_labels}{A string indicating the name of the metadata column
+containing the two comparison group labels or a vector containing the
+comparison labels in order.}
 
-\item{split_labels}{A string indicating the name of a
-column by which to split the cells prior to pseudobulking and performing
-differential expression (e.g., cell types). Alternately, a character vector
-containing the split labels for each cell in order. Results will be returned
-for each unique value indicated by \code{split_labels}. Default = \code{NULL}
-will run pseudobulk differential expression on all cells together.}
+\item{split_labels}{A string indicating the name of a metadata column by
+which to split the cells prior to pseudobulking and performing differential
+expression (e.g., cell types). Alternately, a vector containing the split
+labels for each cell in order. Results will be returned for each unique value
+indicated by \code{split_labels}. Default = \code{NULL} will run pseudobulk
+differential expression on all cells together.}
 
 \item{reference_group}{A string specifying the reference group. Defaults to
 \code{NULL}, in which case the first value alphabetically is used as the
 reference.}
+
+\item{design}{An optional string specifying a model formula for more complex
+designs. Last term in formula must correspond to group labels. Default =
+\code{NULL} will run a pairwise group comparison (~ group) based on the input
+provided to parameter \code{group_labels}.}
 
 \item{use_cells}{A vector of cell names to subset the object to prior to
 subsequent pseudobulk and differential expression steps. Default =

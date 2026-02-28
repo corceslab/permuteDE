@@ -6,12 +6,14 @@
 \usage{
 getCombinations(
   object = NULL,
+  metadata = NULL,
   replicate_labels = NULL,
   group_labels = NULL,
   use_cells = NULL,
   n_replicates = NULL,
   n_group1 = NULL,
   n_combinations = 1000,
+  confound_check = NULL,
   message = "",
   random_seed = 1,
   verbose = TRUE
@@ -22,6 +24,10 @@ getCombinations(
 \code{NULL}, \code{countCombinations} will expect either (1) vector input to
 parameters \code{replicate_label} and \code{group_label} or (2) numeric input
 to parameters \code{n_replicates} and \code{n_group1}.}
+
+\item{metadata}{An optional dataframe containing relevant metadata columns
+corresponding to the data provided to parameter \code{object}. Default =
+\code{NULL} looks for metadata in \code{object} or other provided inputs.}
 
 \item{replicate_labels}{A string indicating the name of the
 metadata column containing the biological replicate labels or a character
@@ -35,13 +41,19 @@ containing the comparison labels in order.}
 possible group comibinations. Default = \code{NULL} will use all cells.}
 
 \item{n_replicates}{A numeric value indicating the total number of
-replicates. Defaults to \code{NULL}.}
+replicates. Alternately, a vector can be provided to generate combinations
+when shuffling separately within multiple sets. Defaults to \code{NULL}.}
 
 \item{n_group1}{A numeric value indicating the number of replicates in one
-group (doesn't matter which). Defaults to \code{NULL}.}
+group (doesn't matter which). Alternately, a vector can be provided to
+generate combinations when shuffling separately within multiple sets.
+Defaults to \code{NULL}.}
 
 \item{n_combinations}{A numeric value indicating the number of combinations
 to generate. Defaults to 1000.}
+
+\item{confound_check}{An optional dataframe of covariates for which to
+exclude permutations that are perfectly confounded. Defaults to \code{NULL}.}
 
 \item{message}{A character string indicating additional progress messaging
 (internal use). Defaults to "".}
@@ -70,5 +82,6 @@ Users may provide input in three ways:
 replicates in one group (k) (doesn't matter which group).
 
 (3) Column names indicating replicate and group metadata columns in a
-provided 'Seurat' or 'SingleCellExperiment' object.
+provided 'Seurat' or 'SingleCellExperiment' object or a provided
+metadata dataframe.
 }

@@ -133,6 +133,10 @@ The output is a list containing the following elements:
 * `parameters` List recording parameter values used
 
 ```{r}
+head(permuteDE_output$permutation_test_results)
+```
+
+```{r}
 head(permuteDE_output$permutation_DE_summary)
 ```
 
@@ -140,7 +144,7 @@ head(permuteDE_output$permutation_DE_summary)
 
 permuteDE has several built-in plotting functions to help display the results from functions `runDE()` and `permuteDE()`. All plots are modifiable `ggplot` outputs.
 
-To generate volcano plots for each split assessed by `runDE()` (or a single split) use function `plotVolcano()`.
+To generate volcano plots for each split assessed by `runDE()` use function `plotVolcano()`. To generate a volcano plot for a specific split or subset of splits, set parameter `use_splits` to the relevant split name(s).
 
 ```{r, message = FALSE, warning = FALSE}
 # Generate a list of volcano plots
@@ -149,7 +153,7 @@ volcano_plots <- plotVolcano(input = runDE_output)
 volcano_plots[["Inhibitory Neurons"]] | volcano_plots[["Oligodendrocytes"]]
 ```
 
-To generate histograms for each permutation test (or a single split), use function `plotHistogram()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and a dashed line where the "true" results fall on this distribution.
+To generate histograms for each permutation test (or a single split), use function `plotHistogram()`. These histograms display the distribution of the number of significant differentially expressed features in each iteration of the permutation test, and a dashed line where the "true" results fall on this distribution.To generate a histogram for a specific split or subset of splits, set parameter `use_splits` to the relevant split name(s).
 
 ```{r, message = FALSE, warning = FALSE}
 # Generate a list of histograms
@@ -215,7 +219,9 @@ feature_plots[["Inhibitory Neurons"]] | feature_plots[["Oligodendrocytes"]]
 
 # Advanced Options
 
-## Input object types for function `runDE()`
+## Input object types
+
+Function `runDE()` accepts three input object types: Seurat objects, SingleCellExperiment objects, and matrices.
 
 ### Seurat
 
@@ -237,11 +243,15 @@ For matrix inputs, the provided matrix may be either a cell-level matrix (featur
 
 If a pre-generated pseudobulk matrix is provided, parameter `pseudobulk` must be set to "supplied".
 
-For matrix inputs, the input to parameters `replicate_labels`, `group_labels`, and `split_labels` must be a character vector containing the labels in order, corresponding to each column of the matrix.
+For matrix inputs, the required input to parameters `replicate_labels`, `group_labels`, and `split_labels` must be provided either:
+
+* As a `data.frame` to parameter `metadata` with column names designated by `replicate_labels`, `group_labels`, and `split_labels`
+
+* Directly to `replicate_labels`, `group_labels`, and `split_labels` as vectors containing the labels in order, corresponding to each column of the matrix
 
 Here's an example of how to apply function `runDE()` to a feature x cell matrix:
 
-```{r, message = TRUE, warning = FALSE}
+```{r, eval = FALSE}
 # Extract count matrix from the sample dataset
 counts_matrix <- sample_data@assays$RNA$counts
 # Extract relevant metadata as a vector
@@ -260,7 +270,7 @@ runDE_output <- runDE(object = counts_matrix,
 
 Or a pre-generated pseudobulk matrix:
 
-```{r, message = TRUE, warning = FALSE}
+```{r, eval = FALSE}
 # Pre-generate pseudobulk matrix
 pb_matrix_list <- getPseudobulk(object = sample_data,
                                 replicate_labels = "sample",
@@ -279,6 +289,84 @@ runDE_output <- runDE(object = pb_matrix,
                       reference_group = "WT",
                       pseudobulk = "supplied",
                       n_cores = 1)
+```
+
+## Complex designs
+
+### Incorporating covariates or multiple factors
+
+To run differential expression analysis accounting for multiple factors/covariates, set parameter `design` in function `runDE()` to a character string providing the desired model formula or a `stats::model.matrix()` design matrix.
+
+Note that complex model formulas are not compatible with the Wilcoxon rank sum test.
+
+Here is an example comparing the groups within the sample data while additionally correcting for batch effects.
+
+```{r, eval = FALSE}
+runDE_output <- runDE(object = sample_data,
+                      replicate_labels = "sample",
+                      group_labels = "group",
+                      split_labels = "cell_type",
+                      reference_group = "WT",
+                      design = "~ batch + group",
+                      n_cores = 2)
+```
+
+In most cases, no additional parameter adjustments are needed to run the permutation test with the specified model formula.
+
+```{r, eval = FALSE}
+permuteDE_output <- permuteDE(input = runDE_output,
+                              n_cores = 2)
+```
+
+### Comparisons within the same replicates (e.g., cell type comparisons)
+
+The default usage of `runDE()` does not permit duplicate replicate labels across different comparison groups. Therefore, to compare cell populations wherein the set of replicates is shared across the two groups of interest (e.g., two different cell types or states from the same set of samples), set the parameter `replicate_labels` in function `runDE()` to a concatenation of the replicate labels and the group labels.
+
+```{r, message = TRUE, warning = FALSE}
+# Add concatenated metadata column
+sample_data$sample_cell_type <- paste(sample_data$sample, sample_data$cell_type, sep = "_")
+```
+
+Then, you can run either an unpaired or paired test:
+
+#### Option 1: Unpaired
+
+Here is an example comparing the gene expression between excitatory vs. inhibitory neurons in the sample dataset:
+
+```{r, eval = FALSE}
+runDE_output <- runDE(object = sample_data,
+                      replicate_labels = "sample_cell_type",
+                      group_labels = "cell_type",
+                      use_cells = colnames(sample_data)[sample_data$cell_type %in% c("Excitatory Neurons", "Inhibitory Neurons")],
+                      reference_group = "Excitatory Neurons",
+                      n_cores = 2)
+
+permuteDE_output <- permuteDE(input = runDE_output,
+                              n_cores = 2)
+```
+
+#### Option 2: Paired
+
+To run a paired comparison, set parameter `design` in function `runDE()` to an additive model formula without an interaction term.
+
+For example, to compare the gene expression between excitatory vs. inhibitory neurons in the sample dataset, our model formula would be `~ sample + cell_type`.
+
+```{r, eval = FALSE}
+runDE_output <- runDE(object = sample_data,
+                      replicate_labels = "sample_cell_type",
+                      group_labels = "cell_type",
+                      use_cells = colnames(sample_data)[sample_data$cell_type %in% c("Excitatory Neurons", "Inhibitory Neurons")],
+                      reference_group = "Excitatory Neurons",
+                      design = "~ sample + cell_type",
+                      n_cores = 2)
+```
+
+When running function `permuteDE()` on paired comparisons, it is important to provide the correct input to parameter `permute_within`, such that group labels are shuffled separately within each paired set. In this example, `permute_within` should be set to `sample`.
+
+```{r, eval = FALSE}
+permuteDE_output <- permuteDE(input = runDE_output,
+                              permute_within = "sample",
+                              n_cores = 2)
 ```
 
 ## permuteDE parameters
@@ -302,9 +390,27 @@ permuteDE uses various filters to reduce the number of DE comparisons:
 
 We highly encourage users to use pseudobulk differential expression analysis, as it reduces the incidence of false positives. However, permuteDE is also compatible with cell-level tests. To run function `runDE()` without pseudobulking, and treating the cells as the statistical sample size, set parameter `pseudobulk` to "none". This works with any input object type, including cell x feature matrices. Please note that the size of the returned output will be substantially larger, since the cell x feature matrices will be returned as output so that they can be subsequently passed to function `permuteDE()`.
 
-When running cell-level tests, we still recommend that users provide the biological replicate labels to function `runDE()` using parameter `replicate_labels`. These labels are not used when running function `runDE()` with parameter `pseudobulk = "none"`, but they are passed on to function `permuteDE()`, such that when the group labels are permuted, cells from each biological replicate are not separated. In other words, the permutation occurs at the replicate level, even for cell-level tests.
+```{r, eval = FALSE}
+runDE_output <- runDE(object = sample_data,
+                      group_labels = "group",
+                      reference_group = "WT",
+                      pseudobulk = "none",
+                      n_cores = 2)
+```
 
-In the rare case when a user wants to permute cells regardless of the biological replicate, simply set `replicate_labels` equal to the cell IDs.
+
+When running cell-level tests, we still recommend that users provide the biological replicate labels to function `permuteDE()` using parameter `permute_by`, such that when the group labels are permuted, cells from each biological replicate are not separated. In other words, the permutation occurs at the biological replicate level, even for cell-level tests. Input to `permute_by` must either be a column name already present in the output under the dataframe `$metadata$group_key` from function `runDE()`, or a vector with values corresponding to each row of that dataframe.
+
+If input is not provided to parameter `permute_by`, the group labels will be permuted across cells regardless of the biological replicate.
+
+```{r, eval = FALSE}
+# Grab sample labels for each row of group key
+sample_labels <- sample_data@meta.data[runDE_output$metadata$group_key$replicate, "sample"]
+# Provide to parameter 'permute_by'
+permuteDE_output <- permuteDE(input = runDE_output,
+                              permute_by = sample_labels,
+                              n_cores = 2)
+```
 
 ## Palettes
 

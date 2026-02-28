@@ -34,36 +34,46 @@
     if (!is.null(input)) {
       # Should be of class "character" or "factor"
       if (!methods::is(input, "character") & !methods::is(input, "factor")) {
-        stop("Input value for '", name, "' must be of class 'character' or 'factor', please supply valid input!")
+        if (methods::is(input, "numeric") | methods::is(input, "logical")) {
+          warning("Input value for '", name, "' will be converted to class 'character'.")
+        } else {
+          stop("Input value for '", name, "' must be a single value of class 'character' or a vector of labels, please supply valid input!")
+        }
       }
       # replicate_labels are not used for cell-level tests
       if (name == "replicate_labels") {
-        if (other[[2]] == "none") {
+        if (other[[3]] == "none") {
           warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
         }
       }
       # If single value, must be a column name
       if (length(input) == 1) {
-        # Must be present in metadata of provided object
-        if (methods::is(other[[1]], "Seurat")) {
-          if (!(input %in% colnames(other[[1]]@meta.data))) {
-            stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
+        # If metadata is provided, must be found there
+        if (!is.null(other[[2]])) {
+          if (!(input %in% colnames(other[[2]]))) {
+            stop("When a single input value is provided for '", name, "', it must indicate a column present in the provided 'metadata', please supply valid input!")
           }
-        } else if (methods::is(other[[1]], "SingleCellExperiment")) {
-          if (!(input %in% colnames(other[[1]]@colData))) {
-            stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+        } else {
+          # Otherwise must be present in metadata of provided object
+          if (methods::is(other[[1]], "Seurat")) {
+            if (!(input %in% colnames(other[[1]]@meta.data))) {
+              stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
+            }
+          } else if (methods::is(other[[1]], "SingleCellExperiment")) {
+            if (!(input %in% colnames(other[[1]]@colData))) {
+              stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+            }
+          } else if (methods::is(other[[1]], "matrix")) {
+            stop("When input to parameter 'object' is of class 'matrix' and input to parameter 'metadata' is NULL, input value for '",
+                 name, "' cannot be a single value, it must be a vector.")
           }
-        } else if (methods::is(other[[1]], "matrix")) {
-          stop("When input to parameter 'object' is of class 'matrix', input value for '", name, "' cannot be a single value, it must be a vector.")
         }
       }
     } else {
       # replicate_labels are required for pseudobulk tests
       if (name == "replicate_labels") {
-        if (other[[2]] %in% c("generate", "supplied")) {
-          stop("Input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
-        } else if (other[[2]] == "none") {
-          warning("If the output of this function is intended to be passed to function 'permuteDE', input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[2]], "'. Please supply valid input!")
+        if (other[[3]] %in% c("generate", "supplied")) {
+          stop("Input value for '", name, "' cannot be NULL when parameter 'pseudobulk' is set to '", other[[3]], "'. Please supply valid input!")
         }
       }
     }
@@ -85,14 +95,13 @@
   }
 
   # Single positive integer
-  # n, n_replicates, n_group1, n_cores, min_cells_per_split, min_cells_per_replicate, min_replicates_per_split,
-  # min_replicates_per_group, min_cells_per_feature, random_seed
+  # n, n_cores, min_cells_per_split, min_cells_per_replicate, min_replicates_per_split,
+  # min_replicates_per_group, min_cells_per_feature, random_seed, n_combinations
   if (name %in% c("min_cells_per_split", "min_cells_per_replicate", "min_replicates_per_split", "min_replicates_per_group", "min_cells_per_feature",
-                  "n_replicates", "n_group1",
                   "n_combinations", "n_iterations",
                   "random_seed", "n_cores", "n")) {
-    # n_cores, n_replicates, n_group1, can be NULL
-    if (!(name %in% c("n_replicates", "n_group1", "n_cores", "n") & is.null(input))) {
+    # n_cores & n can be NULL
+    if (!(name %in% c("n_cores", "n") & is.null(input))) {
       # Should be of class 'numeric', must be a single value
       if (!methods::is(input, "numeric") | length(input) != 1) {
         stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
@@ -100,12 +109,6 @@
       # Must be positive integer
       if (input %% 1 != 0 | input < 1) {
         stop("Input value for '", name, "' must be a positive integer. Please supply valid input!")
-      }
-      # n_group1 must be < n_replicates
-      if (name == "n_group1") {
-        if (input >= other) {
-          stop("Input value for '", name, "' must be less than input value for 'n_replicates'. Please supply valid input!")
-        }
       }
       # min_cells_per_split, min_cells_per_replicate, min_cells_per_feature
       # are not applicable when pre-computed pseudobulk matrix is supplied by the user
@@ -119,6 +122,61 @@
         if (other == "none") {
           warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
         }
+      }
+    }
+  }
+
+  # n_replicates
+  if (name %in% "n_replicates") {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'numeric'
+      if (!methods::is(input, "numeric")) {
+        stop("Input value for '", name, "' must be of class 'numeric'. Please supply valid input!")
+      }
+      # Each value must be positive integer
+      for (i in 1:length(input)) {
+        if (i %% 1 != 0 | i < 1) {
+          stop("Input value(s) for '", name, "' must be positive integer(s). Please supply valid input!")
+        }
+      }
+    }
+  }
+
+  # n_group1
+  if (name %in% "n_group1") {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'numeric'
+      if (!methods::is(input, "numeric")) {
+        stop("Input value for '", name, "' must be of class 'numeric'. Please supply valid input!")
+      }
+      # Each value must be positive integer
+      for (i in 1:length(input)) {
+        if (input[i] %% 1 != 0 | input[i] < 1) {
+          stop("Input value(s) for '", name, "' must be positive integer(s). Please supply valid input!")
+        }
+      }
+      # n_replicates cannot be NULL
+      if (is.null(other)) {
+        warning("Input for '", name, "' is not used when parameter 'n_replicates' is NULL.")
+      } else {
+        # Must have same length as n_replicates
+        if (length(input) != length(other)) {
+          stop("Input for '", name, "' must be a vector of the same length as input to 'n_replicates'. Please supply valid input!")
+        }
+        # Each value < corresponding value of n_replicates
+        for (i in 1:length(input)) {
+          if (input[i] >= other[i]) {
+            stop("Each input value for '", name,
+                 "' must be less than the corresponding input value for 'n_replicates'. Please supply valid input!")
+          }
+        }
+      }
+    } else {
+      # n_replicates must also be NULL
+      if (!is.null(other)) {
+        warning("Input for 'n_replicates' is not used when parameter 'n_group1' is NULL.")
       }
     }
   }
@@ -273,13 +331,64 @@
         # Must have expected elements with set names
         if (!identical(names(input), c("DE_results", "PB_values",  "metadata", "parameters")) &
             !identical(names(input), c("DE_results", "cell_values",  "metadata", "parameters"))) {
-          stop("Structure of list provided for parameter 'input' is unexpected. It should be a list with four named elements ",
+          stop("Structure of list provided for parameter 'input' is unexpected. ",
+               "It should be the output returned by function 'runDE()' or a list following the same structure with four named elements ",
                "('DE_results', 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'). Please supply valid input!")
         }
         # Metadata must contain group key
         if (!("group_key" %in% names(input$metadata))) {
           stop("Structure of list provided for parameter 'input' is unexpected. ",
+               "It should be the output returned by function 'runDE()' or a list following the same structure. ",
                "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
+        }
+        # Parameters must contain certain values
+        if (!all(c("reference_group", "non_reference_group", "design_formula", "de_method", "de_test", "de_params",
+                   "p_adjust_method", "pseudobulk") %in% names(input$parameters))) {
+          stop("Structure of list provided for parameter 'input' is unexpected. ",
+               "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+               "Element 'parameters' must be a list containing a minimal set of named elements ",
+               "('reference_group', 'non_reference_group', 'design_formula', 'de_method', 'de_test', 'de_params', ",
+               "'p_adjust_method', 'pseudobulk'). Please supply valid input!")
+        }
+        # Is the content consistent?
+        if (length(input$parameters$reference_group) != 1 | length(input$parameters$non_reference_group) != 1) {
+          stop("Content of list provided for parameter 'input' is unexpected. ",
+               "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+               "The reference/non-reference groups provided under element 'parameters' must be single values. Please supply valid input!")
+        } else {
+          if (!(input$parameters$reference_group %in% input$metadata$group_key[, "group"])) {
+            stop("Content of list provided for parameter 'input' is unexpected. ",
+                 "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+                 "The reference group provided under element 'parameters' was not found within the 'group_key' provided under element 'metadata'. Please supply valid input!")
+          }
+          if (!(input$parameters$non_reference_group %in% input$metadata$group_key[, "group"])) {
+            stop("Content of list provided for parameter 'input' is unexpected. ",
+                 "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+                 "The non-reference group provided under element 'parameters' was not found within the 'group_key' provided under element 'metadata'. Please supply valid input!")
+          }
+        }
+        if (!is.null(input$parameters$design_formula)) {
+          # Must be formula
+          if(!methods::is(input$parameters$design_formula, "formula")) {
+            stop("Content of list provided for parameter 'input' is unexpected. ",
+                 "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+                 "The 'design_formula' provided under element 'parameters' must be of class 'formula'. Please supply valid input!")
+          }
+          # Terms must be within column names of group key
+          terms <- attr(terms(input$parameters$design_formula), "term.labels")
+          if (any(c(grepl("group:", terms), grepl(":group", terms)))) {
+            stop("Content of list provided for parameter 'input' is unexpected. ",
+                 "The terms within the 'design_formula' provided under element 'parameters' include interaction term(s) that involve ",
+                 "the primary comparison groups to be permuted. The 'permuteDE()' function is not compatible with these interaction terms. ",
+                 "Please supply valid input!")
+          }
+          terms <- unique(unlist(strsplit(terms, ":", fixed = TRUE)))
+          if (!all(terms %in% colnames(input$metadata$group_key))) {
+            stop("Content of list provided for parameter 'input' is unexpected. ",
+                 "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+                 "The terms within the 'design_formula' provided under element 'parameters' must correspond to ",
+                 "the column names of dataframe 'group_key' provided under element 'metadata'. Please supply valid input!")
+          }
         }
       } else if (other == "plotVolcano") {
         # Must have expected elements with set names
@@ -304,13 +413,14 @@
         # Metadata must contain group key
         if (!("group_key" %in% names(input$metadata))) {
           stop("Structure of list provided for parameter 'input' is unexpected. ",
+               "It should be the output returned by function 'runDE()' or a list following the same structure. ",
                "Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
         }
       } else if (other == "plotDimReduction") {
         # Must have expected elements with set names
         if (!("permutation_test_results" %in% names(input))) {
           stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'permuteDE()' ",
-               "or a list containing an element named 'permutation_test_results'. Please supply valid input!")
+               "or a list containing (at minimum) an element named 'permutation_test_results'. Please supply valid input!")
         }
       }
     } else {
@@ -375,17 +485,22 @@
   if (name == "reference_group") {
     # If not NULL
     if (!is.null(input)) {
-      if (length(other[[2]]) == 1) {
-        # Value must be among those indicated by group_labels
-        groups <- .retrieveData(object = other[[1]],
-                                type = "cell_metadata",
-                                name = other[[2]],
-                                use_cells = other[[3]])
+      if (length(input) != 1) {
+        stop("Input for '", name, "' must be a single value, please supply valid input!")
       } else {
-        groups <- other[[2]]
-      }
-      if (!input %in% groups) {
-        stop("Input value for '", name, "' must be present among provided group labels. Please supply valid input!")
+        if (length(other[[3]]) == 1) {
+          # Value must be among those indicated by group_labels
+          groups <- .retrieveData(object = other[[1]],
+                                  metadata = other[[2]],
+                                  type = "cell_metadata",
+                                  name = other[[3]],
+                                  use_cells = other[[4]])
+        } else {
+          groups <- other[[3]]
+        }
+        if (!input %in% groups) {
+          stop("Input value for '", name, "' must be present among provided group labels. Please supply valid input!")
+        }
       }
     }
   }
@@ -404,9 +519,25 @@
     if (input == "none") {
       warning("Cell-level tests are not recommended in most cases, proceed with caution.")
     }
-    # If supplied, object cannot be Seurat or SingleCellExperiment
-    if (input == "supplied" & length(intersect(methods::is(other), c("Seurat", "SingleCellExperiment"))) > 0) {
-      stop("When input for '", name, "' is '", input, "', parameter 'object' must be of class 'matrix'. Please supply valid input!")
+    if (other[[1]] == "permuteDE") {
+      if (input == "none") {
+        if (!("cell_values" %in% names(other[[2]]))) {
+          stop("Structure of list provided for parameter 'input' is unexpected. When conducting cell-level tests, ",
+               "it should be the output returned by function 'runDE()' or a list following the same structure with four named elements ",
+               "('DE_results', 'cell_values', 'metadata', and 'parameters'). Please supply valid input!")
+        }
+      } else {
+        if (!("PB_values" %in% names(other[[2]]))) {
+          stop("Structure of list provided for parameter 'input' is unexpected. When conducting pseudobulk tests, ",
+               "it should be the output returned by function 'runDE()' or a list following the same structure with four named elements ",
+               "('DE_results', 'PB_values', 'metadata', and 'parameters'). Please supply valid input!")
+        }
+      }
+    } else {
+      # If supplied, object cannot be Seurat or SingleCellExperiment
+      if (input == "supplied" & length(intersect(methods::is(other[[2]]), c("Seurat", "SingleCellExperiment"))) > 0) {
+        stop("When input for '", name, "' is '", input, "', parameter 'object' must be of class 'matrix'. Please supply valid input!")
+      }
     }
   }
 
@@ -621,6 +752,149 @@
       # If n_max_label < length(input), issue warning
       if (other < length(input)) {
         warning("When input to parameter '", name, "' is provided, input to parameter 'n_max_label' is disregarded.")
+      }
+    }
+  }
+
+  # design
+  if (name %in% c("design")) {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be a single value of class 'character'
+      if (methods::is(input, "character") & length(input) == 1) {
+        # Check formula syntax
+        if (!grepl("^\\s*~", input)) {
+          stop("Input value for '", name, "' must be a one-sided formula starting with '~'. Please supply valid input!")
+        }
+        try(input_formula <- stats::as.formula(input), silent = TRUE)
+        if (!exists("input_formula")) {
+          stop("Input value for '", name, "' must be a one-sided formula of proper syntax. Please supply valid input!")
+        } else {
+          # Parse terms
+          terms <- attr(terms(input_formula), "term.labels")
+          # Last term must be same as 'group_labels'
+          if (terms[length(terms)] != other[[3]]) {
+            stop("When input is provided to parameter '", name,
+                 "', the last term in the formula must be 'group' or the same as input provided to parameter 'group_labels'. Please supply valid input!")
+          }
+          terms <- terms[-length(terms)]
+          if (length(terms) > 0) {
+            # Break up interaction terms
+            terms <- unique(unlist(strsplit(terms, ":", fixed = TRUE)))
+            # Warn if term "replicate" is in formula, because it will be used to refer to the replicate_labels
+            if ("replicate" %in% terms) {
+              terms <- terms[terms != "replicate"]
+              warning("Formula provided for parameter '", name,
+                      "' includes the term 'replicate'. This will be used to refer to the input provided to parameter 'replicate_labels'. If that is not your intention, please rename the term.")
+            }
+            # Check for presence of terms in metadata of provided object
+            if (!is.null(other[[2]])) {
+              if (!all(terms %in% colnames(other[[2]]))) {
+                stop("When input for '", name, "' is a character string, the terms must indicate column(s) present in the provided 'metadata', please supply valid input!")
+              }
+            } else if (methods::is(other[[1]], "Seurat")) {
+              if (!all(terms %in% colnames(other[[1]]@meta.data))) {
+                stop("When input for '", name, "' is a character string, the terms must indicate column(s) present in the 'meta.data' of the provided object, please supply valid input!")
+              }
+            } else if (methods::is(other[[1]], "SingleCellExperiment")) {
+              if (!all(terms %in% colnames(other[[1]]@colData))) {
+                stop("When input for '", name, "' is a character string, the terms must indicate column(s) present in the 'colData' of the provided object, please supply valid input!")
+              }
+            }
+          }
+          # Clean up
+          rm(input_formula)
+        }
+      } else {
+        stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+      }
+    }
+  }
+
+  # metadata
+  if (name %in% c("metadata")) {
+    # If not NULL
+    if (!is.null(input)) {
+      # Must be a dataframe
+      if (!methods::is(input, "data.frame")) {
+        stop("Input for '", name, "' must be of class 'data.frame', please supply valid input!")
+      }
+      # Must have rownames corresponding to columns in the provided object
+      if (!identical(rownames(input), colnames(other))) {
+        stop("Input for '", name, "' must have row names corresponding to each column name in the provided 'object', please supply valid input!")
+      }
+    }
+  }
+
+  # permute_by, permute_within
+  if (name %in% c("permute_by", "permute_within")) {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class "character" or "factor"
+      if (!methods::is(input, "character") & !methods::is(input, "factor")) {
+        if (methods::is(input, "numeric") | methods::is(input, "logical")) {
+          warning("Input value for '", name, "' will be converted to class 'character'.")
+        } else {
+          stop("Input value for '", name, "' must be a single value of class 'character' or a vector of labels, please supply valid input!")
+        }
+      }
+      # If single value, must be a column name
+      if (length(input) == 1) {
+        # Must not be 'group'
+        if (input == "group") {
+          stop("Input for '", name, "' cannot be 'group', please supply valid input!")
+        }
+        # Must correspond to a column in group_key
+        if (!(input %in% colnames(other[[1]]$metadata$group_key))) {
+          stop("When a single input value is provided for '", name, "', it ",
+               "' must be among the column names of dataframe 'group_key' provided under element ",
+               "'metadata' of list provided to parameter 'input', please supply valid input!")
+        }
+      } else {
+        # Length must correspond to group_key rows
+        if (length(input) != nrow(other[[1]]$metadata$group_key))
+          stop("When a vector is provided for '", name, "', it must contain values corresponding ",
+               "to each row of dataframe 'group_key' provided under element ",
+               "'metadata' of list provided to parameter 'input', please supply valid input!")
+      }
+      if (name == "permute_by") {
+        # If not a cell-level test, issue warning
+        if (other[[2]] != "none") {
+          warning("Input for '", name, "' is intended for use with cell-level tests, where parameter 'pseudobulk' is 'none'.")
+        }
+      } else if (name == "permute_within") {
+        if (is.null(other[[2]])) {
+          warning("Input for '", name, "' is intended for use with complex design formulas, such as paired tests.")
+        }
+      }
+    } else {
+      # If a cell-level test, issue warning
+      if (name == "permute_by") {
+        if (other[[2]] == "none") {
+          warning("When running a cell-level test (parameter 'pseudobulk' is 'none'), consider providing biological replicates labels to ",
+                  "parameter '", name, "', such that group labels for each cell in a biological replicate are shuffled together as a unit.")
+        }
+      }
+    }
+  }
+
+  # confound_check
+  if (name %in% c("confound_check")) {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be a dataframe
+      if (!methods::is(input, "data.frame")) {
+        stop("Input value for '", name, "' must be of class 'data.frame', please supply valid input!")
+      }
+      # Check for correct number of rows
+      if (nrow(input) != other) {
+        stop("Input value for '", name, "' must a 'data.frame' with rows corresponding to the number of replicates, please supply valid input!")
+      }
+      # Check class of each column, should not be numeric
+      for (i in 1:ncol(input)) {
+        if (intersect(methods::is(input[,i]), c("character", "factor", "logical")) < 1) {
+          stop("Input value for '", name, "' must a 'data.frame' with columns of classes 'character', 'factor', or 'logical', please supply valid input!")
+        }
       }
     }
   }

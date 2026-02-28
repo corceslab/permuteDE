@@ -5,11 +5,23 @@
 # Retrieve data from an object
 #
 # object A 'Seurat' or 'SingleCellExperiment' object
+# metadata Optional metadata dataframe
 # type A string indicating data type to retrieve
 # name A string under which data are stored
 # use_cells (Optional) A string vector of cell names to subset
-.retrieveData <- function(object, type, name, use_cells = NULL) {
-  if (methods::is(object, "Seurat")) {
+.retrieveData <- function(object = NULL,
+                          metadata = NULL,
+                          type,
+                          name,
+                          use_cells = NULL) {
+  if (!is.null(metadata)) {
+    # for metadata dataframe
+    if (type == "cell_metadata") {
+      output_data <- metadata[if (is.null(use_cells)) TRUE else use_cells, name]
+    }
+  } else if (is.null(object)) {
+    stop("Could not retrieve ", type, " ", name, " because both 'object' and 'metadata' are NULL.")
+  } else if (methods::is(object, "Seurat")) {
     # for a Seurat object
     if (type == "cell_metadata") {
       output_data <- object@meta.data[if (is.null(use_cells)) TRUE else use_cells, name]

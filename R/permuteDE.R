@@ -27,13 +27,25 @@
 #' permutation test comparisons of the number of differentially expressed
 #' features. Defaults to 0.05.
 #' @param lfc_threshold A numeric value indicating the minimum absolute value
-#' log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
-#' to 0 to disregard log fold change when counting hits.
+#' log fold change for a feature to be counted as a "hit". Default = 0
+#' disregards log fold change when counting hits.
 #' @param n_iterations A numeric value indicating the number of iterations run
 #' for the permutation test. Defaults to 1000. Computational time increases
 #' approximately linearly with the number of iterations.
 #' @param use_splits A vector containing the names of splits to use. Defaults to
 #' \code{NULL}, which will try all splits.
+#' @param permute_by An optional character string indicating the name of the
+#' column in \code{input$metadata$group_key} indicating partitions of the data
+#' within which group labels should be shuffled together as a unit. Alternately,
+#' a vector ordered according to the values in \code{input$metadata$group_key}.
+#' Only for specific use cases such as cell-level tests. Default = \code{NULL}
+#' will shuffle group labels across all replicates.
+#' @param permute_within An optional character string indicating the name of the
+#' column in \code{input$metadata$group_key} indicating partitions of the data
+#' within which group labels should be shuffled separately. Alternately, a
+#' vector ordered according to the values in \code{input$metadata$group_key}.
+#' Only for specific use cases such as cell-level tests. Default = \code{NULL}
+#' will shuffle group labels across all replicates.
 #' @param min_DE A numeric value indicating the minimum number of
 #' differentially expressed features between the true group labels for a split,
 #' below which permutations will not be run. Defaults to 1. Set to 0 to run
@@ -69,9 +81,11 @@
 #'
 permuteDE <- function(input,
                       alpha = 0.05,
-                      lfc_threshold = 0.5,
+                      lfc_threshold = 0,
                       n_iterations = 1000,
                       use_splits = NULL,
+                      permute_by = NULL,
+                      permute_within = NULL,
                       min_DE = 1,
                       return_all = FALSE,
                       random_seed = 1,
@@ -89,7 +103,7 @@ permuteDE <- function(input,
   .validInput(lfc_threshold, "lfc_threshold")
   .validInput(n_iterations, "n_iterations")
   .validInput(use_splits, "use_splits", list(input, "permuteDE"))
-  .validInput(min_de, "min_de")
+  .validInput(min_DE, "min_DE")
   .validInput(return_all, "return_all")
   .validInput(random_seed, "random_seed")
   .validInput(n_cores, "n_cores")
@@ -107,13 +121,25 @@ permuteDE <- function(input,
   # Fetch values
   reference_group <- input$parameters$reference_group
   non_reference_group <- input$parameters$non_reference_group
+  design_formula <- input$parameters$design_formula
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
   de_params <- input$parameters$de_params
   p_adjust_method <- input$parameters$p_adjust_method
   pseudobulk <- input$parameters$pseudobulk
-  stored_replicates <- input$parameters$stored_replicates
 
+  # Validate retrieved parameters
+  .validInput(de_method, "de_method")
+  .validInput(de_test, "de_test", de_method)
+  .validInput(de_params, "de_params", list(de_method, de_test))
+  .validInput(p_adjust_method, "p_adjust_method")
+  .validInput(pseudobulk, "pseudobulk", list("permuteDE", input))
+
+  # Additional validation
+  .validInput(permute_by, "permute_by", list(input, pseudobulk))
+  .validInput(permute_within, "permute_within", list(input, design_formula))
+
+  # Set use_splits
   if (is.null(use_splits)) {
     if (pseudobulk == "none") {
       use_splits <- names(input$cell_values)
@@ -121,6 +147,40 @@ permuteDE <- function(input,
       use_splits <- names(input$PB_values)
     }
   }
+
+  # Configure group key
+  group_key <- input$metadata$group_key
+  # If 'permute_by' provided, some replicates will always be kept together
+  # (e.g., cells from the same sample)
+  if (!is.null(permute_by)) {
+    if (length(permute_by) == 1) {
+      group_key$permute_by <- .retrieveData(object = NULL,
+                                            metadata = group_key,
+                                            type = "cell_metadata",
+                                            name = permute_by)
+    } else {
+      group_key$permute_by <- permute_by
+    }
+  } else {
+    group_key$permute_by <- group_key$replicate
+  }
+  group_key$permute_by <- as.character(group_key$permute_by)
+
+  # If 'permute_within' provided, replicates will be shuffled separately
+  # within each partition
+  if (!is.null(permute_within)) {
+    if (length(permute_within) == 1) {
+      group_key$permute_within <- .retrieveData(object = NULL,
+                                            metadata = group_key,
+                                            type = "cell_metadata",
+                                            name = permute_within)
+    } else {
+      group_key$permute_within <- permute_within
+    }
+  } else {
+    group_key$permute_within <- "all"
+  }
+  group_key$permute_within <- as.character(group_key$permute_within)
 
   # Calculate true number of DE features
   runDE_values <- input$DE_results |>
@@ -143,11 +203,6 @@ permuteDE <- function(input,
 
   n_splits <- length(use_splits)
 
-  # Stop if no splits pass min_DE threshold
-  if (n_splits == 0) {
-    stop("No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
-  }
-
   # ---------------------------------------------------------------------------
   # Compute permuted DE results
   # ---------------------------------------------------------------------------
@@ -155,10 +210,18 @@ permuteDE <- function(input,
   time2 <- Sys.time()
 
   # Progress
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
-                       " : Differential expression results for group ",
-                       unique(input$metadata$group_key$group)[1], " vs. ", unique(input$metadata$group_key$group)[2],
-                       " across ", n_splits, " pseudobulk matrices..")
+  proceed <- TRUE
+  if (n_splits == 0) {
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : No splits have sufficient differentially expressed features, ",
+                         "so permutation tests will not be run. Consider setting parameter 'min_DE' to 0.")
+    warning("No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
+    proceed <- FALSE
+  } else if (verbose) {
+    message(format(Sys.time(), "%Y-%m-%d %X"),
+            " : Differential expression results for group ",
+            unique(input$metadata$group_key$group)[1], " vs. ", unique(input$metadata$group_key$group)[2],
+            " across ", n_splits, " pseudobulk matrices..")
+  }
 
   # Set up to collect output
   # Summary of DE results for each iteration
@@ -189,206 +252,280 @@ permuteDE <- function(input,
   permutation_reference_group_indices <- vector(mode = "list", length = n_splits)
   names(permutation_reference_group_indices) <- use_splits
 
-  # For each split
-  for (s in 1:n_splits) {
-    # Extract relevant values
-    current_split <- use_splits[s]
-    if (pseudobulk == "none" & !is.null(stored_replicates)) {
-      # If cell-level but permuting biological replicates
-      # Grab feature x cell matrix
-      current_mat <- input$cell_values[[current_split]]
-      current_replicates <- colnames(current_mat)
-      # Subset biological replicates to current matrix
-      current_stored_replicates <- stored_replicates[current_replicates]
-      n_replicates <- dplyr::n_distinct(current_stored_replicates)
-      true_groups <- input$metadata$group_key[current_replicates, "group"]
-      replicate_set <- unique(current_stored_replicates)
-    } else {
-      # Grab matrix and get values directly from there
+  if (proceed == TRUE) {
+    # For each split
+    for (s in 1:n_splits) {
+      # Extract relevant values
+      # Split
+      current_split <- use_splits[s]
+      # Matrix
       if (pseudobulk == "none") {
+        # Grab feature x cell matrix
         current_mat <- input$cell_values[[current_split]]
       } else {
+        # Grab PB matrix
         current_mat <- input$PB_values[[current_split]]
       }
+      # Our replicates for DE will always be the column names of this matrix
       current_replicates <- colnames(current_mat)
-      n_replicates <- length(current_replicates)
-      true_groups <- input$metadata$group_key[current_replicates, "group"]
-    }
-    # Proceed if there are two groups present
-    if (dplyr::n_distinct(true_groups) == 2) {
-      # Set remaining values
-      if (pseudobulk == "none" & !is.null(stored_replicates)) {
-        # If cell-level but permuting biological replicates
-        n_reference_group <- dplyr::n_distinct(current_stored_replicates[true_groups == reference_group])
-      } else {
-        n_reference_group <- sum(true_groups == reference_group)
+      # Group key for permutation
+      current_group_key <- group_key[current_replicates,] |>
+        dplyr::select(-replicate) |>
+        dplyr::group_by(dplyr::across(dplyr::everything())) |>
+        dplyr::summarise(n = dplyr::n()) |>
+        dplyr::select(-n) |>
+        dplyr::arrange(permute_within) |>
+        data.frame()
+      # Stop if duplicates
+      if (any(duplicated(current_group_key$permute_by))) {
+        stop("Each value of parameter 'permute_by' must appear only once in each 'group' and each value of 'permute_within' (if applicable).")
       }
-      # Compute a set of permuted group labels
-      permuted_group_indices <- getCombinations(n_replicates = n_replicates,
-                                                n_group1 = n_reference_group,
-                                                n_combinations = n_iterations,
-                                                message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
-                                                random_seed = random_seed,
-                                                verbose = TRUE)
-      current_n_iterations <- ncol(permuted_group_indices)
-      # Calculate overlap with true groups
-      ref_group_overlap <- apply(permuted_group_indices, 2, FUN = function(i) {
-        sum(true_groups[i] == reference_group)/length(true_groups[i])
-      })
-      non_ref_group_overlap <- apply(permuted_group_indices, 2, FUN = function(i) {
-        sum(true_groups[-i] == non_reference_group)/length(true_groups[-i])
-      })
-      # If true labels were among random permutations, skip, leaving n_iterations - 1
-      if (any(ref_group_overlap == 1 & non_ref_group_overlap == 1)) {
-        true_index <- which(ref_group_overlap == 1 & non_ref_group_overlap == 1)
-        permuted_group_indices <- permuted_group_indices[,-true_index]
-        ref_group_overlap <- ref_group_overlap[-true_index]
-        non_ref_group_overlap <- non_ref_group_overlap[-true_index]
-      } else {
-        # If not, remove one random set of labels, leaving n_iterations - 1
-        permuted_group_indices <- permuted_group_indices[,-1]
-        ref_group_overlap <- ref_group_overlap[-1]
-        non_ref_group_overlap <- non_ref_group_overlap[-1]
+      rownames(current_group_key) <- current_group_key$permute_by
+
+      # Establish permute_within order
+      permute_within_ordered <- unique(current_group_key$permute_within)
+      # Get permute_by order when arranged by permute_within
+      permute_by_ordered <- current_group_key$permute_by
+      # Number of replicates (ordered by permute_within order)
+      n_replicates <- as.integer(table(current_group_key$permute_within)[permute_within_ordered])
+      # Number in reference group (ordered by permute_within order)
+      n_reference_group <- as.integer(table(current_group_key$permute_within[current_group_key$group == reference_group])[permute_within_ordered])
+      # If input was not supplied to 'permute_by', reorder according to matrix column names
+      if (is.null(permute_by)) {
+        current_group_key <- current_group_key[current_replicates, ]
       }
-      # If cell-level but permuting biological replicates, convert permuted group indices for each replicate into cell indices
-      if (pseudobulk == "none" & !is.null(stored_replicates)) {
-        new_permuted_group_indices <- apply(permuted_group_indices, 2,
-                                            FUN = function(i) {
-                                              # Which replicates are in these indices
-                                              replicates_i <- replicate_set[i]
-                                              # Which cell indices belong to these replicates
-                                              current_cell_indices <- which(current_stored_replicates %in% replicates_i)
-                                              return(current_cell_indices)
-                                            })
-        # Convert to matrix (make lengths match by padding w/ NA)
-        max_group_indices <- max(lengths(new_permuted_group_indices))
-        new_permuted_group_indices <- lapply(new_permuted_group_indices,
-                                             FUN = function(i) {
-                                               length(i) <- max_group_indices
-                                               return(i)
+
+      # Proceed if there are two groups present
+      if (dplyr::n_distinct(current_group_key$group) != 2) {
+        # Progress
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
+                             " : Skipping split ", current_split, ", ", dplyr::n_distinct(current_group_key$group), " group(s) present.")
+      } else if (any(n_reference_group == 0) |
+                 any((n_replicates - n_reference_group) == 0) |
+                 (length(n_replicates) != length(n_reference_group))) {
+        # Progress
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
+                             " : Skipping split ", current_split,
+                             ", insufficient replicates per group within each value indicated by parameter 'permute_within'.")
+      } else {
+        # Establish whether there are any potential covariate confounders to check
+        confound_check <- NULL
+        if (!is.null(design_formula)) {
+          # Get terms of design formula
+          terms <- attr(terms(design_formula), "term.labels")
+          # Remove last term (group)
+          terms <- terms[-length(terms)]
+          # Create interaction terms if necessary
+          interaction_terms <- terms[grepl(":", terms)]
+          check_terms <- terms[!grepl(":", terms)]
+          if (length(interaction_terms) > 0) {
+            for (i in 1:length(interaction_terms)) {
+              # Split interaction term
+              terms_i <- unlist(strsplit(interaction_terms[i], ":", fixed = TRUE))
+              # Add column to current group key
+              current_group_key[, paste0(c(terms_i, "interaction"), collapse = "_")] <- paste(current_group_key[,terms_i[1]],
+                                                                                              current_group_key[,terms_i[2]],
+                                                                                              sep = "_")
+              # Add new term
+              check_terms <- c(check_terms, paste0(c(terms_i, "interaction"), collapse = "_"))
+            }
+          }
+          # Subset current group key to just columns that are terms of design formula
+          confound_check <- current_group_key[, check_terms, drop = FALSE]
+          # Subset to categorical only
+          categorical_cols <- apply(confound_check, 2, FUN = function(i) {
+            intersect(methods::is(i), c("character", "factor", "logical")) > 0
+          })
+          confound_check <- confound_check[, categorical_cols, drop = FALSE]
+          # If there are any columns left, check those for confounds
+          if (ncol(confound_check) > 0) {
+            # If input was provided to permute_within, reorder
+            if (!is.null(permute_within)) {
+              confound_check <- confound_check[permute_by_ordered, , drop = FALSE]
+            }
+          } else {
+            # Reset to NULL
+            confound_check <- NULL
+          }
+        }
+        # Compute a set of permuted group labels
+        permuted_group_indices <- getCombinations(n_replicates = n_replicates,
+                                                  n_group1 = n_reference_group,
+                                                  n_combinations = n_iterations,
+                                                  confound_check = confound_check,
+                                                  message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
+                                                  random_seed = random_seed,
+                                                  verbose = TRUE)
+        current_n_iterations <- ncol(permuted_group_indices)
+
+        # Reorder if stratified by permute_within
+        if (!is.null(permute_within)) {
+          permuted_group_indices <- apply(permuted_group_indices, 2, FUN = function(i) {
+            match(permute_by_ordered[i], current_group_key$permute_by)
+          })
+        }
+
+        # Calculate overlap with true groups
+        ref_group_overlap <- apply(permuted_group_indices, 2, FUN = function(i) {
+          sum(current_group_key$group[i] == reference_group)/length(current_group_key$group[i])
+        })
+        non_ref_group_overlap <- apply(permuted_group_indices, 2, FUN = function(i) {
+          sum(current_group_key$group[-i] == non_reference_group)/length(current_group_key$group[-i])
+        })
+        # If true labels were among random permutations, skip, leaving n_iterations - 1
+        if (any(ref_group_overlap == 1 & non_ref_group_overlap == 1)) {
+          true_index <- which(ref_group_overlap == 1 & non_ref_group_overlap == 1)
+          permuted_group_indices <- permuted_group_indices[,-true_index]
+          ref_group_overlap <- ref_group_overlap[-true_index]
+          non_ref_group_overlap <- non_ref_group_overlap[-true_index]
+        } else {
+          # If not, remove one random set of labels, leaving n_iterations - 1
+          permuted_group_indices <- permuted_group_indices[,-1]
+          ref_group_overlap <- ref_group_overlap[-1]
+          non_ref_group_overlap <- non_ref_group_overlap[-1]
+        }
+
+        # If input supplied to 'permute_by', expand permuted group indices to each replicate within a 'permute_by' set
+        # (e.g., cells from the same sample)
+        if (!is.null(permute_by)) {
+          new_permuted_group_indices <- apply(permuted_group_indices, 2,
+                                              FUN = function(i) {
+                                                # Which permute_by values are in these indices
+                                                permute_by_i <- current_group_key$permute_by[i]
+                                                # Which replicate indices belong to these permute_by values
+                                                current_replicate_indices <- which(group_key$permute_by %in% permute_by_i)
+                                                return(current_replicate_indices)
+                                              })
+          # Convert to matrix (make lengths match by padding w/ NA)
+          max_group_indices <- max(lengths(new_permuted_group_indices))
+          new_permuted_group_indices <- lapply(new_permuted_group_indices,
+                                               FUN = function(i) {
+                                                 length(i) <- max_group_indices
+                                                 return(i)
                                                })
-        permuted_group_indices <- do.call(cbind, new_permuted_group_indices)
+          permuted_group_indices <- do.call(cbind, new_permuted_group_indices)
+        }
+        # Store permuted group indices
+        permutation_reference_group_indices[[current_split]] <- permuted_group_indices
+
+        # Progress
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
+                             " : Running ", current_n_iterations, " permutations for split ", current_split,
+                             " (", s, "/", n_splits, ")..")
+        # Run permutations
+        permutation_DE_results_list <- pbmcapply::pbmclapply(seq_len(current_n_iterations-1),
+                                                             FUN = function(i) {
+                                                               # Create target dataframe by subsetting group_key to current replicates
+                                                               targets_i <- group_key[current_replicates,]
+                                                               # Switch to permuted group labels
+                                                               targets_i$group <- non_reference_group
+                                                               targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- reference_group
+
+                                                               group_factor <- factor(targets_i$group)
+                                                               group_factor <- stats::relevel(group_factor, ref = reference_group)
+                                                               targets_i$group <- group_factor
+
+                                                               # Create design
+                                                               if (!is.null(design_formula)) {
+                                                                 design_i <- stats::model.matrix(design_formula, data = targets_i)
+                                                               } else {
+                                                                 design_i <- stats::model.matrix(~ group, data = targets_i)
+                                                               }
+
+                                                               # Run DE
+                                                               de_results_i <- switch(de_method,
+                                                                                      edgeR = .runDE.edgeR(mat = current_mat,
+                                                                                                           targets = targets_i,
+                                                                                                           design = design_i,
+                                                                                                           de_test = de_test,
+                                                                                                           de_params = de_params),
+                                                                                      DESeq2 = .runDE.DESeq2(mat = current_mat,
+                                                                                                             targets = targets_i,
+                                                                                                             design = design_i,
+                                                                                                             de_test = de_test,
+                                                                                                             de_params = de_params),
+                                                                                      limma = .runDE.limma(mat = current_mat,
+                                                                                                           targets = targets_i,
+                                                                                                           design = design_i,
+                                                                                                           de_test = de_test,
+                                                                                                           de_params = de_params),
+                                                                                      presto = .runDE.presto(mat = current_mat,
+                                                                                                             targets = targets_i,
+                                                                                                             de_test = de_test,
+                                                                                                             de_params = de_params))
+                                                               de_results_i <- de_results_i |>
+                                                                 dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
+                                                                               permutation = i,
+                                                                               split = current_split) |>
+                                                                 dplyr::arrange(padj)
+                                                               if (return_all != TRUE) {
+                                                                 de_results_i <- de_results_i |>
+                                                                   dplyr::group_by(split, permutation) |>
+                                                                   dplyr::summarise(
+                                                                     n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+                                                                     min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+                                                                     max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+                                                                     min_lfc_all = min(lfc),
+                                                                     max_lfc_all = max(lfc)) |>
+                                                                   data.frame() |>
+                                                                   dplyr::mutate(reference_group_overlap = ref_group_overlap[i],
+                                                                                 non_reference_group_overlap = non_ref_group_overlap[i]) |>
+                                                                   dplyr::select(split,
+                                                                                 permutation,
+                                                                                 reference_group_overlap,
+                                                                                 non_reference_group_overlap,
+                                                                                 n_sig,
+                                                                                 min_lfc_sig,
+                                                                                 max_lfc_sig,
+                                                                                 min_lfc_all,
+                                                                                 max_lfc_all)
+                                                               }
+                                                               return(de_results_i)
+                                                             },
+                                                             mc.cores = n_cores,
+                                                             mc.set.seed = TRUE)
+
+        if (return_all == TRUE) {
+          permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
+          permutation_DE_summary_s <- permutation_DE_results_s |>
+            dplyr::group_by(split, permutation) |>
+            dplyr::summarise(
+              n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+              min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+              max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+              min_lfc_all = min(lfc),
+              max_lfc_all = max(lfc)) |>
+            data.frame() |>
+            dplyr::mutate(reference_group_overlap = ref_group_overlap,
+                          non_reference_group_overlap = non_ref_group_overlap) |>
+            dplyr::select(split,
+                          permutation,
+                          reference_group_overlap,
+                          non_reference_group_overlap,
+                          n_sig,
+                          min_lfc_sig,
+                          max_lfc_sig,
+                          min_lfc_all,
+                          max_lfc_all)
+        } else {
+          permutation_DE_summary_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
+        }
+
+        # Conduct permutation test
+        runDE_n_sig <- dplyr::filter(runDE_values, split == current_split)$runDE_n_sig
+
+        permutation_test_p_value <- sum(c(runDE_n_sig, permutation_DE_summary_s$n_sig) >= runDE_n_sig)/current_n_iterations
+        permutation_test_results_s <- data.frame(split = current_split,
+                                                 runDE_n_sig = runDE_n_sig,
+                                                 pvalue = permutation_test_p_value,
+                                                 n_iterations = current_n_iterations)
+        # Add to overall results
+        permutation_DE_summary <- rbind(permutation_DE_summary, permutation_DE_summary_s)
+        permutation_test_results <- rbind(permutation_test_results, permutation_test_results_s)
+        if (return_all == TRUE) {
+          permutation_DE_results <- rbind(permutation_DE_results, permutation_DE_results_s)
+        }
       }
-      # Store permuted group indices
-      permutation_reference_group_indices[[current_split]] <- permuted_group_indices
-
-      # Progress
-      if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
-                           " : Running ", current_n_iterations, " permutations for split ", current_split,
-                           " (", s, "/", n_splits, ")..")
-      # Run permutations
-      permutation_DE_results_list <- pbmcapply::pbmclapply(seq_len(current_n_iterations-1),
-                                                     FUN = function(i) {
-                                                       # Create target dataframe with permuted group labels
-                                                       targets_i <- data.frame(replicate = current_replicates,
-                                                                               group = non_reference_group)
-                                                       targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- reference_group
-                                                       rownames(targets_i) <- targets_i$replicate
-
-                                                       group_factor <- factor(targets_i$group)
-                                                       group_factor <- stats::relevel(group_factor, ref = reference_group)
-                                                       targets_i$group <- group_factor
-
-                                                       # Create design
-                                                       design_i <- stats::model.matrix(~ group, data = targets_i)
-                                                       # Run DE
-                                                       de_results_i <- switch(de_method,
-                                                                              edgeR = .runDE.edgeR(mat = current_mat,
-                                                                                                   targets = targets_i,
-                                                                                                   design = design_i,
-                                                                                                   de_test = de_test,
-                                                                                                   de_params = de_params),
-                                                                              DESeq2 = .runDE.DESeq2(mat = current_mat,
-                                                                                                     targets = targets_i,
-                                                                                                     design = design_i,
-                                                                                                     de_test = de_test,
-                                                                                                     de_params = de_params),
-                                                                              limma = .runDE.limma(mat = current_mat,
-                                                                                                   targets = targets_i,
-                                                                                                   design = design_i,
-                                                                                                   de_test = de_test,
-                                                                                                   de_params = de_params),
-                                                                              presto = .runDE.presto(mat = current_mat,
-                                                                                                     targets = targets_i,
-                                                                                                     de_test = de_test,
-                                                                                                     de_params = de_params))
-                                                       de_results_i <- de_results_i |>
-                                                         dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
-                                                                       permutation = i,
-                                                                       split = current_split) |>
-                                                         dplyr::arrange(padj)
-                                                       if (return_all != TRUE) {
-                                                         de_results_i <- de_results_i |>
-                                                           dplyr::group_by(split, permutation) |>
-                                                           dplyr::summarise(
-                                                             n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
-                                                             min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-                                                             max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-                                                             min_lfc_all = min(lfc),
-                                                             max_lfc_all = max(lfc)) |>
-                                                           data.frame() |>
-                                                           dplyr::mutate(reference_group_overlap = ref_group_overlap[i],
-                                                                         non_reference_group_overlap = non_ref_group_overlap[i]) |>
-                                                           dplyr::select(split,
-                                                                         permutation,
-                                                                         reference_group_overlap,
-                                                                         non_reference_group_overlap,
-                                                                         n_sig,
-                                                                         min_lfc_sig,
-                                                                         max_lfc_sig,
-                                                                         min_lfc_all,
-                                                                         max_lfc_all)
-                                                       }
-                                                       return(de_results_i)
-                                                     },
-                                                     mc.cores = n_cores,
-                                                     mc.set.seed = TRUE)
-
-      if (return_all == TRUE) {
-        permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
-        permutation_DE_summary_s <- permutation_DE_results_s |>
-          dplyr::group_by(split, permutation) |>
-          dplyr::summarise(
-            n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
-            min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-            max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-            min_lfc_all = min(lfc),
-            max_lfc_all = max(lfc)) |>
-          data.frame() |>
-          dplyr::mutate(reference_group_overlap = ref_group_overlap,
-                        non_reference_group_overlap = non_ref_group_overlap) |>
-          dplyr::select(split,
-                        permutation,
-                        reference_group_overlap,
-                        non_reference_group_overlap,
-                        n_sig,
-                        min_lfc_sig,
-                        max_lfc_sig,
-                        min_lfc_all,
-                        max_lfc_all)
-      } else {
-        permutation_DE_summary_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
-      }
-
-      # Conduct permutation test
-      runDE_n_sig <- dplyr::filter(runDE_values, split == current_split)$runDE_n_sig
-
-      permutation_test_p_value <- sum(c(runDE_n_sig, permutation_DE_summary_s$n_sig) >= runDE_n_sig)/current_n_iterations
-      permutation_test_results_s <- data.frame(split = current_split,
-                                               runDE_n_sig = runDE_n_sig,
-                                               pvalue = permutation_test_p_value,
-                                               n_iterations = current_n_iterations)
-      # Add to overall results
-      permutation_DE_summary <- rbind(permutation_DE_summary, permutation_DE_summary_s)
-      permutation_test_results <- rbind(permutation_test_results, permutation_test_results_s)
-      if (return_all == TRUE) {
-        permutation_DE_results <- rbind(permutation_DE_results, permutation_DE_results_s)
-      }
-
-    } else {
-      # Progress
-      if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
-                           " : Skipping split ", current_split, ", ", dplyr::n_distinct(true_groups), " group(s) present.")
     }
   }
 
@@ -409,6 +546,8 @@ permuteDE <- function(input,
                          "lfc_threshold" = lfc_threshold,
                          "n_iterations" = n_iterations,
                          "use_splits" = use_splits,
+                         "permute_by" = permute_by,
+                         "permute_within" = permute_within,
                          "min_DE" = min_DE,
                          "reference_group" = reference_group,
                          "non_reference_group" = non_reference_group,

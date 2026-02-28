@@ -6,6 +6,7 @@
 \usage{
 getPseudobulk(
   object,
+  metadata = NULL,
   replicate_labels,
   split_labels = NULL,
   use_cells = NULL,
@@ -26,6 +27,10 @@ getPseudobulk(
 \item{object}{An object of class \code{Seurat}, \code{SingleCellExperiment},
 or \code{matrix}. Data supplied as class \code{matrix} should be a
 feature x cell matrix.}
+
+\item{metadata}{An optional dataframe containing relevant metadata columns
+corresponding to the data provided to parameter \code{object}. Default =
+\code{NULL} looks for metadata in \code{object} or other provided inputs.}
 
 \item{replicate_labels}{A string indicating the name of the
 metadata column containing the biological replicate labels or a character

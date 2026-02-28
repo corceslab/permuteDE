@@ -15,25 +15,30 @@
 #' matrix. Note that raw counts are expected, and the normalization method
 #' applied during differential expression analysis differs across the methods
 #' and tests.
+#' @param metadata An optional dataframe containing relevant metadata columns
+#' corresponding to the data provided to parameter \code{object}. Default =
+#' \code{NULL} looks for metadata in \code{object} or other provided inputs.
 #' @param replicate_labels A string indicating the name of the
-#' metadata column containing the biological replicate labels or a character
-#' vector containing the biological replicate labels in order. For pseudobulk DE
+#' metadata column containing the biological replicate labels or a vector
+#' containing the biological replicate labels in order. For pseudobulk DE
 #' analysis, the biological replicate labels are used to construct/define the
-#' pseudobulks. For cell-level DE analysis, the biological replicate labels are
-#' not used in this function, but will be passed on to function permuteDE so
-#' that the permutation of group labels keeps replicates intact.
-#' @param group_labels A string indicating the name of the
-#' column containing the two comparison group labels or a character vector
-#' containing the comparison labels in order.
-#' @param split_labels A string indicating the name of a
-#' column by which to split the cells prior to pseudobulking and performing
-#' differential expression (e.g., cell types). Alternately, a character vector
-#' containing the split labels for each cell in order. Results will be returned
-#' for each unique value indicated by \code{split_labels}. Default = \code{NULL}
-#' will run pseudobulk differential expression on all cells together.
+#' pseudobulks. Input is not required for cell-level DE analysis.
+#' @param group_labels A string indicating the name of the metadata column
+#' containing the two comparison group labels or a vector containing the
+#' comparison labels in order.
+#' @param split_labels A string indicating the name of a metadata column by
+#' which to split the cells prior to pseudobulking and performing differential
+#' expression (e.g., cell types). Alternately, a vector containing the split
+#' labels for each cell in order. Results will be returned for each unique value
+#' indicated by \code{split_labels}. Default = \code{NULL} will run pseudobulk
+#' differential expression on all cells together.
 #' @param reference_group A string specifying the reference group. Defaults to
 #' \code{NULL}, in which case the first value alphabetically is used as the
 #' reference.
+#' @param design An optional string specifying a model formula for more complex
+#' designs. Last term in formula must correspond to group labels. Default =
+#' \code{NULL} will run a pairwise group comparison (~ group) based on the input
+#' provided to parameter \code{group_labels}.
 #' @param use_cells A vector of cell names to subset the object to prior to
 #' subsequent pseudobulk and differential expression steps. Default =
 #' \code{NULL} will use all cells.
@@ -119,10 +124,12 @@
 #' @export
 #'
 runDE <- function(object,
+                  metadata = NULL,
                   replicate_labels = NULL,
                   group_labels,
                   split_labels = NULL,
                   reference_group = NULL,
+                  design = NULL,
                   use_cells = NULL,
                   pseudobulk = "generate",
                   de_method = "edgeR",
@@ -150,12 +157,14 @@ runDE <- function(object,
   time1 <- Sys.time()
 
   .validInput(object, "object", "runDE")
-  .validInput(pseudobulk, "pseudobulk", object)
-  .validInput(replicate_labels, "replicate_labels", list(object, pseudobulk))
-  .validInput(group_labels, "group_labels", list(object))
-  .validInput(split_labels, "split_labels", list(object))
+  .validInput(metadata, "metadata", object)
+  .validInput(pseudobulk, "pseudobulk", list("runDE", object))
+  .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
+  .validInput(group_labels, "group_labels", list(object, metadata))
+  .validInput(split_labels, "split_labels", list(object, metadata))
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
-  .validInput(reference_group, "reference_group", list(object, group_labels, use_cells))
+  .validInput(reference_group, "reference_group", list(object, metadata, group_labels, use_cells))
+  .validInput(design, "design", list(object, metadata, group_labels))
   .validInput(de_method, "de_method")
   .validInput(de_test, "de_test", de_method)
   .validInput(de_params, "de_params", list(de_method, de_test))
@@ -178,6 +187,15 @@ runDE <- function(object,
   # Set up
   # ---------------------------------------------------------------------------
 
+  # Object type
+  if (methods::is(object, "Seurat")) {
+    object_type <- "Seurat"
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    object_type <- "SingleCellExperiment"
+  } else {
+    object_type <- "matrix"
+  }
+
   # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
@@ -196,10 +214,12 @@ runDE <- function(object,
   }
 
   # Replicate labels
-  stored_replicates <- NULL
-  if (!is.null(replicate_labels)) {
+  if (pseudobulk == "none") {
+    replicates <- use_cells
+  } else if (!is.null(replicate_labels)) {
     if (length(replicate_labels) == 1) {
       replicates <- .retrieveData(object = object,
+                                  metadata = metadata,
                                   type = "cell_metadata",
                                   name = replicate_labels,
                                   use_cells = use_cells)
@@ -219,19 +239,13 @@ runDE <- function(object,
         }
       }
     }
-    if (pseudobulk == "none") {
-      # Store biological replicates for use later if output is passed to permuteDE
-      stored_replicates <- replicates
-      replicates <- use_cells
-      names(stored_replicates) <- replicates
-    }
-  } else if (pseudobulk == "none") {
-    replicates <- use_cells
   }
+  replicates <- as.character(replicates)
 
   # Group labels
   if (length(group_labels) == 1) {
     groups <- .retrieveData(object = object,
+                            metadata = metadata,
                             type = "cell_metadata",
                             name = group_labels,
                             use_cells = use_cells)
@@ -245,6 +259,9 @@ runDE <- function(object,
         stop("When a vector is provided for 'group_labels', it must be the same length and in the same order as the supplied cells.")
       }
     }
+  }
+  if (!methods::is(groups, "character") & !methods::is(groups, "factor")) {
+    groups <- as.character(groups)
   }
 
   # There must be exactly two comparison groups
@@ -266,11 +283,55 @@ runDE <- function(object,
     replicate_prefix <- ""
   }
   group_key <- data.frame(replicate = paste0(replicate_prefix, replicates),
-                          group = groups) |>
-    dplyr::group_by(replicate, group) |>
+                          group = groups)
+
+  # Additional variables when design is provided
+  if (!is.null(design)) {
+    # Replace last term of design formula string with "group"
+    # Convert to formula and extract terms
+    design_formula <- stats::as.formula(sub(" [^ ]+$", " group", design))
+    terms <- attr(terms(design_formula), "term.labels")
+    # Remove last term (because that's refers to groups, so it's already in group_key)
+    terms <- terms[-length(terms)]
+    # Break up interaction terms
+    terms <- unique(unlist(strsplit(terms, ":", fixed = TRUE)))
+    # Remove term "replicate" if present (already in group_key)
+    terms <- terms[terms != "replicate"]
+    # Add data for each term to group_key
+    if (length(terms) > 0) {
+      for (t in 1:length(terms)) {
+        term_t <- .retrieveData(object = object,
+                                metadata = metadata,
+                                type = "cell_metadata",
+                                name = terms[t],
+                                use_cells = use_cells)
+        if (length(term_t) != length(groups)) {
+          stop("Input provided to parameter 'design' requires metadata column '", terms[t], "', but it is the wrong length. Please supply valid input!")
+        } else {
+          group_key <- cbind(group_key, tmp = term_t)
+          colnames(group_key)[ncol(group_key)] <- terms[t]
+        }
+      }
+    }
+  } else {
+    design_formula <- NULL
+  }
+
+  group_key <- group_key |>
+    dplyr::group_by(dplyr::across(dplyr::everything())) |>
     dplyr::summarise(n = dplyr::n()) |>
     dplyr::select(-n) |>
     data.frame()
+
+  # Check for duplicated replicates across groupings
+  if (any(duplicated(group_key$replicate))) {
+    if (!is.null(design)) {
+      stop("Input to parameter 'replicate_labels' must be the atomic grouping unit, no replicate value may appear in multiple groups/partitions.")
+    } else {
+      stop("Input to parameter 'replicate_labels' must be the atomic grouping unit, no replicate value may appear in multiple groups.")
+    }
+  }
+
   rownames(group_key) <- group_key$replicate
 
   # ---------------------------------------------------------------------------
@@ -375,7 +436,7 @@ runDE <- function(object,
   # Create corresponding list of replicates/groups
   target_list <- lapply(matrix_list, FUN = function(i) {
     replicates_i <- colnames(i)
-    groups_i <- group_key[replicates_i, c("replicate", "group")]
+    groups_i <- group_key[replicates_i, ]
     return(groups_i)
   })
   names(target_list) <- names(matrix_list)
@@ -407,7 +468,12 @@ runDE <- function(object,
                                                  group_factor <- stats::relevel(group_factor, ref = reference_group)
                                                  target_list[[i]]$group <- group_factor
 
-                                                 design_i <- stats::model.matrix(~ group, data = target_list[[i]])
+                                                 if (!is.null(design)) {
+                                                   design_i <- stats::model.matrix(design_formula, data = target_list[[i]])
+                                                 } else {
+                                                   design_i <- stats::model.matrix(~ group, data = target_list[[i]])
+                                                 }
+
                                                  de_results_i <- switch(de_method,
                                                                         edgeR = .runDE.edgeR(mat = matrix_list[[i]],
                                                                                              targets = target_list[[i]],
@@ -482,11 +548,15 @@ runDE <- function(object,
   }
 
   # Parameters
-  parameter_list <- list("replicate_labels" = replicate_labels,
+  parameter_list <- list("object_type" = object_type,
+                         "metadata_provided" = !is.null(metadata),
+                         "replicate_labels" = replicate_labels,
                          "group_labels" = group_labels,
                          "split_labels" = split_labels,
                          "reference_group" = reference_group,
                          "non_reference_group" = non_reference_group,
+                         "design" = design,
+                         "design_formula" = design_formula,
                          "use_cells" = use_cells,
                          "pseudobulk" = pseudobulk,
                          "de_method" = de_method,
@@ -503,7 +573,6 @@ runDE <- function(object,
                          "force_balance" = force_balance,
                          "use_assay" = use_assay,
                          "use_layer" = use_layer,
-                         "stored_replicates" = stored_replicates,
                          "random_seed" = random_seed,
                          "n_cores" = n_cores)
 
@@ -571,11 +640,9 @@ runDE <- function(object,
                 exact = do.call(edgeR::exactTest, c(list("object" = y),
                                                     de_params[["exactTest"]])))
   test <- switch(de_test,
-                 QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit,
-                                                         "coef" = 2),
+                 QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit),
                                                     de_params[["glmQLFTest"]])),
-                 LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit,
-                                                     "coef" = 2),
+                 LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit),
                                                 de_params[["glmLRT"]])),
                  exact = fit)
   # Compile results

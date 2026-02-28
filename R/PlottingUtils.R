@@ -211,8 +211,8 @@ permuteDEpalette <- function(type = "discrete",
 #' permutation test comparisons of the number of differentially expressed
 #' features. Defaults to 0.05.
 #' @param lfc_threshold A numeric value indicating the minimum absolute value
-#' log fold change for a feature to be counted as a "hit". Defaults to 0.5. Set
-#' to 0 to disregard log fold change when counting hits.
+#' log fold change for a feature to be counted as a "hit". Default = 0
+#' disregards log fold change when counting hits.
 #' @param use_splits A character string or vector containing the names of splits
 #' to use. Defaults to \code{NULL}, which will try all splits.
 #' @param title Character string indicating the plot title. Default =
@@ -234,7 +234,7 @@ permuteDEpalette <- function(type = "discrete",
 #'
 plotVolcano <- function(input,
                         alpha = 0.05,
-                        lfc_threshold = 0.5,
+                        lfc_threshold = 0,
                         use_splits = NULL,
                         title = NULL,
                         subtitle = NULL,

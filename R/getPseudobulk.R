@@ -8,6 +8,9 @@
 #' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
 #' or \code{matrix}. Data supplied as class \code{matrix} should be a
 #' feature x cell matrix.
+#' @param metadata An optional dataframe containing relevant metadata columns
+#' corresponding to the data provided to parameter \code{object}. Default =
+#' \code{NULL} looks for metadata in \code{object} or other provided inputs.
 #' @param replicate_labels A string indicating the name of the
 #' metadata column containing the biological replicate labels or a character
 #' vector containing the biological replicate labels in order. The biological
@@ -68,6 +71,7 @@
 #' @export
 #'
 getPseudobulk <- function(object,
+                          metadata = NULL,
                           replicate_labels,
                           split_labels = NULL,
                           use_cells = NULL,
@@ -88,8 +92,9 @@ getPseudobulk <- function(object,
   # ---------------------------------------------------------------------------
 
   .validInput(object, "object", "getPseudobulk")
-  .validInput(replicate_labels, "replicate_labels", list(object, pseudobulk))
-  .validInput(split_labels, "split_labels", object)
+  .validInput(metadata, "metadata", object)
+  .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
+  .validInput(split_labels, "split_labels", list(object, metadata))
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
   .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
   .validInput(min_cells_per_replicate, "min_cells_per_replicate", pseudobulk)
@@ -97,7 +102,7 @@ getPseudobulk <- function(object,
   .validInput(min_cells_per_feature, "min_cells_per_feature", pseudobulk)
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
   .validInput(filter, "filter")
-  .validInput(pseudobulk, "pseudobulk", object)
+  .validInput(pseudobulk, "pseudobulk", list("getPseudobulk", object))
   .validInput(use_assay, "use_assay", object)
   .validInput(use_slot, "use_slot", list(object, use_assay))
   .validInput(n_cores, "n_cores")
@@ -106,6 +111,15 @@ getPseudobulk <- function(object,
   # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
+  }
+
+  # Object type
+  if (methods::is(object, "Seurat")) {
+    object_type <- "Seurat"
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    object_type <- "SingleCellExperiment"
+  } else {
+    object_type <- "matrix"
   }
 
   # ---------------------------------------------------------------------------
@@ -121,6 +135,7 @@ getPseudobulk <- function(object,
   if (pseudobulk == "generate") {
     if (length(replicate_labels) == 1) {
       replicates <- .retrieveData(object = object,
+                                  metadata = metadata,
                                   type = "cell_metadata",
                                   name = replicate_labels,
                                   use_cells = use_cells)
@@ -132,12 +147,19 @@ getPseudobulk <- function(object,
         stop("When a vector is provided for 'replicate_labels', it must be the same length and in the same order as the supplied cells.")
       }
     }
+  } else {
+    replicates <- use_cells
+  }
+
+  if (!methods::is(replicates, "character")) {
+    replicates <- as.character(replicates)
   }
 
   # Split labels
   if (!is.null(split_labels)) {
     if (length(split_labels) == 1) {
       splits <- .retrieveData(object = object,
+                              metadata = metadata,
                               type = "cell_metadata",
                               name = split_labels,
                               use_cells = use_cells)
@@ -151,6 +173,7 @@ getPseudobulk <- function(object,
   } else {
     splits <- rep("all", length(use_cells))
   }
+  splits <- as.character(splits)
 
   if (pseudobulk == "generate") {
     # Filter out splits with too few cells & too few replicates
@@ -364,7 +387,9 @@ getPseudobulk <- function(object,
   # Wrap up
   # ---------------------------------------------------------------------------
 
-  parameter_list <- list("replicate_labels" = replicate_labels,
+  parameter_list <- list("object_type" = object_type,
+                         "metadata_provided" = !is.null(metadata),
+                         "replicate_labels" = replicate_labels,
                          "split_labels" = split_labels,
                          "use_cells" = use_cells,
                          "min_cells_per_split" = min_cells_per_split,
