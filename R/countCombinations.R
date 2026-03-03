@@ -61,7 +61,7 @@ countCombinations <- function(object = NULL,
   if (!is.null(n_replicates) & !is.null(n_group1)) {
     # use 'n_replicates' and 'n_group1'
     if (any(!is.null(object), !is.null(replicate_labels), !is.null(group_labels), !is.null(use_cells))) {
-      warning("When inputs for 'n_replicates' and 'n_group1' are provided, inputs for 'object', 'replicate_labels', 'group_labels', and 'use_cells' are not used.")
+      warning(" When inputs for 'n_replicates' and 'n_group1' are provided, inputs for 'object', 'replicate_labels', 'group_labels', and 'use_cells' are not used.")
     }
   } else {
     # use 'object', 'replicate_labels', 'group_labels'
@@ -69,10 +69,10 @@ countCombinations <- function(object = NULL,
       stop("If not using 'n_replicates' and 'n_group1', input must be provided to 'replicate_labels' and 'group_labels'.")
     }
     if (!is.null(n_replicates)) {
-      warning("Input for 'n_replicates' was not used.")
+      warning(" Input for 'n_replicates' was not used.")
     }
     if (!is.null(n_group1)) {
-      warning("Input for 'n_group1' was not used.")
+      warning(" Input for 'n_group1' was not used.")
     }
 
     # Retrieve metadata
@@ -94,10 +94,17 @@ countCombinations <- function(object = NULL,
                               use_cells = use_cells)
     } else {
       if (!is.null(object)) {
-        warning("When input for 'replicate_labels' and 'group_labels' are vectors, input to parameter 'object' is not used.")
+        warning(" When input for 'replicate_labels' and 'group_labels' are vectors, input to parameter 'object' is not used.")
       }
       replicates <- replicate_labels
       groups <- group_labels
+    }
+    # Check for NA values
+    if (any(is.na(replicates))) {
+      stop("Values provided for 'replicate_labels' cannot be NA.")
+    }
+    if (any(is.na(groups))) {
+      stop("Values provided for 'group_labels' cannot be NA.")
     }
     # Check that there are exactly two groups present
     if (dplyr::n_distinct(groups) != 2) {

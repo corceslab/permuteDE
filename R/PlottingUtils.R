@@ -628,7 +628,7 @@ plotFeature <- function(input,
     } else {
       split_results <- input$cell_values
     }
-    warning("This plotting function may be less efficient for cell-level data.")
+    warning(" This plotting function may be less efficient for cell-level data.")
   } else {
     stop("Structure of list provided for parameter 'input' is unexpected, it should be the output returned by function 'runDE()' ",
          "or a list containing (at minimum) elements named 'PB_values' (or 'cell_values'), 'metadata', and 'parameters'. Please supply valid input!")
@@ -668,7 +668,7 @@ plotFeature <- function(input,
 
     # If feature is not in matrix, return NULL
     if (!(feature %in% rownames(split_results_s))) {
-      warning("Feature '", feature, "' is not present in split '", s, "'.")
+      warning(" Feature '", feature, "' is not present in split '", s, "'.")
       return(NULL)
     } else {
       # Extract feature & proceed
@@ -851,10 +851,10 @@ plotDimReduction <- function(reduction,
     palette <- c(na_color)
     color_legend <- ""
     if (label_splits == TRUE) {
-      warning("Input value for 'label_splits' is not used when parameters 'split_labels' or 'color_by' are NULL.")
+      warning(" Input value for 'label_splits' is not used when parameters 'split_labels' or 'color_by' are NULL.")
     }
     if (label_statistics == TRUE) {
-      warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
+      warning(" Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
     }
   } else if (color_by == "split") {
     type <- "DimPlot"
@@ -868,7 +868,7 @@ plotDimReduction <- function(reduction,
       add_labels <- TRUE
     }
     if (label_statistics == TRUE) {
-      warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
+      warning(" Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
     }
   } else if (color_by %in% c("n_sig", "pvalue")) {
     legend_barwidth <- NULL
@@ -996,7 +996,7 @@ plotDimReduction <- function(reduction,
       Seurat::Idents(object = tmp_seurat) <- "labels"
     }
     if (label_statistics == TRUE) {
-      warning("Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
+      warning(" Input value for 'label_statistics' is not used when parameter 'color_by' is not 'n_sig' or 'pvalue'.")
     }
     if (permutation_test_alpha < 1) {
       permutation_test_alpha <- 1

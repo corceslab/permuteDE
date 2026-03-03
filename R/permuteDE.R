@@ -164,6 +164,10 @@ permuteDE <- function(input,
   } else {
     group_key$permute_by <- group_key$replicate
   }
+  # Check for NA values
+  if (any(is.na(group_key$permute_by))) {
+    stop("Values provided for 'permute_by' cannot be NA.")
+  }
   group_key$permute_by <- as.character(group_key$permute_by)
 
   # If 'permute_within' provided, replicates will be shuffled separately
@@ -179,6 +183,10 @@ permuteDE <- function(input,
     }
   } else {
     group_key$permute_within <- "all"
+  }
+  # Check for NA values
+  if (any(is.na(group_key$permute_within))) {
+    stop("Values provided for 'permute_within' cannot be NA.")
   }
   group_key$permute_within <- as.character(group_key$permute_within)
 
@@ -214,7 +222,7 @@ permuteDE <- function(input,
   if (n_splits == 0) {
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : No splits have sufficient differentially expressed features, ",
                          "so permutation tests will not be run. Consider setting parameter 'min_DE' to 0.")
-    warning("No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
+    warning(" No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
     proceed <- FALSE
   } else if (verbose) {
     message(format(Sys.time(), "%Y-%m-%d %X"),

@@ -170,11 +170,11 @@ runDE <- function(object,
   .validInput(de_params, "de_params", list(de_method, de_test))
   .validInput(normalize_prefilter, "normalize_prefilter")
   .validInput(p_adjust_method, "p_adjust_method")
-  .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
-  .validInput(min_cells_per_replicate, "min_cells_per_replicate", pseudobulk)
-  .validInput(min_replicates_per_split, "min_replicates_per_split", pseudobulk)
+  .validInput(min_cells_per_split, "min_cells_per_split", list(pseudobulk))
+  .validInput(min_cells_per_replicate, "min_cells_per_replicate", list(pseudobulk, "runDE"))
+  .validInput(min_replicates_per_split, "min_replicates_per_split", list(pseudobulk, "runDE"))
   .validInput(min_replicates_per_group, "min_replicates_per_group")
-  .validInput(min_cells_per_feature, "min_cells_per_feature", pseudobulk)
+  .validInput(min_cells_per_feature, "min_cells_per_feature", list(pseudobulk))
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
   .validInput(force_balance, "force_balance", pseudobulk)
   .validInput(use_assay, "use_assay", object)
@@ -240,6 +240,10 @@ runDE <- function(object,
       }
     }
   }
+  # Check for NA values
+  if (any(is.na(replicates))) {
+    stop("Values provided for 'replicate_labels' cannot be NA.")
+  }
   replicates <- as.character(replicates)
 
   # Group labels
@@ -259,6 +263,10 @@ runDE <- function(object,
         stop("When a vector is provided for 'group_labels', it must be the same length and in the same order as the supplied cells.")
       }
     }
+  }
+  # Check for NA values
+  if (any(is.na(groups))) {
+    stop("Values provided for 'group_labels' cannot be NA.")
   }
   if (!methods::is(groups, "character") & !methods::is(groups, "factor")) {
     groups <- as.character(groups)
@@ -305,6 +313,10 @@ runDE <- function(object,
                                 type = "cell_metadata",
                                 name = terms[t],
                                 use_cells = use_cells)
+        # Check for NA values
+        if (any(is.na(term_t))) {
+          stop("Values provided for covariate '", terms[t], "' cannot be NA.")
+        }
         if (length(term_t) != length(groups)) {
           stop("Input provided to parameter 'design' requires metadata column '", terms[t], "', but it is the wrong length. Please supply valid input!")
         } else {
@@ -451,7 +463,7 @@ runDE <- function(object,
   proceed <- TRUE
   if (length(matrix_list) == 0) {
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : No matrices had sufficient cells/replicates, DE will not be run.")
-    warning("No matrices had sufficient cells/replicates, DE was not run.")
+    warning(" No matrices had sufficient cells/replicates, DE was not run.")
     proceed <- FALSE
   } else if (verbose) {
     message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),

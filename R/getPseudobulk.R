@@ -96,10 +96,10 @@ getPseudobulk <- function(object,
   .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
   .validInput(split_labels, "split_labels", list(object, metadata))
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
-  .validInput(min_cells_per_split, "min_cells_per_split", pseudobulk)
-  .validInput(min_cells_per_replicate, "min_cells_per_replicate", pseudobulk)
-  .validInput(min_replicates_per_split, "min_replicates_per_split", pseudobulk)
-  .validInput(min_cells_per_feature, "min_cells_per_feature", pseudobulk)
+  .validInput(min_cells_per_split, "min_cells_per_split", list(pseudobulk))
+  .validInput(min_cells_per_replicate, "min_cells_per_replicate", list(pseudobulk, "getPseudobulk"))
+  .validInput(min_replicates_per_split, "min_replicates_per_split", list(pseudobulk, "getPseudobulk"))
+  .validInput(min_cells_per_feature, "min_cells_per_feature", list(pseudobulk))
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
   .validInput(filter, "filter")
   .validInput(pseudobulk, "pseudobulk", list("getPseudobulk", object))
@@ -150,7 +150,10 @@ getPseudobulk <- function(object,
   } else {
     replicates <- use_cells
   }
-
+  # Check for NA values
+  if (any(is.na(replicates))) {
+    stop("Values provided for 'replicate_labels' cannot be NA.")
+  }
   if (!methods::is(replicates, "character")) {
     replicates <- as.character(replicates)
   }
@@ -172,6 +175,10 @@ getPseudobulk <- function(object,
     }
   } else {
     splits <- rep("all", length(use_cells))
+  }
+  # Check for NA values
+  if (any(is.na(splits))) {
+    stop("Values provided for 'split_labels' cannot be NA.")
   }
   splits <- as.character(splits)
 

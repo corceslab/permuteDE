@@ -164,11 +164,11 @@
   } else {
     # If use_assay is not NULL
     if (!is.null(use_assay)) {
-      if (verbose) warning("Input for parameter 'use_assay' is not used when a matrix is provided for parameter 'use_matrix'.")
+      if (verbose) warning(" Input for parameter 'use_assay' is not used when a matrix is provided for parameter 'use_matrix'.")
     }
     # If use_layer is not NULL
     if (!is.null(use_layer)) {
-      if (verbose) warning("Input for parameter 'use_layer' is not used when a matrix is provided for parameter 'use_matrix'.")
+      if (verbose) warning(" Input for parameter 'use_layer' is not used when a matrix is provided for parameter 'use_matrix'.")
     }
   }
 
@@ -184,7 +184,7 @@
   if (!is.null(use_features)) {
     unused_features <- use_features[!(use_features %in% rownames(use_matrix))]
     if (verbose & (length(unused_features) > 0)) {
-      warning("Could not find the following ",
+      warning(" Could not find the following ",
               length(unused_features),
               " features provided by 'use_features' in 'use_matrix': \n",
               unused_features)
@@ -209,7 +209,7 @@
   if (!is.null(use_cells)) {
     unused_cells <- use_cells[!(use_cells %in% colnames(use_matrix))]
     if (verbose & (length(unused_cells) > 0)) {
-      warning("Could not find the following ",
+      warning(" Could not find the following ",
               length(unused_cells),
               " cells provided by 'use_cells' in 'use_matrix': \n",
               unused_cells)
@@ -242,12 +242,12 @@
   } else {
     # If assay is not NULL
     if (!is.null(use_assay)) {
-      if (verbose) warning("Input for parameter 'use_assay' is not used when a matrix is provided for parameter 'use_matrix'.")
+      if (verbose) warning(" Input for parameter 'use_assay' is not used when a matrix is provided for parameter 'use_matrix'.")
     }
   }
   # If use_layer is not NULL
   if (!is.null(use_layer)) {
-    if (verbose) warning("Input for parameter 'use_layer' is not used when input for parameter 'object' is of type 'SingleCellExperiment'.")
+    if (verbose) warning(" Input for parameter 'use_layer' is not used when input for parameter 'object' is of type 'SingleCellExperiment'.")
   }
 
   # If matrix has no row names
@@ -262,7 +262,7 @@
   if (!is.null(use_features)) {
     unused_features <- use_features[!(use_features %in% rownames(use_matrix))]
     if (verbose & (length(unused_features) > 0)) {
-      warning("Could not find the following ",
+      warning(" Could not find the following ",
               length(unused_features),
               " features provided by 'use_features' in 'use_matrix': \n",
               unused_features)
@@ -287,7 +287,7 @@
   if (!is.null(use_cells)) {
     unused_cells <- use_cells[!(use_cells %in% colnames(use_matrix))]
     if (verbose & (length(unused_cells) > 0)) {
-      warning("Could not find the following ",
+      warning(" Could not find the following ",
               length(unused_cells),
               " cells provided by 'use_cells' in 'use_matrix': \n",
               unused_cells)
@@ -331,7 +331,7 @@
   if (!is.null(use_features)) {
     unused_features <- use_features[!(use_features %in% rownames(use_matrix))]
     if (verbose & (length(unused_features) > 0)) {
-      warning("Could not find the following ",
+      warning(" Could not find the following ",
               length(unused_features),
               " features provided by 'use_features' in 'use_matrix': \n",
               unused_features)
@@ -356,7 +356,7 @@
   if (!is.null(use_cells)) {
     unused_cells <- use_cells[!(use_cells %in% colnames(use_matrix))]
     if (verbose & (length(unused_cells) > 0)) {
-      warning("Could not find the following ",
+      warning(" Could not find the following ",
               length(unused_cells),
               " cells provided by 'use_cells' in 'use_matrix': \n",
               unused_cells)

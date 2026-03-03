@@ -398,7 +398,6 @@ runDE_output <- runDE(object = sample_data,
                       n_cores = 2)
 ```
 
-
 When running cell-level tests, we still recommend that users provide the biological replicate labels to function `permuteDE()` using parameter `permute_by`, such that when the group labels are permuted, cells from each biological replicate are not separated. In other words, the permutation occurs at the biological replicate level, even for cell-level tests. Input to `permute_by` must either be a column name already present in the output under the dataframe `$metadata$group_key` from function `runDE()`, or a vector with values corresponding to each row of that dataframe.
 
 If input is not provided to parameter `permute_by`, the group labels will be permuted across cells regardless of the biological replicate.

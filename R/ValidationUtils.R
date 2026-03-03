@@ -35,7 +35,7 @@
       # Should be of class "character" or "factor"
       if (!methods::is(input, "character") & !methods::is(input, "factor")) {
         if (methods::is(input, "numeric") | methods::is(input, "logical")) {
-          warning("Input value for '", name, "' will be converted to class 'character'.")
+          warning(" Input value for '", name, "' will be converted to class 'character'.")
         } else {
           stop("Input value for '", name, "' must be a single value of class 'character' or a vector of labels, please supply valid input!")
         }
@@ -43,7 +43,7 @@
       # replicate_labels are not used for cell-level tests
       if (name == "replicate_labels") {
         if (other[[3]] == "none") {
-          warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
+          warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
         }
       }
       # If single value, must be a column name
@@ -84,7 +84,7 @@
     # If not NULL & object is not NULL
     if (!is.null(input) & !is.null(other[[1]])) {
       if (other[[2]] == "supplied") {
-        warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
+        warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
       } else {
         cell_ids <- colnames(other[[1]])
         if (length(intersect(input, cell_ids)) != length(input)) {
@@ -113,14 +113,14 @@
       # min_cells_per_split, min_cells_per_replicate, min_cells_per_feature
       # are not applicable when pre-computed pseudobulk matrix is supplied by the user
       if (name %in% c("min_cells_per_split", "min_cells_per_replicate", "min_cells_per_feature")) {
-        if (other == "supplied") {
-          warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
+        if (other[[1]] == "supplied") {
+          warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
         }
       }
       # min_cells_per_replicate, min_replicates_per_split are not applicable when doing cell-level tests
       if (name %in% c("min_cells_per_replicate", "min_replicates_per_split")) {
-        if (other == "none") {
-          warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
+        if (other[[1]] == "none" & other[[2]] != "runDE") {
+          warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
         }
       }
     }
@@ -159,7 +159,7 @@
       }
       # n_replicates cannot be NULL
       if (is.null(other)) {
-        warning("Input for '", name, "' is not used when parameter 'n_replicates' is NULL.")
+        warning(" Input for '", name, "' is not used when parameter 'n_replicates' is NULL.")
       } else {
         # Must have same length as n_replicates
         if (length(input) != length(other)) {
@@ -176,7 +176,7 @@
     } else {
       # n_replicates must also be NULL
       if (!is.null(other)) {
-        warning("Input for 'n_replicates' is not used when parameter 'n_group1' is NULL.")
+        warning(" Input for 'n_replicates' is not used when parameter 'n_group1' is NULL.")
       }
     }
   }
@@ -217,9 +217,9 @@
     if (!is.null(input)) {
       # Only relevant for Seurat and SingleCellExperiment objects
       if (is.null(other)) {
-        warning("Input value for '", name, "' is not used when 'object' is NULL.")
+        warning(" Input value for '", name, "' is not used when 'object' is NULL.")
       } else if (methods::is(other, "matrix")) {
-        warning("Input value for '", name, "' is not used when 'object' is of class 'matrix'.")
+        warning(" Input value for '", name, "' is not used when 'object' is of class 'matrix'.")
       } else if (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment")) {
         # Should be of class 'character'
         if (!methods::is(input, "character") | length(input) != 1) {
@@ -264,7 +264,7 @@
           }
         }
       } else {
-        warning("Input value(s) for '", name, "' are not used when provided object is not of class 'Seurat'.")
+        warning(" Input value(s) for '", name, "' are not used when provided object is not of class 'Seurat'.")
       }
     }
   }
@@ -389,6 +389,14 @@
                  "The terms within the 'design_formula' provided under element 'parameters' must correspond to ",
                  "the column names of dataframe 'group_key' provided under element 'metadata'. Please supply valid input!")
           }
+          # For each term, check for NA values
+          for (t in terms) {
+            if (any(is.na(input$metadata$group_key[, t]))) {
+              stop("Content of list provided for parameter 'input' is unexpected. ",
+                   "It should be the output returned by function 'runDE()' or a list following the same structure. ",
+                   "Dataframe 'group_key' provided under element 'metadata' cannot contain NA values. Please supply valid input!")
+            }
+          }
         }
       } else if (other == "plotVolcano") {
         # Must have expected elements with set names
@@ -445,11 +453,11 @@
     # min_prop_cells_per_feature is not applicable when pre-computed pseudobulk matrix is supplied by the user
     if (name %in% c("min_prop_cells_per_feature")) {
       if (other == "supplied") {
-        warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
+        warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
       }
     } else if ((name == "permutation_test_alpha") & (input < 1)) {
       if (!(other %in% c("pvalue", "split"))) {
-        warning("Input value for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
+        warning(" Input value for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
       }
     }
   }
@@ -515,9 +523,9 @@
     if (!(input %in% c("generate", "supplied", "none"))) {
       stop("Input for '", name, "' must be among permitted values (", paste0(c("generate", "supplied", "none"), collapse = ", "), "), please supply valid input!")
     }
-    # Issue warning for cell-level tests
-    if (input == "none") {
-      warning("Cell-level tests are not recommended in most cases, proceed with caution.")
+    # Issue warning for cell-level tests (when function is runDE, will warn during internal getPseudobulk call)
+    if (other[[1]] != "runDE" & input == "none") {
+      warning(" Cell-level tests are not recommended in most cases, proceed with caution.")
     }
     if (other[[1]] == "permuteDE") {
       if (input == "none") {
@@ -559,7 +567,7 @@
       }
       if (name == "feature_name") {
         if (other != "feature") {
-          warning("Input for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
+          warning(" Input for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
         }
       }
     }
@@ -701,7 +709,7 @@
     # If not NULL
     if (!is.null(input)) {
       if (!(other %in% c("pvalue", "n_sig", "feature"))) {
-        warning("Input values for '", name, "' are not used when parameter 'color_by' is set to '", other, "'.")
+        warning(" Input values for '", name, "' are not used when parameter 'color_by' is set to '", other, "'.")
       } else {
         # Should be of class 'numeric'
         if (!methods::is(input, "numeric") | length(input) != 2) {
@@ -716,7 +724,7 @@
     # If not NULL
     if (!is.null(input)) {
       if (other[[3]] != "feature") {
-        warning("Input values for '", name, "' are not used when parameter 'color_by' is set to '", other[[3]], "'.")
+        warning(" Input values for '", name, "' are not used when parameter 'color_by' is set to '", other[[3]], "'.")
       } else {
         # Should be of class "numeric"
         if (!methods::is(input, "numeric")) {
@@ -751,7 +759,7 @@
       }
       # If n_max_label < length(input), issue warning
       if (other < length(input)) {
-        warning("When input to parameter '", name, "' is provided, input to parameter 'n_max_label' is disregarded.")
+        warning(" When input to parameter '", name, "' is provided, input to parameter 'n_max_label' is disregarded.")
       }
     }
   }
@@ -784,7 +792,7 @@
             # Warn if term "replicate" is in formula, because it will be used to refer to the replicate_labels
             if ("replicate" %in% terms) {
               terms <- terms[terms != "replicate"]
-              warning("Formula provided for parameter '", name,
+              warning(" Formula provided for parameter '", name,
                       "' includes the term 'replicate'. This will be used to refer to the input provided to parameter 'replicate_labels'. If that is not your intention, please rename the term.")
             }
             # Check for presence of terms in metadata of provided object
@@ -833,7 +841,7 @@
       # Should be of class "character" or "factor"
       if (!methods::is(input, "character") & !methods::is(input, "factor")) {
         if (methods::is(input, "numeric") | methods::is(input, "logical")) {
-          warning("Input value for '", name, "' will be converted to class 'character'.")
+          warning(" Input value for '", name, "' will be converted to class 'character'.")
         } else {
           stop("Input value for '", name, "' must be a single value of class 'character' or a vector of labels, please supply valid input!")
         }
@@ -860,18 +868,18 @@
       if (name == "permute_by") {
         # If not a cell-level test, issue warning
         if (other[[2]] != "none") {
-          warning("Input for '", name, "' is intended for use with cell-level tests, where parameter 'pseudobulk' is 'none'.")
+          warning(" Input for '", name, "' is intended for use with cell-level tests, where parameter 'pseudobulk' is 'none'.")
         }
       } else if (name == "permute_within") {
         if (is.null(other[[2]])) {
-          warning("Input for '", name, "' is intended for use with complex design formulas, such as paired tests.")
+          warning(" Input for '", name, "' is intended for use with complex design formulas, such as paired tests.")
         }
       }
     } else {
       # If a cell-level test, issue warning
       if (name == "permute_by") {
         if (other[[2]] == "none") {
-          warning("When running a cell-level test (parameter 'pseudobulk' is 'none'), consider providing biological replicates labels to ",
+          warning(" When running a cell-level test (parameter 'pseudobulk' is 'none'), consider providing biological replicates labels to ",
                   "parameter '", name, "', such that group labels for each cell in a biological replicate are shuffled together as a unit.")
         }
       }
