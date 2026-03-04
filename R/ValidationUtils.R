@@ -786,6 +786,10 @@
                  "', the last term in the formula must be 'group' or the same as input provided to parameter 'group_labels'. Please supply valid input!")
           }
           terms <- terms[-length(terms)]
+          # Check for non-standard / function call-based terms in design formula
+          if (any(grepl("\\(", terms))) {
+            stop("permuteDE is not currently compatible with non-standard terms (or terms based on function calls) within input provided for '", name, "'. Please supply valid input!")
+          }
           if (length(terms) > 0) {
             # Break up interaction terms
             terms <- unique(unlist(strsplit(terms, ":", fixed = TRUE)))
@@ -798,15 +802,15 @@
             # Check for presence of terms in metadata of provided object
             if (!is.null(other[[2]])) {
               if (!all(terms %in% colnames(other[[2]]))) {
-                stop("When input for '", name, "' is a character string, the terms must indicate column(s) present in the provided 'metadata', please supply valid input!")
+                stop("When input is provided for '", name, "', the terms must indicate column(s) present in the provided 'metadata', please supply valid input!")
               }
             } else if (methods::is(other[[1]], "Seurat")) {
               if (!all(terms %in% colnames(other[[1]]@meta.data))) {
-                stop("When input for '", name, "' is a character string, the terms must indicate column(s) present in the 'meta.data' of the provided object, please supply valid input!")
+                stop("When input is provided for '", name, "', the terms must indicate column(s) present in the 'meta.data' of the provided object, please supply valid input!")
               }
             } else if (methods::is(other[[1]], "SingleCellExperiment")) {
               if (!all(terms %in% colnames(other[[1]]@colData))) {
-                stop("When input for '", name, "' is a character string, the terms must indicate column(s) present in the 'colData' of the provided object, please supply valid input!")
+                stop("When input is provided for '", name, "', the terms must indicate column(s) present in the 'colData' of the provided object, please supply valid input!")
               }
             }
           }
