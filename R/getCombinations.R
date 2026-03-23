@@ -219,66 +219,87 @@ getCombinations <- function(object = NULL,
       }
       output_combinations <- all_combinations[, sample(1:ncol(all_combinations), n_combinations)]
     } else {
+      ## mofidied by James to resolve the "variable names are limited to 10000 bytes" issue
       # Set up collection of combinations
       output_combinations <- vector("list", n_combinations)
       count <- 0
       n_excluded_confound_check <- 0
+      
+      # Track how many candidate combinations have been tested
+      n_tested <- 0
+      
       # Set up environment to track previously encountered combinations
-      seen_combinations <- new.env(hash = TRUE, size = n_combinations)
+      seen_combinations <- new.env(hash = TRUE, parent = emptyenv())
+      # optional: pre-size the hash table a bit
+      # seen_combinations <- new.env(hash = TRUE, size = n_combinations, parent = emptyenv())
+      
       # Generate new unique combinations
       while (count < n_combinations) {
         possible_comb <- sample(n_replicates, n_group1)
+        
+        # Compact key for uniqueness check
+        # If you have digest installed, this is better than pasting all IDs together:
+        comb_key <- digest::digest(sort(possible_comb), algo = "xxhash64")
+        
         # Check if unique
-        comb_key <- paste(sort(possible_comb), collapse = "-")
-        if (is.null(seen_combinations[[comb_key]])) {
-          # Add to seen combinations
-          seen_combinations[[comb_key]] <- TRUE
-
+        if (!exists(comb_key, envir = seen_combinations, inherits = FALSE)) {
+          assign(comb_key, TRUE, envir = seen_combinations)
+          n_tested <- n_tested + 1
+          
           # If checking for covariate confounds, remove if perfectly confounded
           if (!is.null(confound_check)) {
-              # Convert combination to a 0,1 matrix
-              group_i <- rep(1, n_replicates)
-              group_i[possible_comb] <- 0
-              # Test each covariate
-              exclude <- apply(confound_check, 2, FUN = function(j) {
-                all(colSums(table(group_i, droplevels(factor(j))) > 0) == 1)
-              })
-              # Retain combination?
-              if (any(exclude)) {
-                keep <- FALSE
-                n_excluded_confound_check <- n_excluded_confound_check + 1
-              } else {
-                keep <- TRUE
-              }
+            group_i <- rep(1, n_replicates)
+            group_i[possible_comb] <- 0
+            
+            exclude <- apply(confound_check, 2, FUN = function(j) {
+              all(colSums(table(group_i, droplevels(factor(j))) > 0) == 1)
+            })
+            
+            if (any(exclude)) {
+              keep <- FALSE
+              n_excluded_confound_check <- n_excluded_confound_check + 1
+            } else {
+              keep <- TRUE
+            }
           } else {
             keep <- TRUE
           }
-
+          
           # Add to output
-          if (keep == TRUE) {
+          if (keep) {
             count <- count + 1
             output_combinations[[count]] <- possible_comb
           }
-
+          
           # Avoid forever loop
-          if (length(seen_combinations) > 10*n_combinations) {
-            # Stop, even though we have not reached n combinations yet
-            count <- n_combinations
-            # Report issue
-            if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
-                                 " : >90% of tested combinations have been excluded due to covariate confounds. Could not find ",
-                                 n_combinations, " unique combinations. Stopping search at ", length(output_combinations),
-                                 " to prevent a potential infinite loop..")
+          if (n_tested > 10 * n_combinations) {
+            if (verbose) {
+              message(
+                format(Sys.time(), "%Y-%m-%d %X"),
+                " : >90% of tested combinations have been excluded due to covariate confounds. Could not find ",
+                n_combinations, " unique combinations. Stopping search at ", count,
+                " to prevent a potential infinite loop.."
+              )
+            }
+            break
           }
         }
       }
+      
       # Report if any were excluded due to covariate confounds
-      if (verbose & (n_excluded_confound_check > 0)) {
-        message(format(Sys.time(), "%Y-%m-%d %X"), " : ",
-                n_excluded_confound_check, " initially sampled combination(s) excluded due to covariate confounds..")
+      if (verbose && n_excluded_confound_check > 0) {
+        message(
+          format(Sys.time(), "%Y-%m-%d %X"), " : ",
+          n_excluded_confound_check, " initially sampled combination(s) excluded due to covariate confounds.."
+        )
       }
+      
+      # Drop any NULLs if we exited early
+      output_combinations <- output_combinations[seq_len(count)]
+      
       # Simplify combinations to a matrix
       output_combinations <- do.call(cbind, output_combinations)
+
     }
   }
   # Return matrix of combinations

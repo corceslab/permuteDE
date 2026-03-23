@@ -43,7 +43,7 @@
       # replicate_labels are not used for cell-level tests
       if (name == "replicate_labels") {
         if (other[[3]] == "none") {
-          warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
+          warning("Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
         }
       }
       # If single value, must be a column name
@@ -58,18 +58,18 @@
           if (methods::is(other[[1]], "Seurat")) {
             if (!(input %in% colnames(other[[1]]@meta.data))) {
               stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
-            }
-          } else if (methods::is(other[[1]], "SingleCellExperiment")) {
-            if (!(input %in% colnames(other[[1]]@colData))) {
-              stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
-            }
-          } else if (methods::is(other[[1]], "matrix")) {
-            stop("When input to parameter 'object' is of class 'matrix' and input to parameter 'metadata' is NULL, input value for '",
-                 name, "' cannot be a single value, it must be a vector.")
-          }
+              }
+            } else if (methods::is(other[[1]], "SingleCellExperiment")) {
+              if (!(input %in% colnames(other[[1]]@colData))) {
+                stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+                } 
+              } else if (methods::is(other[[1]], "matrix")) {
+                stop("When input to parameter 'object' is of class 'matrix' and input to parameter 'metadata' is NULL, input value for '",
+                     name, "' cannot be a single value, it must be a vector.")
+              }
         }
-      }
-    } else {
+        }
+      } else {
       # replicate_labels are required for pseudobulk tests
       if (name == "replicate_labels") {
         if (other[[3]] %in% c("generate", "supplied")) {
