@@ -9,6 +9,7 @@ plotFeature(
   feature,
   use_splits = NULL,
   normalization_method = "cpm",
+  plot_type = "boxplot",
   title = NULL,
   subtitle = NULL,
   label_replicates = FALSE,
@@ -26,6 +27,10 @@ to use. Defaults to \code{NULL}, which will try all splits.}
 \item{normalization_method}{A character string indicating which normalization
 method to apply to the replicate x feature matrix. Permitted values are
 "cpm", "log_cpm", and "none". Defaults to "cpm".}
+
+\item{plot_type}{A character string indicating the type of plot. Permitted
+values are "boxplot", "bar_se", "bar_sd", "beeswarm".
+Defaults to "boxplot".}
 
 \item{title}{A character string indicating the plot title. Default =
 \code{NULL} sets a title automatically for each split.}

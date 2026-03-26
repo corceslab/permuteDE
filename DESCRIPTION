@@ -18,7 +18,8 @@ Imports:
     ggplot2,
     Matrix,
     Seurat,
-    ggtext
+    ggtext,
+    digest
 Suggests: 
     DESeq2,
     ggbeeswarm,

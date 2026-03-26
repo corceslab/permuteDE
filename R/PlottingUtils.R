@@ -565,6 +565,9 @@ plotHistogram <- function(input,
 #' @param normalization_method A character string indicating which normalization
 #' method to apply to the replicate x feature matrix. Permitted values are
 #' "cpm", "log_cpm", and "none". Defaults to "cpm".
+#' @param plot_type A character string indicating the type of plot. Permitted
+#' values are "boxplot", "bar_se", "bar_sd", "beeswarm".
+#' Defaults to "boxplot".
 #' @param title A character string indicating the plot title. Default =
 #' \code{NULL} sets a title automatically for each split.
 #' @param subtitle Character string indicating the plot subtitle. Default =
@@ -584,6 +587,7 @@ plotFeature <- function(input,
                         feature,
                         use_splits = NULL,
                         normalization_method = "cpm",
+                        plot_type = "boxplot",
                         title = NULL,
                         subtitle = NULL,
                         label_replicates = FALSE,
@@ -601,6 +605,7 @@ plotFeature <- function(input,
   .validInput(input, "input", "plotFeature")
   .validInput(feature, "feature")
   .validInput(use_splits, "use_splits", list(input, "plotFeature"))
+  .validInput(plot_type, "plot_type")
   .validInput(normalization_method, "normalization_method")
   .validInput(title, "title")
   .validInput(subtitle, "subtitle")
@@ -645,13 +650,31 @@ plotFeature <- function(input,
     # Normalized data
     if (normalization_method == "cpm") {
       split_results_s <- edgeR::cpm(y = split_results_s)
-      y_axis_title <- paste0("Normalized expression of *", feature, "* (CPM)")
+      if (plot_type == "bar_se") {
+        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(CPM, mean &plusmn; SE)")
+      } else if (plot_type == "bar_sd") {
+        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(CPM, mean &plusmn; SD)")
+      } else {
+        y_axis_title <- paste0("Normalized expression of *", feature, "* (CPM)")
+      }
     } else if (normalization_method == "log_cpm") {
       split_results_s <- edgeR::cpm(y = split_results_s,
                                     log = TRUE)
-      y_axis_title <- paste0("Normalized expression of *", feature, "* (Log CPM)")
+      if (plot_type == "bar_se") {
+        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Log CPM, mean &plusmn; SE)")
+      } else if (plot_type == "bar_sd") {
+        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Log CPM, mean &plusmn; SD)")
+      } else {
+        y_axis_title <- paste0("Normalized expression of *", feature, "* (Log CPM)")
+      }
     } else {
-      y_axis_title <- paste0("Expression of *", feature, "*")
+      if (plot_type == "bar_se") {
+        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Mean &plusmn; SE)")
+      } else if (plot_type == "bar_sd") {
+        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Mean &plusmn; SD)")
+      } else {
+        y_axis_title <- paste0("Expression of *", feature, "*")
+      }
     }
 
     # Set title & subtitle
@@ -672,7 +695,7 @@ plotFeature <- function(input,
       return(NULL)
     } else {
       # Extract feature & proceed
-      feature_s <- data.frame(feature = split_results_s[feature,],
+      feature_s <- data.frame(value = split_results_s[feature,],
                               replicate = input$metadata$group_key[colnames(split_results_s), "replicate"],
                               group = input$metadata$group_key[colnames(split_results_s), "group"])
       feature_s$group <- stats::relevel(factor(feature_s$group), ref = reference_group)
@@ -700,34 +723,88 @@ plotFeature <- function(input,
       # Plot
       p <- ggplot2::ggplot(data = feature_s,
                            ggplot2::aes(x = group,
-                                        y = feature,
+                                        y = value,
                                         fill = group)) +
         permuteDEtheme() +
         ggplot2::theme(legend.position = "none") +
         ggplot2::theme(plot.title = ggtext::element_markdown(),
                        axis.title.y = ggtext::element_markdown()) +
-        ggbeeswarm::geom_beeswarm(size = 2, shape = 21) +
+        ggbeeswarm::geom_beeswarm(size = 2, shape = 21,
+                                  corral = "random", corral.width = 0.2) + # corral prevents overlap across groups
         ggplot2::scale_fill_manual(values = c("#AAAAAA", "#EE3751")) +
         ggplot2::labs(title = current_title,
                       subtitle = current_subtitle,
                       x = "Group",
                       y = y_axis_title)
+
+      y_min <- min(feature_s$value, na.rm = TRUE)
+
+      if (plot_type == "boxplot") {
+        p <- p +
+          ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA,
+                                position = ggplot2::position_nudge(x = -0.2, y = 0))
+      } else if (plot_type %in% c("bar_se", "bar_sd")) {
+        # Set new min
+        y_min <- 0
+
+        # Summary statistics
+        summary_feature_s <- feature_s |>
+          dplyr::group_by(group) |>
+          dplyr::summarise(n_group = dplyr::n(),
+                           mean_value = mean(value),
+                           sd_value = stats::sd(value)) |>
+          dplyr::mutate(se_value = sd_value/sqrt(n_group)) |>
+          data.frame()
+
+        print(summary_feature_s)
+        p <- p +
+          ggplot2::geom_bar(stat = "summary", fun = "mean",
+                            width = 0.1, color = "black",
+                            position = ggplot2::position_nudge(x = -0.2, y = 0))
+        if (plot_type == "bar_se") {
+          p <- p +
+            ggplot2::geom_errorbar(data = summary_feature_s,
+                                   ggplot2::aes(x = group,
+                                                ymin = mean_value - se_value,
+                                                ymax = mean_value + se_value),
+                                   inherit.aes = FALSE,
+                                   width = 0.05,
+                                   position = ggplot2::position_nudge(x = -0.2, y = 0))
+        } else if (plot_type == "bar_sd") {
+          p <- p +
+            ggplot2::geom_errorbar(data = summary_feature_s,
+                                   ggplot2::aes(x = group,
+                                                ymin = mean_value - sd_value,
+                                                ymax = mean_value + sd_value),
+                                   inherit.aes = FALSE,
+                                   width = 0.05,
+                                   position = ggplot2::position_nudge(x = -0.2, y = 0))
+        }
+      }
+
       # Add replicate labels
       if (label_replicates == TRUE) {
-        p <- p + ggrepel::geom_text_repel(ggplot2::aes(label = replicate))
+        p <- p + ggrepel::geom_text_repel(ggplot2::aes(label = replicate),
+                                          position = ggbeeswarm::position_beeswarm(corral = "random",
+                                                                                   corral.width = 0.2))
       }
       # Add LFC & p-value
       if (label_statistics == TRUE) {
+        # Set range
+        y_max <- max(feature_s$value, na.rm = TRUE)
+        y_range <- y_max - y_min
+        y_buffer <- y_range*0.1
+
         p <- p + ggtext::geom_richtext(x = 1.5,
-                                       y = max(feature_s$feature)*1.05,
+                                       y = y_max + y_buffer,
                                        label = statistics_text,
                                        hjust = "center",
                                        vjust = "bottom",
                                        fill = NA,
                                        label.color = NA) +
           ggplot2::geom_segment(x = 1, xend = 2,
-                                y = max(feature_s$feature)*1.05, yend = max(feature_s$feature)*1.05) +
-          ggplot2::ylim(c(min(feature_s$feature, na.rm = TRUE), max(feature_s$feature, na.rm = TRUE)*1.1))
+                                y = y_max + y_buffer, yend = y_max + y_buffer) +
+          ggplot2::ylim(c(NA, y_max + (y_buffer*2)))
       }
       return(p)
     }

@@ -188,13 +188,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:27 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:27 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (310 features) and 69.6% (1200 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:27 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -248,25 +248,25 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:28 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:28 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:28 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:28 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:32 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:32 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:32 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:38 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:38 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:38 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:44 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:44 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:44 : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:47 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:47 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:47 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:51 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:51 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2026-02-27 18:16:51 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:07 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:11 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:11 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:11 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:17 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:17 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:17 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:23 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:23 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:23 : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:26 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:26 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:26 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:30 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:30 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-26 15:10:30 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
