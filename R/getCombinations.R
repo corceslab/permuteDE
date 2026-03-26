@@ -219,7 +219,6 @@ getCombinations <- function(object = NULL,
       }
       output_combinations <- all_combinations[, sample(1:ncol(all_combinations), n_combinations)]
     } else {
-      ## mofidied by James to resolve the "variable names are limited to 10000 bytes" issue
       # Set up collection of combinations
       output_combinations <- vector("list", n_combinations)
       count <- 0
@@ -323,136 +322,158 @@ getCombinations <- function(object = NULL,
                                        verbose = TRUE) {
   # Number of partitions
   n_partitions <- length(n_replicates)
-
+  
   # Total possible combinations across partitions (log)
   log_n_possible_combinations <- sum(lchoose(n_replicates, n_group1))
   if (log_n_possible_combinations < log(.Machine$double.xmax)) {
-    # Safe to compute real number
     n_possible_combinations <- prod(choose(n_replicates, n_group1))
   } else {
-    # Effectively
     n_possible_combinations <- Inf
   }
-
+  
   # Check whether possible number of combinations is < requested number of combinations
-  if (n_possible_combinations < n_combinations) {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Input ", n_combinations,
-                         " for parameter 'n_combinations' exceeds the number of possible combinations ",
-                         n_possible_combinations,". Only ", n_possible_combinations,
-                         " combinations will be generated", message, ".")
+  if (is.finite(n_possible_combinations) && n_possible_combinations < n_combinations) {
+    if (verbose) {
+      message(
+        format(Sys.time(), "%Y-%m-%d %X"), " : Input ", n_combinations,
+        " for parameter 'n_combinations' exceeds the number of possible combinations ",
+        n_possible_combinations, ". Only ", n_possible_combinations,
+        " combinations will be generated", message, "."
+      )
+    }
     n_combinations <- n_possible_combinations
   }
-
+  
   # ---------------------------------------------------------------------------
   # Generate combinations
   # ---------------------------------------------------------------------------
-
+  
   if (verbose) {
     if (is.finite(n_possible_combinations)) {
-      message(format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
-              n_combinations, " of ", n_possible_combinations,
-              " possible combinations", message, "..")
+      message(
+        format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
+        n_combinations, " of ", n_possible_combinations,
+        " possible combinations", message, ".."
+      )
     } else {
-      message(format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
-              n_combinations, " from a very large set of possible combinations",
-              message, "..")
+      message(
+        format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
+        n_combinations, " from a very large set of possible combinations",
+        message, ".."
+      )
     }
   }
-
+  
   # Build global index ranges for each partition
-  partition_indices <- split(seq_len(sum(n_replicates)),
-                             rep.int(seq_along(n_replicates), n_replicates))
-
+  partition_indices <- split(
+    seq_len(sum(n_replicates)),
+    rep.int(seq_along(n_replicates), n_replicates)
+  )
+  
   # Decide whether to enumerate all combinations within each partition
   log_n_combinations_per_partition <- lchoose(n_replicates, n_group1)
   generate_all <- log_n_combinations_per_partition <= log(1000000)
-
+  
   # Precompute per-partition combination sets when feasible
   combinations_by_partition <- vector("list", n_partitions)
   for (p in seq_len(n_partitions)) {
     indices_p <- partition_indices[[p]]
     n_group1_p <- n_group1[[p]]
-    if (generate_all[[p]] == TRUE) {
-      # Generate a list of all combinations in partition p
-      combinations_by_partition[[p]] <- utils::combn(indices_p, n_group1_p, simplify = FALSE)
+    
+    if (isTRUE(generate_all[p])) {
+      combinations_by_partition[[p]] <- utils::combn(
+        indices_p,
+        n_group1_p,
+        simplify = FALSE
+      )
     } else {
-      # Too large to generate all
       combinations_by_partition[[p]] <- NULL
     }
   }
-
+  
   # Set up collection of combinations
   output_combinations <- vector("list", n_combinations)
-  count <- 0
-  n_excluded_confound_check <- 0
+  count <- 0L
+  n_excluded_confound_check <- 0L
+  
   # Set up environment to track previously encountered combinations
-  seen_combinations <- new.env(hash = TRUE, size = n_combinations)
+  seen_combinations <- new.env(hash = TRUE, parent = emptyenv())
+  
   # Generate new unique combinations
   while (count < n_combinations) {
-    possible_comb <- unlist(lapply(seq_along(partition_indices),
-                                   FUN = function(p) {
-                                     # Grab pre-generated combinations for partition p (if available)
-                                     combinations_p <- combinations_by_partition[[p]]
-                                     if (!is.null(combinations_p)) {
-                                       # Sample from pre-generated combinations for partition p
-                                       combinations_p[[sample.int(length(combinations_p), 1L)]]
-                                     } else {
-                                       # When not pre-generated, generate random combination for partition p
-                                       sample(partition_indices[[p]], n_group1[[p]], replace = FALSE)
-                                     }
-                                   }))
+    possible_comb <- unlist(
+      lapply(seq_len(n_partitions), function(p) {
+        combinations_p <- combinations_by_partition[[p]]
+        
+        if (!is.null(combinations_p)) {
+          combinations_p[[sample.int(length(combinations_p), 1L)]]
+        } else {
+          sample(partition_indices[[p]], n_group1[[p]], replace = FALSE)
+        }
+      }),
+      use.names = FALSE
+    )
+    
+    # Compact uniqueness key
+    comb_key <- digest::digest(sort(possible_comb), algo = "xxhash64")
+    
     # Check if unique
-    comb_key <- paste(sort(possible_comb), collapse = "-")
-    if (is.null(seen_combinations[[comb_key]])) {
-      seen_combinations[[comb_key]] <- TRUE
-
+    if (!exists(comb_key, envir = seen_combinations, inherits = FALSE)) {
+      assign(comb_key, TRUE, envir = seen_combinations)
+      
       # If checking for covariate confounds, remove if perfectly confounded
       if (!is.null(confound_check)) {
-        # Convert combination to a 0,1 matrix
         group_i <- rep(1, sum(n_replicates))
         group_i[possible_comb] <- 0
-        # Test each covariate
+        
         exclude <- apply(confound_check, 2, FUN = function(j) {
           all(colSums(table(group_i, droplevels(factor(j))) > 0) == 1)
         })
-        # Retain combination?
+        
         if (any(exclude)) {
           keep <- FALSE
-          n_excluded_confound_check <- n_excluded_confound_check + 1
+          n_excluded_confound_check <- n_excluded_confound_check + 1L
         } else {
           keep <- TRUE
         }
       } else {
         keep <- TRUE
       }
-
+      
       # Add to output
-      if (keep == TRUE) {
-        count <- count + 1
+      if (keep) {
+        count <- count + 1L
         output_combinations[[count]] <- possible_comb
       }
-
+      
       # Avoid forever loop
-      if (length(seen_combinations) > 10*n_combinations) {
-        # Stop, even though we have not reached n combinations yet
-        count <- n_combinations
-        # Report issue
-        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
-                             " : Excluded >90% of tested combinations so far due to covariate confounds. Stopping search at ",
-                             length(output_combinations), " unique combinations to prevent a potential infinite loop..")
+      if (length(ls(envir = seen_combinations, all.names = TRUE)) > 10 * n_combinations) {
+        if (verbose) {
+          message(
+            format(Sys.time(), "%Y-%m-%d %X"),
+            " : Excluded >90% of tested combinations so far due to covariate confounds. Stopping search at ",
+            count, " unique combinations to prevent a potential infinite loop.."
+          )
+        }
+        break
       }
     }
   }
-
+  
   # Report if any were excluded due to covariate confounds
-  if (verbose & (n_excluded_confound_check > 0)) {
-    message(format(Sys.time(), "%Y-%m-%d %X"), " : Excluded ",
-            n_excluded_confound_check, " initially sampled combination(s) due to covariate confounds..")
+  if (verbose && n_excluded_confound_check > 0) {
+    message(
+      format(Sys.time(), "%Y-%m-%d %X"), " : Excluded ",
+      n_excluded_confound_check, " initially sampled combination(s) due to covariate confounds.."
+    )
   }
-
+  
+  # Drop any NULLs if we exited early
+  output_combinations <- output_combinations[seq_len(count)]
+  
   # Simplify combinations to a matrix
   output_combinations <- do.call(cbind, output_combinations)
-
+  
   # Return matrix of combinations
   return(output_combinations)
 }
