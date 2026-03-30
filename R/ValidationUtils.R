@@ -32,40 +32,63 @@
   if (name %in% c("replicate_labels", "group_labels", "split_labels")) {
     # If not NULL
     if (!is.null(input)) {
-      # Should be of class "character" or "factor"
-      if (!methods::is(input, "character") & !methods::is(input, "factor")) {
-        if (methods::is(input, "numeric") | methods::is(input, "logical")) {
-          warning(" Input value for '", name, "' will be converted to class 'character'.")
+      # For split_labels within plotDimReduction, must be a vector
+      if (name == "split_labels" && other[[3]] == "plotDimReduction") {
+        if (is.null(other[[2]])) {
+          warning(" Input for '", name, "' is not used when parameter 'color_by' is NULL.")
+        } else if (other[[2]] != "split") {
+          warning(" Input for '", name, "' is not used when parameter 'n_replicates' is '", other[[2]],"'.")
         } else {
-          stop("Input value for '", name, "' must be a single value of class 'character' or a vector of labels, please supply valid input!")
-        }
-      }
-      # replicate_labels are not used for cell-level tests
-      if (name == "replicate_labels") {
-        if (other[[3]] == "none") {
-          warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
-        }
-      }
-      # If single value, must be a column name
-      if (length(input) == 1) {
-        # If metadata is provided, must be found there
-        if (!is.null(other[[2]])) {
-          if (!(input %in% colnames(other[[2]]))) {
-            stop("When a single input value is provided for '", name, "', it must indicate a column present in the provided 'metadata', please supply valid input!")
+          # Should be of class "character" or "factor"
+          if (!methods::is(input, "character") & !methods::is(input, "factor")) {
+            if (methods::is(input, "numeric") | methods::is(input, "logical")) {
+              warning(" Input value for '", name, "' will be converted to class 'character'.")
+            } else {
+              stop("Input value for '", name, "' must be a vector of labels, please supply valid input!")
+            }
           }
-        } else {
-          # Otherwise must be present in metadata of provided object
-          if (methods::is(other[[1]], "Seurat")) {
-            if (!(input %in% colnames(other[[1]]@meta.data))) {
-              stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
+          # Must be same length as provided reduction
+          if (length(input) != nrow(other[[1]])) {
+            stop("Input value for '", name,
+                 "' must be a vector of labels corresponding to each row of the input provided to parameter 'reduction', please supply valid input!")
+          }
+        }
+      } else {
+        # Should be of class "character" or "factor"
+        if (!methods::is(input, "character") & !methods::is(input, "factor")) {
+          if (methods::is(input, "numeric") | methods::is(input, "logical")) {
+            warning(" Input value for '", name, "' will be converted to class 'character'.")
+          } else {
+            stop("Input value for '", name, "' must be a single value of class 'character' or a vector of labels, please supply valid input!")
+          }
+        }
+        # replicate_labels are not used for cell-level tests
+        if (name == "replicate_labels") {
+          if (other[[3]] == "none") {
+            warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'none'.")
+          }
+        }
+        # If single value, must be a column name
+        if (length(input) == 1) {
+          # If metadata is provided, must be found there
+          if (!is.null(other[[2]])) {
+            if (!(input %in% colnames(other[[2]]))) {
+              stop("When a single input value is provided for '", name, "', it must indicate a column present in the provided 'metadata', please supply valid input!")
             }
-          } else if (methods::is(other[[1]], "SingleCellExperiment")) {
-            if (!(input %in% colnames(other[[1]]@colData))) {
-              stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+          } else {
+            # Otherwise must be present in metadata of provided object
+            if (methods::is(other[[1]], "Seurat")) {
+              if (!(input %in% colnames(other[[1]]@meta.data))) {
+                stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'meta.data' of the provided object, please supply valid input!")
+              }
+            } else if (methods::is(other[[1]], "SingleCellExperiment")) {
+              if (!(input %in% colnames(other[[1]]@colData))) {
+                stop("When a single input value is provided for '", name, "', it must indicate a column present in the 'colData' of the provided object, please supply valid input!")
+              }
+            } else if (methods::is(other[[1]], "matrix")) {
+              stop("When input to parameter 'object' is of class 'matrix' and input to parameter 'metadata' is NULL, input value for '",
+                   name, "' cannot be a single value, it must be a vector.")
             }
-          } else if (methods::is(other[[1]], "matrix")) {
-            stop("When input to parameter 'object' is of class 'matrix' and input to parameter 'metadata' is NULL, input value for '",
-                 name, "' cannot be a single value, it must be a vector.")
           }
         }
       }
@@ -456,7 +479,9 @@
         warning(" Input value for '", name, "' is not used when parameter 'pseudobulk' is set to 'supplied' (when a pre-computed pseudobulk matrix is supplied by the user).")
       }
     } else if ((name == "permutation_test_alpha") & (input < 1)) {
-      if (!(other %in% c("pvalue", "split"))) {
+      if (is.null(other)) {
+        warning(" Input value for '", name, "' is not used when parameter 'color_by' is set to NULL.")
+      } else if (!(other %in% c("pvalue", "split"))) {
         warning(" Input value for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
       }
     }
@@ -566,7 +591,9 @@
         stop("Input for '", name, "' must be a single value of class 'character'. Please supply valid input!")
       }
       if (name == "feature_name") {
-        if (other != "feature") {
+        if (is.null(other)) {
+          warning(" Input for '", name, "' is not used when parameter 'color_by' is set to NULL.")
+        } else if (other != "feature") {
           warning(" Input for '", name, "' is not used when parameter 'color_by' is set to '", other, "'.")
         }
       }
@@ -670,24 +697,36 @@
   }
 
   # name
-  if (name == "palette_name") {
+  if (name == "palette") {
     # If not NULL
     if (!is.null(input)) {
       # Should be of class 'character'
-      if (!methods::is(input, "character") | length(input) != 1) {
-        stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
+      if (!methods::is(input, "character")) {
+        stop("Input for '", name, "' must be of class 'character', please supply valid input!")
       }
-      # Must be among permitted values for palette type
-      if (other == "discrete") {
-        if (!(input %in% c("choir", "archr"))) {
-          stop("When input for 'type' is 'discrete', input for '", name, "' must be among permitted values (",
-               paste0(c("choir", "archr"), collapse = ", "), "), please supply valid input!")
+      # Can be color value(s)
+      is_color <- vapply(input, function(i) {
+        tryCatch(is.matrix(grDevices::col2rgb(i)),
+                 error = function(e) FALSE)
+      }, logical(1))
+
+      if (all(is_color)) {
+        # All good if color values
+      } else if (length(input) == 1) {
+        # Otherwise must be length 1 and among permitted palette name values for palette type
+        if (other == "discrete") {
+          if (!(input %in% c("choir", "archr"))) {
+            stop("When input for 'type' is 'discrete', input for '", name, "' must be among permitted values (",
+                 paste0(c("choir", "archr"), collapse = ", "), "), please supply valid input!")
+          }
+        } else if (other == "gradient") {
+          if (!(input %in% c("frozen", "inferno"))) {
+            stop("When input for 'type' is 'gradient', input for '", name, "' must be among permitted values (",
+                 paste0(c("frozen", "inferno"), collapse = ", "), "), please supply valid input!")
+          }
         }
-      } else if (other == "gradient") {
-        if (!(input %in% c("frozen", "inferno"))) {
-          stop("When input for 'type' is 'gradient', input for '", name, "' must be among permitted values (",
-               paste0(c("frozen", "inferno"), collapse = ", "), "), please supply valid input!")
-        }
+      } else {
+        stop("Input for '", name, "' must be either a palette name or a vector of color values, please supply valid input!")
       }
     }
   }
@@ -708,7 +747,9 @@
   if (name == "color_limits") {
     # If not NULL
     if (!is.null(input)) {
-      if (!(other %in% c("pvalue", "n_sig", "feature"))) {
+      if (is.null(other)) {
+        warning(" Input values for '", name, "' are not used when parameter 'color_by' is set to NULL.")
+      } else if (!(other %in% c("pvalue", "n_sig", "feature"))) {
         warning(" Input values for '", name, "' are not used when parameter 'color_by' is set to '", other, "'.")
       } else {
         # Should be of class 'numeric'
@@ -723,7 +764,9 @@
   if (name %in% c("feature_values")) {
     # If not NULL
     if (!is.null(input)) {
-      if (other[[3]] != "feature") {
+      if (is.null(other[[3]])) {
+        warning(" Input values for '", name, "' are not used when parameter 'color_by' is set to NULL.")
+      } else if (other[[3]] != "feature") {
         warning(" Input values for '", name, "' are not used when parameter 'color_by' is set to '", other[[3]], "'.")
       } else {
         # Should be of class "numeric"
@@ -743,8 +786,10 @@
       }
     } else {
       # feature_values are required when color_by = "feature"
-      if (other[[3]] == "feature") {
-        stop("Input value for '", name, "' cannot be NULL when parameter 'color_by' is set to '", other[[3]], "'. Please supply valid input!")
+      if (!is.null(other[[3]])) {
+        if (other[[3]] == "feature") {
+          stop("Input value for '", name, "' cannot be NULL when parameter 'color_by' is set to '", other[[3]], "'. Please supply valid input!")
+        }
       }
     }
   }

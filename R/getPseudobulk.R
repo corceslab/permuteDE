@@ -94,7 +94,7 @@ getPseudobulk <- function(object,
   .validInput(object, "object", "getPseudobulk")
   .validInput(metadata, "metadata", object)
   .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
-  .validInput(split_labels, "split_labels", list(object, metadata))
+  .validInput(split_labels, "split_labels", list(object, metadata, "getPseudobulk"))
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
   .validInput(min_cells_per_split, "min_cells_per_split", list(pseudobulk))
   .validInput(min_cells_per_replicate, "min_cells_per_replicate", list(pseudobulk, "getPseudobulk"))

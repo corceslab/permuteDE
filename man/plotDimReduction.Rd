@@ -15,7 +15,7 @@ plotDimReduction(
   permutation_test_alpha = 1,
   label_splits = FALSE,
   label_statistics = FALSE,
-  palette_name = NULL,
+  palette = NULL,
   color_limits = NULL,
   fix_coords = TRUE,
   ...
@@ -44,8 +44,7 @@ reduction cell coordinates to. Default = \code{NULL} will use all cells.}
 each split. Permitted values are "n_sig" (number of significant DE features),
 "pvalue" (permutation test p-value), "split" (values provided to parameter
 \code{split_labels}), and "feature" (values provided to parameter
-\code{feature_values}). Default = "split" will color the cells by the split
-they belong to if input to parameter \code{split_labels} is provided.}
+\code{feature_values}). Default = \code{NULL} will not apply a color scheme.}
 
 \item{permutation_test_alpha}{A numeric value indicating the significance
 level to apply to the permutation test results. Splits that do not pass this
@@ -57,10 +56,11 @@ splits. Defaults to \code{FALSE}.}
 \item{label_statistics}{A Boolean value indicating whether to label the
 values of the selected metric. Defaults to \code{FALSE}.}
 
-\item{palette_name}{A character string indicating the palette name. Permitted
-values are "choir", "archr", "frozen", and "inferno". Default =
-\code{NULL} will use "choir" for discrete colors and "frozen" for
-gradient colors.}
+\item{palette}{A character string indicating the palette name. Permitted
+values are "choir", "archr", "inferno", and "frozen". Default =
+\code{NULL} will use "choir" for discrete colors and "inferno" for
+gradient colors. Alternately, provide a vector of color values to use as
+starting values for the color palette.}
 
 \item{color_limits}{A vector with the minimum and maximum values indicated by
 \code{color_by} ("n_sig" or "pvalue") for display on the color bar legend. Default

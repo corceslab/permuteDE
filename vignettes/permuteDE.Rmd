@@ -16,6 +16,8 @@ comment = "#>"
 
 # Installation
 
+------
+
 permuteDE is designed to be run on Unix-based operating systems such as macOS and linux.
 
 permuteDE installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by permuteDE:
@@ -39,6 +41,8 @@ remotes::install_github("corceslab/permuteDE", ref="main", repos = BiocManager::
 
 # Introduction
 
+------
+
 This tutorial provides a basic example of how to run permuteDE, an R package intended to help users assess which differential expression comparisons can be trusted and which should be met with skepticism. 
 
 permuteDE is applicable to any sequencing data suitable for differential expression analysis. It takes as input a Seurat object, SingleCellExperiment object, or matrix (see [Advanced Options](<LINK>) for details about input object types). Detailed parameter definitions are available under the [Functions](<LINK>) tab.
@@ -59,7 +63,7 @@ permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. If a matrix 
 
 To demonstrate how to run permuteDE, we’ll use a small sample dataset consisting of mouse brain snRNA-seq data, stored as a Seurat object.
 
-```{r, message = FALSE, warning = FALSE, fig.height = 5}
+```{r, message = FALSE, warning = TRUE, fig.height = 5}
 # Load dataset from permuteDE package
 data("sample_data")
 
@@ -72,6 +76,8 @@ plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
 ------
 
 # Running permuteDE
+
+------
 
 permuteDE proceeds in two main steps, each corresponding to a function: (1) `runDE()` and (2) `permuteDE()`.
 
@@ -191,7 +197,7 @@ plotDimReduction(reduction = sample_data@reductions$umap@cell.embeddings,
                  input = permuteDE_output,
                  split_labels = sample_data$cell_type,
                  color_by = "pvalue",
-                 palette_name = "frozen")
+                 palette = "frozen")
 ```
 
 This function can also be used analogously to `Seurat::FeaturePlot()` to show the values for a single feature across the cells.
@@ -218,6 +224,8 @@ feature_plots[["Inhibitory Neurons"]] | feature_plots[["Oligodendrocytes"]]
 ------
 
 # Advanced Options
+
+------
 
 ## Input object types
 
@@ -291,11 +299,14 @@ runDE_output <- runDE(object = pb_matrix,
                       n_cores = 1)
 ```
 
+
+------
+
 ## Complex designs
 
 ### Incorporating covariates or multiple factors
 
-To run differential expression analysis accounting for multiple factors/covariates, set parameter `design` in function `runDE()` to a character string providing the desired model formula or a `stats::model.matrix()` design matrix.
+To run differential expression analysis accounting for multiple factors/covariates, set parameter `design` in function `runDE()` to a character string providing the desired model formula.
 
 Note that complex model formulas are not compatible with the Wilcoxon rank sum test.
 
@@ -369,6 +380,9 @@ permuteDE_output <- permuteDE(input = runDE_output,
                               n_cores = 2)
 ```
 
+
+------
+
 ## permuteDE parameters
 
 ### Significance level & multiple comparison correction
@@ -411,6 +425,9 @@ permuteDE_output <- permuteDE(input = runDE_output,
                               n_cores = 2)
 ```
 
+
+------
+
 ## Palettes
 
 Four color palettes are included in this package. They can be called using function `permuteDEpalette()`, and setting parameter `swatch` to `TRUE` will display the palette.
@@ -418,14 +435,14 @@ Four color palettes are included in this package. They can be called using funct
 ```{r, eval = FALSE}
 permuteDEpalette(type = "discrete", 
                   n = 10, 
-                  palette_name = "choir", 
+                  palette = "choir", 
                   swatch = TRUE)
 ```
 
 ```{r, echo = FALSE, fig.height = 1}
-palette_choir <- permuteDEpalette(type = "discrete", n = 10, palette_name = "choir", swatch = TRUE)
-palette_archr <- permuteDEpalette(type = "discrete", n = 10, palette_name = "archr", swatch = TRUE)
-palette_inferno <- permuteDEpalette(type = "gradient", n = 10, palette_name = "inferno", swatch = TRUE)
-palette_frozen <- permuteDEpalette(type = "gradient", n = 10, palette_name = "frozen", swatch = TRUE) 
+palette_choir <- permuteDEpalette(type = "discrete", n = 10, palette = "choir", swatch = TRUE)
+palette_archr <- permuteDEpalette(type = "discrete", n = 10, palette = "archr", swatch = TRUE)
+palette_inferno <- permuteDEpalette(type = "gradient", n = 10, palette = "inferno", swatch = TRUE)
+palette_frozen <- permuteDEpalette(type = "gradient", n = 10, palette = "frozen", swatch = TRUE) 
 ```
 

@@ -82,10 +82,11 @@ permuteDEtheme <- function(color = "black",
 #' are "discrete" and "gradient". Defaults to discrete.
 #' @param n Number of colors. Default = \code{NULL} will return all of the
 #' pre-set colors in the palette.
-#' @param palette_name A character string indicating the palette name. Permitted
-#' values are "choir", "archr", "frozen", and "inferno". Default = \code{NULL}
-#' will use "choir" when \code{type} is "discrete" and "inferno" when
-#' \code{type} is "gradient.
+#' @param palette A character string indicating the palette name. Permitted
+#' values are "choir", "archr", "inferno", and "frozen". Default =
+#' \code{NULL} will use "choir" for discrete colors and "inferno" for
+#' gradient colors. Alternately, provide a vector of color values to use as
+#' starting values for the color palette.
 #' @param swatch A Boolean value indicating whether to plot a swatch of the
 #' palette.
 #'
@@ -95,7 +96,7 @@ permuteDEtheme <- function(color = "black",
 #'
 permuteDEpalette <- function(type = "discrete",
                              n = NULL,
-                             palette_name = NULL,
+                             palette = NULL,
                              swatch = FALSE) {
 
   # ---------------------------------------------------------------------------
@@ -104,17 +105,24 @@ permuteDEpalette <- function(type = "discrete",
 
   .validInput(type, "type")
   .validInput(n, "n")
-  .validInput(palette_name, "palette_name", type)
+  .validInput(palette, "palette", type)
   .validInput(swatch, "swatch")
 
   # ---------------------------------------------------------------------------
   # Create palette
   # ---------------------------------------------------------------------------
   if (type == "discrete") {
-    if (is.null(palette_name)) {
-      palette_name <- "choir"
+    if (is.null(palette)) {
+      palette <- "choir"
     }
-    if (palette_name == "choir") {
+    if (length(palette) > 1 || !(palette %in% c("choir", "archr"))) {
+      # Convert provided colors to hex values
+      starting_colors_rgb <- grDevices::col2rgb(palette)
+      starting_colors <- grDevices::rgb(starting_colors_rgb[1,],
+                                        starting_colors_rgb[2,],
+                                        starting_colors_rgb[3,],
+                                        maxColorValue = 255)
+    } else if (palette == "choir") {
       starting_colors <- c("#00CCE3", "#F8A100", "#E81AEF", "#F56900", "#6560FF",
                            "#00D456", "#A25AFF", "#C1D400", "#E58CCC", "#1990FF",
                            "#00DEA3", "#FF5B4B", "#F7D823", "#3BA833", "#AEA9FF",
@@ -135,7 +143,7 @@ permuteDEpalette <- function(type = "discrete",
                            "#A78D60", "#EA4974", "#3AEF83", "#D168CC", "#B77E7B",
                            "#77C65D", "#E2D452", "#FFB6C9", "#A2B3CC", "#C660A2",
                            "#616DFF", "#FF9240", "#9B9CA3", "#7DE3FF", "#FF69A3")
-    } else if (palette_name == "archr") {
+    } else if (palette == "archr") {
       starting_colors <- c("#D51F26","#272E6A","#208A42","#89288F","#F47D2B",
                            "#FEE500","#8A9FD1","#C06CAB","#D8A767","#90D5E4",
                            "#89C75F","#F37B7D","#9983BD","#D24B27","#3BBCA8",
@@ -145,31 +153,37 @@ permuteDEpalette <- function(type = "discrete",
       n <- length(starting_colors)
     }
     if (n <= length(starting_colors)) {
-      values <- starting_colors[1:n]
+      palette_values <- starting_colors[1:n]
     } else {
       .requirePackage("Polychrome", source = "cran")
-      values <- Polychrome::createPalette(N = n,
+      palette_values <- Polychrome::createPalette(N = n,
                                           seedcolors = starting_colors,
                                           range = c(50, 80))
-      names(values) <- NULL
+      names(palette_values) <- NULL
     }
   } else if (type == "gradient") {
-    if (is.null(palette_name)) {
-      palette_name <- "inferno"
+    if (is.null(palette)) {
+      palette <- "inferno"
     }
-    if (palette_name == "inferno") {
-      starting_colors <- c("#FFC715", "#FF9D33", "#FF7145", "#FF527B", "#ED35B9", "#CB27E2", "#9031FF", "#5939F7", "#2A26EA", "#1A17BA", "#0C0782", "#000A51")
-    } else if (palette_name == "frozen") {
-      starting_colors <- c("#61DAFF", "#48ACFF", "#337DFF", "#2E5CEF", "#5F36F2", "#511DCE", "#32217A", "#1E1551")
+    if (length(palette) > 1 || !(palette %in% c("inferno", "frozen"))) {
+      # Use provided colors
+      starting_colors <- palette
+    } else if (palette == "inferno") {
+      starting_colors <- c("#FFC715", "#FF9D33", "#FF7145", "#FF527B",
+                           "#ED35B9", "#CB27E2", "#9031FF", "#5939F7",
+                           "#2A26EA", "#1A17BA", "#0C0782", "#000A51")
+    } else if (palette == "frozen") {
+      starting_colors <- c("#61DAFF", "#48ACFF", "#337DFF", "#2E5CEF",
+                           "#5F36F2", "#511DCE", "#32217A", "#1E1551")
     }
     if (is.null(n)) {
       n <- length(starting_colors)
     }
     if (n != length(starting_colors)) {
       color_function <- grDevices::colorRampPalette(colors = starting_colors)
-      values <- color_function(n)
+      palette_values <- color_function(n)
     } else {
-      values <- starting_colors
+      palette_values <- starting_colors
     }
   }
 
@@ -180,17 +194,23 @@ permuteDEpalette <- function(type = "discrete",
     n_rows <- ceiling(n / 10)
     swatch_data <- data.frame(x = rep(1:10, n_rows)[1:n],
                               y = rep(n_rows:1, each = 10)[1:n],
-                              color = values)
+                              color = palette_values)
+    if (length(palette) > 1) {
+      title <- paste0('Custom palette')
+    } else {
+      title <- paste0('Palette: "', palette, '"')
+    }
+
     p <- ggplot2::ggplot(swatch_data, ggplot2::aes(x, y)) +
       ggplot2::geom_tile(ggplot2::aes(fill = color), color = NA) +
       ggplot2::scale_fill_identity() +
       ggplot2::coord_fixed() +
       ggplot2::theme_void() +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.05, vjust = 1, size = 10)) +
-      ggplot2::labs(title = paste0('Palette: "', palette_name, '"'))
+      ggplot2::labs(title = title)
     print(p)
   }
-  return(values)
+  return(palette_values)
 }
 
 #' Generate volcano plot(s) from differential expression results
@@ -485,9 +505,9 @@ plotHistogram <- function(input,
     runDE_n_sig_s <- dplyr::filter(input$permutation_test_results, split == s)$runDE_n_sig[1]
     pvalue_s <- dplyr::filter(input$permutation_test_results, split == s)$pvalue[1]
     if (pvalue_s == 1) {
-      palette <- c("#EE3751")
+      palette_values <- c("#EE3751")
     } else {
-      palette <- c("#AAAAAA", "#EE3751")
+      palette_values <- c("#AAAAAA", "#EE3751")
     }
     if (pvalue_s < 0.0001) {
       pvalue_s <- paste0("*p* < 0.0001")
@@ -520,7 +540,7 @@ plotHistogram <- function(input,
                               binwidth = 1,
                               breaks = seq(-0.01, x_max, 1)) +
       ggplot2::geom_vline(xintercept = runDE_n_sig_s, linetype = "longdash", color = "#EE3751") +
-      ggplot2::scale_fill_manual(values = palette) +
+      ggplot2::scale_fill_manual(values = palette_values) +
       ggplot2::scale_y_continuous(limits = y_limits, expand = c(0,0)) +
       ggplot2::scale_x_continuous(breaks = x_breaks) +
       ggplot2::labs(title = current_title,
@@ -756,7 +776,6 @@ plotFeature <- function(input,
           dplyr::mutate(se_value = sd_value/sqrt(n_group)) |>
           data.frame()
 
-        print(summary_feature_s)
         p <- p +
           ggplot2::geom_bar(stat = "summary", fun = "mean",
                             width = 0.1, color = "black",
@@ -840,8 +859,7 @@ plotFeature <- function(input,
 #' each split. Permitted values are "n_sig" (number of significant DE features),
 #' "pvalue" (permutation test p-value), "split" (values provided to parameter
 #' \code{split_labels}), and "feature" (values provided to parameter
-#' \code{feature_values}). Default = "split" will color the cells by the split
-#' they belong to if input to parameter \code{split_labels} is provided.
+#' \code{feature_values}). Default = \code{NULL} will not apply a color scheme.
 #' @param permutation_test_alpha A numeric value indicating the significance
 #' level to apply to the permutation test results. Splits that do not pass this
 #' threshold will be grayed out. Default = 1 applies no threshold.
@@ -849,10 +867,11 @@ plotFeature <- function(input,
 #' splits. Defaults to \code{FALSE}.
 #' @param label_statistics A Boolean value indicating whether to label the
 #' values of the selected metric. Defaults to \code{FALSE}.
-#' @param palette_name A character string indicating the palette name. Permitted
-#' values are "choir", "archr", "frozen", and "inferno". Default =
-#' \code{NULL} will use "choir" for discrete colors and "frozen" for
-#' gradient colors.
+#' @param palette A character string indicating the palette name. Permitted
+#' values are "choir", "archr", "inferno", and "frozen". Default =
+#' \code{NULL} will use "choir" for discrete colors and "inferno" for
+#' gradient colors. Alternately, provide a vector of color values to use as
+#' starting values for the color palette.
 #' @param color_limits A vector with the minimum and maximum values indicated by
 #' `color_by` ("n_sig" or "pvalue") for display on the color bar legend. Default
 #' = \code{NULL} sets limits automatically.
@@ -874,7 +893,7 @@ plotDimReduction <- function(reduction,
                              permutation_test_alpha = 1,
                              label_splits = FALSE,
                              label_statistics = FALSE,
-                             palette_name = NULL,
+                             palette = NULL,
                              color_limits = NULL,
                              fix_coords = TRUE,
                              ...) {
@@ -885,9 +904,9 @@ plotDimReduction <- function(reduction,
 
   .validInput(reduction, "reduction")
   .validInput(input, "input", "plotDimReduction")
-  .validInput(split_labels, "split_labels", reduction)
   .validInput(use_cells, "use_cells", list(t(reduction), "none"))
   .validInput(color_by, "color_by", list(split_labels, input))
+  .validInput(split_labels, "split_labels", list(reduction, color_by, "plotDimReduction"))
   .validInput(feature_values, "feature_values", list(reduction, use_cells, color_by))
   .validInput(feature_name, "feature_name", color_by)
   .validInput(permutation_test_alpha, "permutation_test_alpha", color_by)
@@ -908,13 +927,14 @@ plotDimReduction <- function(reduction,
   # Create temporary Seurat object
   tmp <- matrix(stats::rnorm(nrow(reduction) * 3, 10),
                 ncol = nrow(reduction), nrow = 3)
+  tmp <- methods::as(tmp, "dgCMatrix")
   colnames(tmp) <- rownames(reduction)
   rownames(tmp) <- paste0("t",seq_len(nrow(tmp)))
   tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
   # Add dimensionality reduction
-  tmp_seurat@reductions$dim_reduction <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = reduction,
-                                                                                       key = 'dimreduction',
-                                                                                       assay = 'tmp'))
+  tmp_seurat@reductions$dim_reduction <- Seurat::CreateDimReducObject(embeddings = reduction,
+                                                                                       key = 'dimreduction_',
+                                                                                       assay = 'tmp')
   # Add color groupings
   na_color <- "#BBBBBB"
   na_cutoff_low <- NA
@@ -925,7 +945,7 @@ plotDimReduction <- function(reduction,
     type <- "DimPlot"
     # No groups
     tmp_seurat$color_groups <- "all"
-    palette <- c(na_color)
+    palette_values <- c(na_color)
     color_legend <- ""
     if (label_splits == TRUE) {
       warning(" Input value for 'label_splits' is not used when parameters 'split_labels' or 'color_by' are NULL.")
@@ -936,10 +956,13 @@ plotDimReduction <- function(reduction,
   } else if (color_by == "split") {
     type <- "DimPlot"
     # Add splits to metadata
+    if (!methods::is(split_labels, "character") & !methods::is(split_labels, "factor")) {
+      split_labels <- as.character(split_labels)
+    }
     tmp_seurat$color_groups <- split_labels
-    palette <- permuteDEpalette(type = "discrete",
+    palette_values <- permuteDEpalette(type = "discrete",
                                 n = dplyr::n_distinct(split_labels),
-                                palette_name = palette_name)
+                                palette = palette)
     color_legend <- ""
     if (label_splits == TRUE) {
       add_labels <- TRUE
@@ -969,8 +992,8 @@ plotDimReduction <- function(reduction,
     tmp_seurat$n_sig <- key$runDE_n_sig[match(split_labels, key$split)]
     tmp_seurat$pvalue <- key$pvalue[match(split_labels, key$split)]
     # Color palette
-    palette <- permuteDEpalette(type = "gradient",
-                                palette_name = palette_name)
+    palette_values <- permuteDEpalette(type = "gradient",
+                                palette = palette)
     if (color_by == "n_sig") {
       color_legend <- "Number of<br>significant<br>DE features"
       if (all(is.na(tmp_seurat$n_sig))) {
@@ -1013,7 +1036,7 @@ plotDimReduction <- function(reduction,
         }
       }
       # Reverse palette
-      palette <- rev(palette)
+      palette_values <- rev(palette_values)
     }
     # Labels
     if (label_splits == TRUE & label_statistics == TRUE) {
@@ -1044,8 +1067,8 @@ plotDimReduction <- function(reduction,
     # Add feature values to metadata
     tmp_seurat$color_groups <- feature_values
     # Color palette
-    palette <- permuteDEpalette(type = "gradient",
-                                palette_name = palette_name)
+    palette_values <- permuteDEpalette(type = "gradient",
+                                palette = palette)
     # Set NA cutoff
     if (!is.null(color_limits)) {
       na_cutoff_low <- color_limits[1]
@@ -1098,7 +1121,7 @@ plotDimReduction <- function(reduction,
                      axis.title.y = ggplot2::element_text(angle = 90, vjust = 0.5),
                      plot.title = ggplot2::element_blank(),
                      legend.box.margin = ggplot2::margin(5, 5, 5, 5)) +
-      ggplot2::scale_color_manual(values = palette) +
+      ggplot2::scale_color_manual(values = palette_values) +
       ggplot2::labs(color = color_legend) +
       ggplot2::xlab("Dim 1") +
       ggplot2::ylab("Dim 2")
@@ -1119,7 +1142,7 @@ plotDimReduction <- function(reduction,
                      plot.title = ggplot2::element_blank(),
                      legend.title = ggtext::element_markdown(margin = ggplot2::margin(l = 5, r = 5)),
                      legend.box.margin = ggplot2::margin(5, 12, 5, 5)) +
-      ggplot2::scale_color_gradientn(colors = palette,
+      ggplot2::scale_color_gradientn(colors = palette_values,
                                      na.value = na_color,
                                      limits = c(na_cutoff_low, na_cutoff_high),
                                      guide = ggplot2::guide_colorbar(frame.colour = "black",

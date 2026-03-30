@@ -161,7 +161,7 @@ runDE <- function(object,
   .validInput(pseudobulk, "pseudobulk", list("runDE", object))
   .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
   .validInput(group_labels, "group_labels", list(object, metadata))
-  .validInput(split_labels, "split_labels", list(object, metadata))
+  .validInput(split_labels, "split_labels", list(object, metadata, "runDE"))
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
   .validInput(reference_group, "reference_group", list(object, metadata, group_labels, use_cells))
   .validInput(design, "design", list(object, metadata, group_labels))

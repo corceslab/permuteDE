@@ -64,6 +64,7 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
+<hr>
 <p>permuteDE is designed to be run on Unix-based operating systems such
 as macOS and linux.</p>
 <p>permuteDE installation currently requires <code>remotes</code> and
@@ -86,6 +87,7 @@ it isn’t already installed:</p>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
+<hr>
 <p>This tutorial provides a basic example of how to run permuteDE, an R
 package intended to help users assess which differential expression
 comparisons can be trusted and which should be met with skepticism.</p>
@@ -133,7 +135,23 @@ consisting of mouse brain snRNA-seq data, stored as a Seurat object.</p>
 <span><span class="co"># Seurat object containing a count matrix, UMAP coordinates, and cell metadata</span></span>
 <span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
-<span>                 color_by <span class="op">=</span> <span class="st">"split"</span><span class="op">)</span></span></code></pre></div>
+<span>                 color_by <span class="op">=</span> <span class="st">"split"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: The `size` argument of `element_line()` is deprecated as of ggplot2 3.4.0.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Please use the `linewidth` argument instead.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">permuteDE</span> package.</span></span>
+<span><span class="co">#&gt;   Please report the issue at</span></span>
+<span><span class="co">#&gt;   <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/cathrinesant/permuteDE/issues&gt;</span>.</span></span>
+<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once every 8 hours.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #555555;">Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span></span>
+<span><span class="co">#&gt; <span style="color: #555555;">generated.</span></span></span>
+<span><span class="co">#&gt; Warning: The `size` argument of `element_rect()` is deprecated as of ggplot2 3.4.0.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Please use the `linewidth` argument instead.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">permuteDE</span> package.</span></span>
+<span><span class="co">#&gt;   Please report the issue at</span></span>
+<span><span class="co">#&gt;   <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/cathrinesant/permuteDE/issues&gt;</span>.</span></span>
+<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once every 8 hours.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #555555;">Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span></span>
+<span><span class="co">#&gt; <span style="color: #555555;">generated.</span></span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="700"></p>
 <hr>
 </div>
@@ -141,6 +159,7 @@ consisting of mouse brain snRNA-seq data, stored as a Seurat object.</p>
 <div class="section level2">
 <h2 id="running-permutede">Running permuteDE<a class="anchor" aria-label="anchor" href="#running-permutede"></a>
 </h2>
+<hr>
 <p>permuteDE proceeds in two main steps, each corresponding to a
 function: (1) <code><a href="../reference/runDE.html">runDE()</a></code> and (2) <code><a href="../reference/permuteDE.html">permuteDE()</a></code>.</p>
 <div class="section level3">
@@ -188,13 +207,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:54 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:54 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (310 features) and 69.6% (1200 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-03-30 12:57:54 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -248,25 +267,25 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:07 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:11 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:11 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:11 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:17 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:17 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:17 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:23 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:23 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:23 : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:26 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:26 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:26 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:30 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:30 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-26 15:10:30 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-03-30 12:57:55 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:55 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:55 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:55 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:58 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:58 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:57:58 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:05 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:05 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:05 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:11 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:11 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:11 : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:14 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:14 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:14 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:18 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:18 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2026-03-30 12:58:18 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -369,7 +388,7 @@ p-value was &gt; 0.05.</p>
 <span>                 input <span class="op">=</span> <span class="va">permuteDE_output</span>,</span>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
 <span>                 color_by <span class="op">=</span> <span class="st">"pvalue"</span>,</span>
-<span>                 palette_name <span class="op">=</span> <span class="st">"frozen"</span><span class="op">)</span></span></code></pre></div>
+<span>                 palette <span class="op">=</span> <span class="st">"frozen"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="700"></p>
 <p>This function can also be used analogously to
 <code><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">Seurat::FeaturePlot()</a></code> to show the values for a single
@@ -399,6 +418,7 @@ using the parameter <code>normalization_method</code>.</p>
 <div class="section level2">
 <h2 id="advanced-options">Advanced Options<a class="anchor" aria-label="anchor" href="#advanced-options"></a>
 </h2>
+<hr>
 <div class="section level3">
 <h3 id="input-object-types">Input object types<a class="anchor" aria-label="anchor" href="#input-object-types"></a>
 </h3>
@@ -492,6 +512,7 @@ feature x cell matrix:</p>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      pseudobulk <span class="op">=</span> <span class="st">"supplied"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 </div>
 <div class="section level3">
@@ -503,7 +524,7 @@ feature x cell matrix:</p>
 <p>To run differential expression analysis accounting for multiple
 factors/covariates, set parameter <code>design</code> in function
 <code><a href="../reference/runDE.html">runDE()</a></code> to a character string providing the desired model
-formula or a <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code> design matrix.</p>
+formula.</p>
 <p>Note that complex model formulas are not compatible with the Wilcoxon
 rank sum test.</p>
 <p>Here is an example comparing the groups within the sample data while
@@ -579,6 +600,7 @@ separately within each paired set. In this example,
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              permute_within <span class="op">=</span> <span class="st">"sample"</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 </div>
 </div>
@@ -659,6 +681,7 @@ replicate.</p>
 <span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              permute_by <span class="op">=</span> <span class="va">sample_labels</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 </div>
 <div class="section level3">
@@ -670,7 +693,7 @@ using function <code><a href="../reference/permuteDEpalette.html">permuteDEpalet
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/permuteDEpalette.html">permuteDEpalette</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"discrete"</span>, </span>
 <span>                  n <span class="op">=</span> <span class="fl">10</span>, </span>
-<span>                  palette_name <span class="op">=</span> <span class="st">"choir"</span>, </span>
+<span>                  palette <span class="op">=</span> <span class="st">"choir"</span>, </span>
 <span>                  swatch <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="permuteDE_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" alt="" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-2.png" class="r-plt" alt="" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-3.png" class="r-plt" alt="" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-4.png" class="r-plt" alt="" width="700"></p>
 </div>

@@ -4,12 +4,7 @@
 \alias{permuteDEpalette}
 \title{Generate color palette}
 \usage{
-permuteDEpalette(
-  type = "discrete",
-  n = NULL,
-  palette_name = NULL,
-  swatch = FALSE
-)
+permuteDEpalette(type = "discrete", n = NULL, palette = NULL, swatch = FALSE)
 }
 \arguments{
 \item{type}{A character string indicating the palette type. Permitted values
@@ -18,10 +13,11 @@ are "discrete" and "gradient". Defaults to discrete.}
 \item{n}{Number of colors. Default = \code{NULL} will return all of the
 pre-set colors in the palette.}
 
-\item{palette_name}{A character string indicating the palette name. Permitted
-values are "choir", "archr", "frozen", and "inferno". Default = \code{NULL}
-will use "choir" when \code{type} is "discrete" and "inferno" when
-\code{type} is "gradient.}
+\item{palette}{A character string indicating the palette name. Permitted
+values are "choir", "archr", "inferno", and "frozen". Default =
+\code{NULL} will use "choir" for discrete colors and "inferno" for
+gradient colors. Alternately, provide a vector of color values to use as
+starting values for the color palette.}
 
 \item{swatch}{A Boolean value indicating whether to plot a swatch of the
 palette.}
