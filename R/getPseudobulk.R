@@ -254,38 +254,98 @@ getPseudobulk <- function(object,
                                verbose = verbose)
     # Create list of feature x replicate pseudobulk matrices, one per split
     output_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
-      split_s <- splits == s
-      # Remove features with 0 counts
-      count_matrix_s <- count_matrix[Matrix::rowSums(count_matrix[, split_s]) > 0, split_s]
+      # Subset matrix to split s
+      split_s <- which(splits == s)
+      count_matrix_s <- count_matrix[, split_s, drop = FALSE]
+
+      # Metadata values
+      n_all_features <- nrow(count_matrix_s)
+      n_cells_s <- ncol(count_matrix_s)
+      all_features <- rownames(count_matrix_s)
+
+      # Set up row chunks if matrix is large
+      if (ncol(count_matrix_s) > 100000) {
+        chunk_size <- 5000
+      } else {
+        chunk_size <- NULL
+      }
+      if (is.null(chunk_size) || chunk_size >= n_all_features) {
+        row_chunks <- list(seq_len(n_all_features))
+      } else {
+        starts <- seq.int(1L, n_all_features, by = chunk_size)
+        row_chunks <- lapply(starts, function(i) {
+          seq.int(i, min(i + chunk_size - 1L, n_all_features))
+        })
+      }
+
+      # Preallocate
+      feature_totals <- numeric(n_all_features)
+      nonzero_per_feature <- numeric(n_all_features)
+
+      # Pass 1: feature totals + nonzero counts
+      for (i in row_chunks) {
+        block <- count_matrix_s[i, , drop = FALSE]
+        feature_totals[i] <- Matrix::rowSums(block)
+        nonzero_per_feature[i] <- Matrix::rowSums(block > 0)
+      }
+
+      # Remove features with zero counts
+      keep_nonzero <- feature_totals > 0
+      count_matrix_s <- count_matrix_s[keep_nonzero, , drop = FALSE]
+      n_nonzero_features <- nrow(count_matrix_s)
 
       # Identify features that don't pass input thresholds
-      keep_features_count <- Matrix::rowSums(count_matrix_s > 0) >= min_cells_per_feature
-      prop_nonzero <- Matrix::rowMeans((count_matrix_s > 0))
-      keep_features_prop <- prop_nonzero >= min_prop_cells_per_feature
-      exclude_features <- rownames(count_matrix_s)[-which(keep_features_count & keep_features_prop)]
+      exclude_feature_indices <- !((nonzero_per_feature[keep_nonzero] >= min_cells_per_feature) &
+                                     ((nonzero_per_feature[keep_nonzero] / n_cells_s) >= min_prop_cells_per_feature))
+      exclude_features <- all_features[keep_nonzero][exclude_feature_indices]
 
       # Pseudobulk
       if (pseudobulk == "generate") {
-        model_mat <- stats::model.matrix(~ 0 + rep_, data = data.frame(rep_ = as.character(replicates[split_s])))
-        output_mat <- count_matrix_s %*% model_mat
+        rep_s <- paste0("rep_", as.character(replicates[split_s]))
+        rep_levels <- unique(rep_s)
+        model_mat <- Matrix::sparseMatrix(i = seq_along(rep_s),
+                                          j = match(rep_s, rep_levels),
+                                          x = 1,
+                                          dims = c(length(rep_s), length(rep_levels)),
+                                          dimnames = list(NULL, rep_levels))
+        # Set up row chunks again
+        if (is.null(chunk_size) || chunk_size >= n_nonzero_features) {
+          row_chunks <- list(seq_len(n_nonzero_features))
+        } else {
+          starts <- seq.int(1L, n_nonzero_features, by = chunk_size)
+          row_chunks <- lapply(starts, function(i) {
+            seq.int(i, min(i + chunk_size - 1L, n_nonzero_features))
+          })
+        }
+        # Create pseudobulk matrix
+        out_chunks <- lapply(row_chunks, function(i) {
+          count_matrix_s[i, , drop = FALSE] %*% model_mat
+        })
+        output_mat <- do.call(rbind, out_chunks)
+
+        # Matrix type
+        output_mat <- methods::as(output_mat, "dgCMatrix")
+
       } else {
         output_mat <- count_matrix_s
       }
 
       # Metadata values
-      n_all_features <- nrow(count_matrix)
-      n_nonzero_features <- nrow(output_mat)
-      n_features_exclude <- length(exclude_features)
-      n_features_for_DE <- n_nonzero_features-n_features_exclude
-      prop_features_exclude <- (n_all_features-n_features_for_DE)/n_all_features
+      n_features_for_DE <- n_nonzero_features - length(exclude_features)
+      n_features_exclude <- n_all_features - n_features_for_DE
+      prop_features_exclude <- n_features_exclude/n_all_features
       n_all_reads <- sum(Matrix::rowSums(count_matrix_s))
-      n_reads_exclude <- sum(Matrix::rowSums(output_mat[exclude_features,]))
+      n_reads_exclude <- if (any(exclude_feature_indices)) {
+        sum(Matrix::rowSums(output_mat[exclude_feature_indices,]))
+      } else {
+        0
+      }
       n_reads_for_DE <- n_all_reads - n_reads_exclude
       prop_reads_exclude <- n_reads_exclude/n_all_reads
 
       # Exclude features
       if (filter == TRUE) {
-        output_mat <- output_mat[!(rownames(output_mat) %in% exclude_features),]
+        output_mat <- output_mat[!exclude_feature_indices, , drop = FALSE]
       }
 
       return(list("output_mat" = output_mat,
