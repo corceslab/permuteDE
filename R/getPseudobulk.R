@@ -104,7 +104,7 @@ getPseudobulk <- function(object,
   .validInput(filter, "filter")
   .validInput(pseudobulk, "pseudobulk", list("getPseudobulk", object))
   .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
+  .validInput(use_layer, "use_layer", list(object, use_assay))
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
 
@@ -252,6 +252,18 @@ getPseudobulk <- function(object,
                                use_layer = use_layer,
                                use_cells = use_cells,
                                verbose = verbose)
+    
+    # n_cores workers in parallel multiplies the open-file count and can
+    # quickly exceed the OS ulimit.  Detect this and fall back to sequential
+    # processing so that at most one set of file handles is active at a time.   
+    is_bpcells <- inherits(count_matrix, "IterableMatrix")                                                                                                                         
+    if (is_bpcells && n_cores > 1) {                                                                                                                                               
+      if (verbose) message("BPCells on-disk matrix detected: using sequential processing to avoid 'Too many open files' errors. If an error still exists, please increase file size limits by running 'ulimit -n'")                                                  
+      n_cores_use <- 1L
+      } else {                                                                                                                                                                       
+        n_cores_use <- n_cores                                                                                                                                                       
+      }
+    
     # Create list of feature x replicate pseudobulk matrices, one per split
     output_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
       # Subset matrix to split s
@@ -359,7 +371,7 @@ getPseudobulk <- function(object,
                   "n_reads_exclude" = n_reads_exclude,
                   "n_reads_for_DE" = n_reads_for_DE,
                   "prop_reads_exclude" = prop_reads_exclude))
-    }, mc.cores = n_cores)
+    }, mc.cores = n_cores_use)
 
     # Combine output
     mat_list <- do.call(rbind, output_list)[, "output_mat"]

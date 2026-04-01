@@ -178,7 +178,7 @@ runDE <- function(object,
   .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
   .validInput(force_balance, "force_balance", pseudobulk)
   .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
+  .validInput(use_layer, "use_layer", list(object, use_assay))
   .validInput(random_seed, "random_seed")
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
@@ -429,8 +429,8 @@ runDE <- function(object,
         n_exclude <- max(replicates_per_group) - min(replicates_per_group)
         downsample_group <- names(replicates_per_group[replicates_per_group == max(replicates_per_group)])
         exclude_indices <- sample(which(current_groups == downsample_group), n_exclude)
-        m <- m[, -exclude_replicates, drop = FALSE]
-        current_groups <- current_groups[-exclude_replicates]
+        m <- m[, -exclude_indices, drop = FALSE]
+        current_groups <- current_groups[-exclude_indices]
       }
     }
     return(m)
