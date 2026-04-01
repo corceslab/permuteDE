@@ -379,6 +379,8 @@ runDE <- function(object,
     if (normalize_prefilter == TRUE) {
       exclude_features <- output_list[["metadata"]][["exclude_features"]]
     }
+    rm(output_list)
+    gc(verbose = FALSE)
   } else {
     # If necessary, separate the supplied pseudobulk matrix by split
     # Returns a list containing one pseudobulk matrix (feature x replicate) per split

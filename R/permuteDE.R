@@ -416,82 +416,134 @@ permuteDE <- function(input,
         # Store permuted group indices
         permutation_reference_group_indices[[current_split]] <- permuted_group_indices
 
+        # For cell-level tests, cap concurrent workers based on estimated memory
+        # DE tools create dense matrix copies internally: each worker needs roughly
+        # 5x the sparse matrix size. Target a 4 GB ceiling for concurrent workers.
+        if (pseudobulk == "none") {
+          bytes_per_worker <- as.numeric(object.size(current_mat)) * 5
+          effective_cores <- max(1L, min(n_cores, floor(4e9 / bytes_per_worker)))
+          if (effective_cores < n_cores && verbose) {
+            message(format(Sys.time(), "%Y-%m-%d %X"),
+                    " : Large cell matrix (~", round(bytes_per_worker / 1e6), " MB per worker). ",
+                    "Reducing parallel workers from ", n_cores, " to ", effective_cores,
+                    " to limit memory usage.")
+          }
+        } else {
+          effective_cores <- n_cores
+        }
+        
+        # Define the per-permutation worker function
+        .run_one_permutation <- function(i) {
+          targets_i <- group_key[current_replicates,]
+          targets_i$group <- non_reference_group
+          targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- reference_group
+          
+          group_factor <- factor(targets_i$group)
+          group_factor <- stats::relevel(group_factor, ref = reference_group)
+          targets_i$group <- group_factor
+          
+          if (!is.null(design_formula)) {
+            design_i <- stats::model.matrix(design_formula, data = targets_i)
+          } else {
+            design_i <- stats::model.matrix(~ group, data = targets_i)
+          }
+          
+          de_results_i <- switch(de_method,
+                                 edgeR = .runDE.edgeR(mat = current_mat,
+                                                      targets = targets_i,
+                                                      design = design_i,
+                                                      de_test = de_test,
+                                                      de_params = de_params),
+                                 DESeq2 = .runDE.DESeq2(mat = current_mat,
+                                                        targets = targets_i,
+                                                        design = design_i,
+                                                        de_test = de_test,
+                                                        de_params = de_params),
+                                 limma = .runDE.limma(mat = current_mat,
+                                                      targets = targets_i,
+                                                      design = design_i,
+                                                      de_test = de_test,
+                                                      de_params = de_params),
+                                 presto = .runDE.presto(mat = current_mat,
+                                                        targets = targets_i,
+                                                        de_test = de_test,
+                                                        de_params = de_params))
+          de_results_i <- de_results_i |>
+            dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
+                          permutation = i,
+                          split = current_split) |>
+            dplyr::arrange(padj)
+          if (return_all != TRUE) {
+            de_results_i <- de_results_i |>
+              dplyr::group_by(split, permutation) |>
+              dplyr::summarise(
+                n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+                min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+                max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
+                min_lfc_all = min(lfc),
+                max_lfc_all = max(lfc)) |>
+              data.frame() |>
+              dplyr::mutate(reference_group_overlap = ref_group_overlap[i],
+                            non_reference_group_overlap = non_ref_group_overlap[i]) |>
+              dplyr::select(split,
+                            permutation,
+                            reference_group_overlap,
+                            non_reference_group_overlap,
+                            n_sig,
+                            min_lfc_sig,
+                            max_lfc_sig,
+                            min_lfc_all,
+                            max_lfc_all)
+          }
+          return(de_results_i)
+        }
+        
         # Progress
         if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
                              " : Running ", current_n_iterations, " permutations for split ", current_split,
                              " (", s, "/", n_splits, ")..")
-        # Run permutations
-        permutation_DE_results_list <- pbmcapply::pbmclapply(seq_len(current_n_iterations-1),
-                                                             FUN = function(i) {
-                                                               # Create target dataframe by subsetting group_key to current replicates
-                                                               targets_i <- group_key[current_replicates,]
-                                                               # Switch to permuted group labels
-                                                               targets_i$group <- non_reference_group
-                                                               targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- reference_group
-
-                                                               group_factor <- factor(targets_i$group)
-                                                               group_factor <- stats::relevel(group_factor, ref = reference_group)
-                                                               targets_i$group <- group_factor
-
-                                                               # Create design
-                                                               if (!is.null(design_formula)) {
-                                                                 design_i <- stats::model.matrix(design_formula, data = targets_i)
-                                                               } else {
-                                                                 design_i <- stats::model.matrix(~ group, data = targets_i)
-                                                               }
-
-                                                               # Run DE
-                                                               de_results_i <- switch(de_method,
-                                                                                      edgeR = .runDE.edgeR(mat = current_mat,
-                                                                                                           targets = targets_i,
-                                                                                                           design = design_i,
-                                                                                                           de_test = de_test,
-                                                                                                           de_params = de_params),
-                                                                                      DESeq2 = .runDE.DESeq2(mat = current_mat,
-                                                                                                             targets = targets_i,
-                                                                                                             design = design_i,
-                                                                                                             de_test = de_test,
-                                                                                                             de_params = de_params),
-                                                                                      limma = .runDE.limma(mat = current_mat,
-                                                                                                           targets = targets_i,
-                                                                                                           design = design_i,
-                                                                                                           de_test = de_test,
-                                                                                                           de_params = de_params),
-                                                                                      presto = .runDE.presto(mat = current_mat,
-                                                                                                             targets = targets_i,
-                                                                                                             de_test = de_test,
-                                                                                                             de_params = de_params))
-                                                               de_results_i <- de_results_i |>
-                                                                 dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
-                                                                               permutation = i,
-                                                                               split = current_split) |>
-                                                                 dplyr::arrange(padj)
-                                                               if (return_all != TRUE) {
-                                                                 de_results_i <- de_results_i |>
-                                                                   dplyr::group_by(split, permutation) |>
-                                                                   dplyr::summarise(
-                                                                     n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
-                                                                     min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-                                                                     max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-                                                                     min_lfc_all = min(lfc),
-                                                                     max_lfc_all = max(lfc)) |>
-                                                                   data.frame() |>
-                                                                   dplyr::mutate(reference_group_overlap = ref_group_overlap[i],
-                                                                                 non_reference_group_overlap = non_ref_group_overlap[i]) |>
-                                                                   dplyr::select(split,
-                                                                                 permutation,
-                                                                                 reference_group_overlap,
-                                                                                 non_reference_group_overlap,
-                                                                                 n_sig,
-                                                                                 min_lfc_sig,
-                                                                                 max_lfc_sig,
-                                                                                 min_lfc_all,
-                                                                                 max_lfc_all)
-                                                               }
-                                                               return(de_results_i)
-                                                             },
-                                                             mc.cores = n_cores,
-                                                             mc.set.seed = TRUE)
+        
+        # Run permutations in batches to bound peak memory.
+        # For pseudobulk this is a single batch (batch_size = all iterations).
+        # For cell-level, batch_size = effective_cores so each batch frees
+        # its DE objects before the next batch starts.
+        if (pseudobulk == "none") {
+          batch_size <- effective_cores
+        } else {
+          batch_size <- current_n_iterations - 1L
+        }
+        iter_indices <- seq_len(current_n_iterations - 1L)
+        batches <- split(iter_indices,
+                         ceiling(seq_along(iter_indices) / batch_size))
+        
+        permutation_DE_results_list <- vector("list", length(iter_indices))
+        for (batch in batches) {
+          if (effective_cores > 1L) {
+            batch_results <- tryCatch(
+              pbmcapply::pbmclapply(batch,
+                                    FUN = .run_one_permutation,
+                                    mc.cores = effective_cores,
+                                    mc.set.seed = TRUE),
+              error = function(e) {
+                if (grepl("mcfork|allocate memory|Cannot fork", conditionMessage(e))) {
+                  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
+                                       " : Unable to fork processes (out of memory). Falling back to sequential processing.")
+                  lapply(batch, FUN = .run_one_permutation)
+                } else {
+                  stop(e)
+                }
+              }
+            )
+          } else {
+            batch_results <- lapply(batch, FUN = .run_one_permutation)
+          }
+          
+          for (idx in seq_along(batch)) {
+            permutation_DE_results_list[[batch[idx]]] <- batch_results[[idx]]
+          }
+          rm(batch_results)
+          gc(verbose = FALSE)
+        }
 
         if (return_all == TRUE) {
           permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()
