@@ -129,11 +129,11 @@ permuteDE <- function(input,
   pseudobulk <- input$parameters$pseudobulk
 
   # Validate retrieved parameters
-  .validInput(de_method, "de_method")
-  .validInput(de_test, "de_test", de_method)
-  .validInput(de_params, "de_params", list(de_method, de_test))
   .validInput(p_adjust_method, "p_adjust_method")
   .validInput(pseudobulk, "pseudobulk", list("permuteDE", input))
+  .validInput(de_method, "de_method", list("permuteDE", pseudobulk, input))
+  .validInput(de_test, "de_test", de_method)
+  .validInput(de_params, "de_params", list(de_method, de_test))
 
   # Additional validation
   .validInput(permute_by, "permute_by", list(input, pseudobulk))
@@ -431,23 +431,23 @@ permuteDE <- function(input,
         } else {
           effective_cores <- n_cores
         }
-        
+
         # Define the per-permutation worker function
         .run_one_permutation <- function(i) {
           targets_i <- group_key[current_replicates,]
           targets_i$group <- non_reference_group
           targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- reference_group
-          
+
           group_factor <- factor(targets_i$group)
           group_factor <- stats::relevel(group_factor, ref = reference_group)
           targets_i$group <- group_factor
-          
+
           if (!is.null(design_formula)) {
             design_i <- stats::model.matrix(design_formula, data = targets_i)
           } else {
             design_i <- stats::model.matrix(~ group, data = targets_i)
           }
-          
+
           de_results_i <- switch(de_method,
                                  edgeR = .runDE.edgeR(mat = current_mat,
                                                       targets = targets_i,
@@ -467,7 +467,11 @@ permuteDE <- function(input,
                                  presto = .runDE.presto(mat = current_mat,
                                                         targets = targets_i,
                                                         de_test = de_test,
-                                                        de_params = de_params))
+                                                        de_params = de_params),
+                                 BPCells = .runDE.BPCells(mat = current_mat,
+                                                          targets = targets_i,
+                                                          de_test = de_test,
+                                                          de_params = de_params))
           de_results_i <- de_results_i |>
             dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                           permutation = i,
@@ -497,12 +501,12 @@ permuteDE <- function(input,
           }
           return(de_results_i)
         }
-        
+
         # Progress
         if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
                              " : Running ", current_n_iterations, " permutations for split ", current_split,
                              " (", s, "/", n_splits, ")..")
-        
+
         # Run permutations in batches to bound peak memory.
         # For pseudobulk this is a single batch (batch_size = all iterations).
         # For cell-level, batch_size = effective_cores so each batch frees
@@ -515,7 +519,7 @@ permuteDE <- function(input,
         iter_indices <- seq_len(current_n_iterations - 1L)
         batches <- split(iter_indices,
                          ceiling(seq_along(iter_indices) / batch_size))
-        
+
         permutation_DE_results_list <- vector("list", length(iter_indices))
         for (batch in batches) {
           if (effective_cores > 1L) {
@@ -537,7 +541,7 @@ permuteDE <- function(input,
           } else {
             batch_results <- lapply(batch, FUN = .run_one_permutation)
           }
-          
+
           for (idx in seq_along(batch)) {
             permutation_DE_results_list[[batch[idx]]] <- batch_results[[idx]]
           }

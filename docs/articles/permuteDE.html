@@ -192,6 +192,8 @@ parameters <code>de_method</code> and <code>de_test</code>:</p>
 “wilcox_cpm_log”</li>
 <li>
 <code>presto</code>: “wilcox_cpm”, “wilcox_cpm_log”</li>
+<li>
+<code>BPCells</code>: “wilcox_cpm”, “wilcox_cpm_log”</li>
 </ul>
 <p>By default, <code><a href="../reference/runDE.html">runDE()</a></code> will run differential expression
 analysis using <code>edgeR</code> LRT. The precise execution of the
@@ -207,13 +209,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:54 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:54 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
-<span><span class="co">#&gt; Excluded between 19.43% (310 features) and 69.6% (1200 features) of features in each split.</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:34 : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:34 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:54 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-04-08 12:50:34 : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -267,25 +269,25 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:55 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:55 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:55 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:55 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:58 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:58 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:57:58 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:05 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:05 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:05 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:11 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:11 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:11 : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:14 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:14 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:14 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:18 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:18 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2026-03-30 12:58:18 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-04-08 12:50:35 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:35 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:35 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:35 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:39 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:39 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:39 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:45 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:45 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:45 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:51 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:51 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:51 : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:54 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:54 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:54 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:58 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:58 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2026-04-08 12:50:58 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -317,19 +319,19 @@ runtime</li>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">permuteDE_output</span><span class="op">$</span><span class="va">permutation_DE_summary</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        split permutation reference_group_overlap non_reference_group_overlap</span></span>
-<span><span class="co">#&gt; 1 Astrocytes           1                    0.25                        0.25</span></span>
-<span><span class="co">#&gt; 2 Astrocytes           2                    0.75                        0.75</span></span>
-<span><span class="co">#&gt; 3 Astrocytes           3                    0.75                        0.75</span></span>
-<span><span class="co">#&gt; 4 Astrocytes           4                    0.50                        0.50</span></span>
+<span><span class="co">#&gt; 1 Astrocytes           1                    0.50                        0.50</span></span>
+<span><span class="co">#&gt; 2 Astrocytes           2                    0.25                        0.25</span></span>
+<span><span class="co">#&gt; 3 Astrocytes           3                    0.50                        0.50</span></span>
+<span><span class="co">#&gt; 4 Astrocytes           4                    0.75                        0.75</span></span>
 <span><span class="co">#&gt; 5 Astrocytes           5                    0.50                        0.50</span></span>
-<span><span class="co">#&gt; 6 Astrocytes           6                    0.75                        0.75</span></span>
+<span><span class="co">#&gt; 6 Astrocytes           6                    0.25                        0.25</span></span>
 <span><span class="co">#&gt;   n_sig min_lfc_sig max_lfc_sig min_lfc_all max_lfc_all</span></span>
-<span><span class="co">#&gt; 1     5   -3.472168    0.479491   -3.472168    1.391549</span></span>
-<span><span class="co">#&gt; 2     1    1.839246    1.839246   -1.342398    1.839246</span></span>
-<span><span class="co">#&gt; 3     0          NA          NA   -1.392288    1.878978</span></span>
-<span><span class="co">#&gt; 4     0          NA          NA   -1.496774    1.639203</span></span>
-<span><span class="co">#&gt; 5     0          NA          NA   -3.156099    1.541848</span></span>
-<span><span class="co">#&gt; 6     0          NA          NA   -1.187755    1.699554</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     1  -0.7063576  -0.7063576   -1.306694    2.303966</span></span>
+<span><span class="co">#&gt; 2     0          NA          NA   -1.918125    1.173536</span></span>
+<span><span class="co">#&gt; 3     0          NA          NA   -1.128684    1.283791</span></span>
+<span><span class="co">#&gt; 4     4  -1.5885933   2.7290607   -1.588593    2.729061</span></span>
+<span><span class="co">#&gt; 5     0          NA          NA   -2.501939    1.356584</span></span>
+<span><span class="co">#&gt; 6     0          NA          NA   -1.374724    1.068373</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
@@ -681,6 +683,15 @@ replicate.</p>
 <span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              permute_by <span class="op">=</span> <span class="va">sample_labels</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p>For cell-level tests where the input count matrix is stored as a
+<code>BPCells</code> <code>IterableMatrix</code> (which can greatly
+improve computational efficiency), the only differential method that is
+currently compatible is <code>BPCells</code>, which uses function
+<code>BPCells::marker_features()</code>.</p>
+<p>In such cases, please specify parameters
+<code>de_method = "BPCells"</code> and
+<code>de_test = "wilcox_log_cpm"</code> or
+<code>de_test = "wilcox_cpm"</code>.</p>
 <hr>
 </div>
 </div>

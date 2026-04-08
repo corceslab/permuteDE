@@ -299,8 +299,59 @@
       stop("Input for '", name, "' must be a single value of class 'character', please supply valid input!")
     }
     # Must be among permitted values
-    if (!(input %in% c("edgeR", "DESeq2", "limma", "presto"))) {
-      stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma", "presto"), collapse = ", "), "), please supply valid input!")
+    if (!(input %in% c("edgeR", "DESeq2", "limma", "presto", "BPCells"))) {
+      stop("Input for '", name, "' must be among permitted values (", paste0(c("edgeR", "DESeq2", "limma", "presto", "BPCells"), collapse = ", "), "), please supply valid input!")
+    }
+    # BPCells method won't work unless input matrix is "IterableMatrix"
+    if (input == "BPCells") {
+      if (other[[1]] == "runDE") {
+        # Extract input matrix
+        input_matrix <- .getMatrix(object = other[[3]],
+                                   use_assay = other[[4]],
+                                   use_layer = other[[5]],
+                                   use_cells = other[[6]],
+                                   verbose = FALSE)
+      } else if (other[[1]] == "permuteDE") {
+        # Extract input matrix
+        if (other[[2]] == "none") {
+          # Grab feature x cell matrix
+          input_matrix <- other[[3]]$cell_values[[1]]
+        } else {
+          # Grab PB matrix
+          input_matrix <- other[[3]]$PB_values[[1]]
+        }
+      }
+      # Input matrix must be "IterableMatrix"
+      if (!methods::is(input_matrix, "IterableMatrix")) {
+        stop("When input for '", name, "' is 'BPCells', counts must be provided as class 'IterableMatrix'. Please supply valid input!")
+      }
+    } else {
+      # Cell-level tests on BPCells matrices are only compatible with BPCells
+      if (other[[2]] == "none") {
+        # Extract input matrix
+        if (other[[1]] == "runDE") {
+          # Extract input matrix
+          input_matrix <- .getMatrix(object = other[[3]],
+                                     use_assay = other[[4]],
+                                     use_layer = other[[5]],
+                                     use_cells = other[[6]],
+                                     verbose = FALSE)
+        } else if (other[[1]] == "permuteDE") {
+          # Extract input matrix
+          if (other[[2]] == "none") {
+            # Grab feature x cell matrix
+            input_matrix <- other[[3]]$cell_values[[1]]
+          } else {
+            # Grab PB matrix
+            input_matrix <- other[[3]]$PB_values[[1]]
+          }
+        }
+        # Input matrix cannot be "IterableMatrix"
+        if (methods::is(input_matrix, "IterableMatrix")) {
+          stop("When counts are provided as class 'IterableMatrix' and input to parameter 'pseudobulk' is 'none', input for '",
+               name, "' must be 'BPCells'. Please supply valid input!")
+        }
+      }
     }
   }
 
@@ -324,6 +375,10 @@
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("trend", "voom", "wilcox_cpm", "wilcox_log_cpm"), collapse = ", "), "), please supply valid input!")
       }
     } else if (other == "presto") {
+      if (!(input %in% c("wilcox_cpm", "wilcox_log_cpm"))) {
+        stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("wilcox_cpm", "wilcox_log_cpm"), collapse = ", "), "), please supply valid input!")
+      }
+    } else if (other == "BPCells") {
       if (!(input %in% c("wilcox_cpm", "wilcox_log_cpm"))) {
         stop("When input for 'de_method' is '", other, "', input for '", name, "' must be among permitted values (", paste0(c("wilcox_cpm", "wilcox_log_cpm"), collapse = ", "), "), please supply valid input!")
       }
@@ -640,6 +695,8 @@
         }
       } else if (other[[1]] == "presto") {
         allowed_functions <- c("DGEList", "cpm", "wilcoxauc")
+      } else if (other[[1]] == "BPCells") {
+        allowed_functions <- c("DGEList", "cpm", "marker_features", "lfc")
       }
       if (!all(names(input) %in% allowed_functions)) {
         stop("When supplying additional parameters to '", name, "' for use",

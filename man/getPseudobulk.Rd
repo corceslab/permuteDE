@@ -83,8 +83,8 @@ for \code{Seurat} objects and the \code{counts} assay for
 \code{SingleCellExperiment} objects.}
 
 \item{use_layer}{For \code{Seurat} objects, a string or vector
-indicating the layer—previously known as slot—to use in the provided object.
-Default = \code{NULL} will use the \code{counts} layer.}
+indicating the layer (previously known as slot) to use in the provided
+object. Default = \code{NULL} will use the \code{counts} layer.}
 
 \item{n_cores}{A numeric value indicating the number of cores to use for
 parallelization. Default = \code{NULL} will use the number of available cores

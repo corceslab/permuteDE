@@ -82,14 +82,14 @@ are: "generate" (pseudobulk matrices will be generated), "supplied"
 analysis will be run). Defaults to "generate".}
 
 \item{de_method}{Which tool to use for differential expression analysis.
-Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
-"edgeR".}
+Permitted values are "edgeR", "DESeq2", "limma", "presto", and "BPCells".
+Defaults to "edgeR".}
 
 \item{de_test}{Which test to use for differential expression analysis.
 Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
 "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
-"wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
-Defaults to "LRT".}
+"wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm"),
+and "BPCells" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".}
 
 \item{de_params}{A list of lists containing additional parameters to be
 passed to specific DE functions. The name of each element must be the
@@ -143,8 +143,8 @@ for \code{Seurat} objects and the \code{counts} assay for
 \code{SingleCellExperiment} objects.}
 
 \item{use_layer}{For \code{Seurat} objects, a string or vector
-indicating the layer—previously known as slot—to use in the provided object.
-Default = \code{NULL} will use the \code{counts} layer.}
+indicating the layer (previously known as slot) to use in the provided
+object. Default = \code{NULL} will use the \code{counts} layer.}
 
 \item{random_seed}{A numerical value indicating the random seed to be used.
 Defaults to 1. Only relevant in this function when parameter

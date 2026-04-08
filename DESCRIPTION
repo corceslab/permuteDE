@@ -21,6 +21,7 @@ Imports:
     ggtext,
     digest
 Suggests: 
+    BPCells,
     DESeq2,
     ggbeeswarm,
     ggrepel,

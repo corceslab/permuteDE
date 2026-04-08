@@ -95,6 +95,7 @@ Function `runDE()` allows the user to run several different methods of different
 * `DESeq2`: "LRT", "Wald"
 * `limma`: "trend", "voom", "wilcox_cpm", "wilcox_cpm_log"
 * `presto`: "wilcox_cpm", "wilcox_cpm_log"
+* `BPCells`: "wilcox_cpm", "wilcox_cpm_log"
 
 By default, `runDE()` will run differential expression analysis using `edgeR` LRT. The precise execution of the differential expression analysis can be further adjusted using parameter `de_params` to pass further parameters to the selected method. This function is parallelized when multiple splits are assessed, so efficiency improves as `n_cores` is increased, up to the number of splits.
 
@@ -425,6 +426,9 @@ permuteDE_output <- permuteDE(input = runDE_output,
                               n_cores = 2)
 ```
 
+For cell-level tests where the input count matrix is stored as a `BPCells` `IterableMatrix` (which can greatly improve computational efficiency), the only differential method that is currently compatible is `BPCells`, which uses function `BPCells::marker_features()`.
+
+In such cases, please specify parameters `de_method = "BPCells"` and `de_test = "wilcox_log_cpm"` or `de_test = "wilcox_cpm"`.
 
 ------
 

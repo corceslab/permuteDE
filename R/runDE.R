@@ -48,13 +48,13 @@
 #' "none" (pseudobulking will not be used, cell-level differential expression
 #' analysis will be run). Defaults to "generate".
 #' @param de_method Which tool to use for differential expression analysis.
-#' Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
-#' "edgeR".
+#' Permitted values are "edgeR", "DESeq2", "limma", "presto", and "BPCells".
+#' Defaults to "edgeR".
 #' @param de_test Which test to use for differential expression analysis.
 #' Available values are dependent on the \code{de_method}: "edgeR" ("LRT",
 #' "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
-#' "wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
-#' Defaults to "LRT".
+#' "wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm"),
+#' and "BPCells" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".
 #' @param de_params A list of lists containing additional parameters to be
 #' passed to specific DE functions. The name of each element must be the
 #' specific DE function to which those parameters are passed. Defaults to an
@@ -96,8 +96,8 @@
 #' for \code{Seurat} objects and the \code{counts} assay for
 #' \code{SingleCellExperiment} objects.
 #' @param use_layer For \code{Seurat} objects, a string or vector
-#' indicating the layer—previously known as slot—to use in the provided object.
-#' Default = \code{NULL} will use the \code{counts} layer.
+#' indicating the layer (previously known as slot) to use in the provided
+#' object. Default = \code{NULL} will use the \code{counts} layer.
 #' @param random_seed A numerical value indicating the random seed to be used.
 #' Defaults to 1. Only relevant in this function when parameter
 #' \code{force_balance = TRUE}.
@@ -165,9 +165,6 @@ runDE <- function(object,
   .validInput(use_cells, "use_cells", list(object, pseudobulk))
   .validInput(reference_group, "reference_group", list(object, metadata, group_labels, use_cells))
   .validInput(design, "design", list(object, metadata, group_labels))
-  .validInput(de_method, "de_method")
-  .validInput(de_test, "de_test", de_method)
-  .validInput(de_params, "de_params", list(de_method, de_test))
   .validInput(normalize_prefilter, "normalize_prefilter")
   .validInput(p_adjust_method, "p_adjust_method")
   .validInput(min_cells_per_split, "min_cells_per_split", list(pseudobulk))
@@ -179,6 +176,9 @@ runDE <- function(object,
   .validInput(force_balance, "force_balance", pseudobulk)
   .validInput(use_assay, "use_assay", object)
   .validInput(use_layer, "use_layer", list(object, use_assay))
+  .validInput(de_method, "de_method", list("runDE", pseudobulk, object, use_assay, use_layer, use_cells))
+  .validInput(de_test, "de_test", de_method)
+  .validInput(de_params, "de_params", list(de_method, de_test))
   .validInput(random_seed, "random_seed")
   .validInput(n_cores, "n_cores")
   .validInput(verbose, "verbose")
@@ -516,7 +516,14 @@ runDE <- function(object,
                                                                                                de_params = de_params,
                                                                                                normalize_prefilter = normalize_prefilter,
                                                                                                exclude_features = exclude_features[[i]],
-                                                                                               non_reference_group = non_reference_group))
+                                                                                               non_reference_group = non_reference_group),
+                                                                        BPCells = .runDE.BPCells(mat = matrix_list[[i]],
+                                                                                                 targets = target_list[[i]],
+                                                                                                 de_test = de_test,
+                                                                                                 de_params = de_params,
+                                                                                                 normalize_prefilter = normalize_prefilter,
+                                                                                                 exclude_features = exclude_features[[i]],
+                                                                                                 non_reference_group = non_reference_group))
                                                  de_results_i <- de_results_i |>
                                                    dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                                                                  split = names(matrix_list)[i]) |>
@@ -829,6 +836,7 @@ runDE <- function(object,
                                                                         de_params[["rankSumTestWithCorrelation"]]))), 1))
       }
     )
+
     # LFC
     if ("pseudocount" %in% de_params[["lfc"]]) {
       pseudocount <- de_params$lfc$pseudocount
@@ -837,6 +845,7 @@ runDE <- function(object,
     }
     lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
 
+    # Results
     limma_results <- data.frame(feature = rownames(cpm_mat),
                                  lfc = lfcs,
                                  pvalue = pvalues)
@@ -896,6 +905,74 @@ runDE <- function(object,
     dplyr::transmute(feature,
                      lfc = logFC,
                      pvalue = pval)
+  rownames(wilcox_results) <- NULL
+
+  return(wilcox_results)
+}
+
+# Run Wilcoxon rank sum test differential expression using BPCells ---------------------------
+#
+# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix (must be IterableMatrix)
+# targets -- A dataframe containing sample to group key
+# de_test -- Which test to use for differential expression
+# de_params -- Additional parameters to pass to cpm and/or wilcoxauc
+# normalize_prefilter -- Whether to get normalization/size factors before filtering out features
+# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+
+.runDE.BPCells <- function(mat,
+                          targets,
+                          de_test = "wilcox_cpm",
+                          de_params = list(),
+                          normalize_prefilter = FALSE,
+                          exclude_features = NULL,
+                          non_reference_group) {
+
+  .requirePackage("BPCells", installInfo = "devtools::install_github('bnprks/BPCells/r')")
+
+  # Get library sizes
+  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
+                                        "group" = targets$group),
+                                   de_params[["DGEList"]]))
+  lib_sizes <- dge$samples[colnames(mat), "lib.size"]
+  # If filtering, do so
+  if (normalize_prefilter & !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features),]
+  }
+  # Normalization
+  if (de_test == "wilcox_cpm") {
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "lib.size" = lib_sizes),
+                                     de_params[["cpm"]]))
+  } else if (de_test == "wilcox_log_cpm") {
+    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
+                                          "lib.size" = lib_sizes,
+                                          "log" = TRUE),
+                                     de_params[["cpm"]]))
+  }
+
+  # Run Wilcoxon rank sum test
+  wilcox_results <- do.call(BPCells::marker_features, c(list("mat" = cpm_mat,
+                                                             "groups" = targets$group),
+                                                        de_params[["marker_features"]]))
+  wilcox_results <- wilcox_results |> dplyr::filter(foreground == non_reference_group)
+
+  # Group indices
+  group1_indices <- which(targets$group == levels(targets$group)[1])
+  group2_indices <- which(targets$group == levels(targets$group)[2])
+
+  # LFC
+  if ("pseudocount" %in% de_params[["lfc"]]) {
+    pseudocount <- de_params$lfc$pseudocount
+  } else {
+    pseudocount <- 1
+  }
+  lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
+
+  # Results
+  wilcox_results <- wilcox_results |>
+    dplyr::transmute(feature,
+                     lfc = lfcs,
+                     pvalue = p_val_raw)
   rownames(wilcox_results) <- NULL
 
   return(wilcox_results)

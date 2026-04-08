@@ -141,16 +141,16 @@ analysis will be run). Defaults to "generate".</p></dd>
 
 <dt id="arg-de-method">de_method<a class="anchor" aria-label="anchor" href="#arg-de-method"></a></dt>
 <dd><p>Which tool to use for differential expression analysis.
-Permitted values are "edgeR", "DESeq2", "limma", and "presto". Defaults to
-"edgeR".</p></dd>
+Permitted values are "edgeR", "DESeq2", "limma", "presto", and "BPCells".
+Defaults to "edgeR".</p></dd>
 
 
 <dt id="arg-de-test">de_test<a class="anchor" aria-label="anchor" href="#arg-de-test"></a></dt>
 <dd><p>Which test to use for differential expression analysis.
 Available values are dependent on the <code>de_method</code>: "edgeR" ("LRT",
 "QLF", "exact"), "DESeq2" ("LRT", "Wald"), "limma" ("trend", "voom",
-"wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm").
-Defaults to "LRT".</p></dd>
+"wilcox_cpm", "wilcox_log_cpm"), "presto" ("wilcox_cpm", "wilcox_log_cpm"),
+and "BPCells" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".</p></dd>
 
 
 <dt id="arg-de-params">de_params<a class="anchor" aria-label="anchor" href="#arg-de-params"></a></dt>
@@ -228,8 +228,8 @@ for <code>Seurat</code> objects and the <code>counts</code> assay for
 
 <dt id="arg-use-layer">use_layer<a class="anchor" aria-label="anchor" href="#arg-use-layer"></a></dt>
 <dd><p>For <code>Seurat</code> objects, a string or vector
-indicating the layer—previously known as slot—to use in the provided object.
-Default = <code>NULL</code> will use the <code>counts</code> layer.</p></dd>
+indicating the layer (previously known as slot) to use in the provided
+object. Default = <code>NULL</code> will use the <code>counts</code> layer.</p></dd>
 
 
 <dt id="arg-random-seed">random_seed<a class="anchor" aria-label="anchor" href="#arg-random-seed"></a></dt>

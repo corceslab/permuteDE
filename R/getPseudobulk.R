@@ -51,8 +51,8 @@
 #' for \code{Seurat} objects and the \code{counts} assay for
 #' \code{SingleCellExperiment} objects.
 #' @param use_layer For \code{Seurat} objects, a string or vector
-#' indicating the layer—previously known as slot—to use in the provided object.
-#' Default = \code{NULL} will use the \code{counts} layer.
+#' indicating the layer (previously known as slot) to use in the provided
+#' object. Default = \code{NULL} will use the \code{counts} layer.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
@@ -334,9 +334,6 @@ getPseudobulk <- function(object,
           count_matrix_s[i, , drop = FALSE] %*% model_mat
         })
         output_mat <- do.call(rbind, out_chunks)
-
-        # Matrix type
-        output_mat <- methods::as(output_mat, "dgCMatrix")
 
       } else {
         output_mat <- count_matrix_s
