@@ -1,10 +1,26 @@
-.Rproj.user
-inst/doc
-.Rhistory
-.Rdata
-.httr-oauth
-.DS_Store
-.quarto
-pkgdown/
+# Jupyter/Python
 .ipynb_checkpoints
+
+# R session data
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.Rprofile
+
+# RStudio project files
+*.Rproj
+
+# Temporary files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# OS-specific
+.Rapp.history
+
+# pkgdown
+pkgdown/
 docs
+inst/doc
