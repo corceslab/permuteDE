@@ -29,10 +29,12 @@ Suggests:
     limma,
     Polychrome,
     presto,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 URL: https://github.com/cathrinesant/permuteDE
 BugReports: https://github.com/cathrinesant/permuteDE/issues
 Depends: 
     R (>= 3.5)
 LazyData: true
+Config/testthat/edition: 3
