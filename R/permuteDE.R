@@ -98,20 +98,53 @@ permuteDE <- function(input,
 
   time1 <- Sys.time()
 
-  .validInput(input, "input", "permuteDE")
-  .validInput(alpha, "alpha")
-  .validInput(lfc_threshold, "lfc_threshold")
-  .validInput(n_iterations, "n_iterations")
-  .validInput(use_splits, "use_splits", list(input, "permuteDE"))
-  .validInput(min_DE, "min_DE")
-  .validInput(return_all, "return_all")
-  .validInput(random_seed, "random_seed")
-  .validInput(n_cores, "n_cores")
-  .validInput(verbose, "verbose")
+  .validInput(input = input,
+              name = "input",
+              class = "list",
+              caller = "permuteDE")
+  .validInput(input = alpha,
+              name = "alpha",
+              class = "numeric",
+              len = 1)
+  .validInput(input = lfc_threshold,
+              name = "lfc_threshold",
+              class = "numeric",
+              len = 1)
+  .validInput(input = n_iterations,
+              name = "n_iterations",
+              class = "numeric",
+              len = 1)
+  .validInput(input = use_splits,
+              name = "use_splits",
+              null_allowed = TRUE,
+              class = "vector",
+              caller = "permuteDE",
+              other = input)
+  .validInput(input = min_DE,
+              name = "min_DE",
+              class = "numeric",
+              len = 1)
+  .validInput(input = return_all,
+              name = "return_all",
+              class = "logical",
+              len = 1)
+  .validInput(input = random_seed,
+              name = "random_seed",
+              class = "numeric",
+              len = 1)
+  .validInput(input = n_cores,
+              name = "n_cores",
+              null_allowed = TRUE,
+              class = "numeric",
+              len = 1)
+  .validInput(input = verbose,
+              name = "verbose",
+              class = "logical",
+              len = 1)
 
   # Set defaults
   if (is.null(n_cores)) {
-    n_cores <- parallel::detectCores() - 2
+    n_cores <- max(1, parallel::detectCores() - 2)
   }
 
   # ---------------------------------------------------------------------------
@@ -129,15 +162,43 @@ permuteDE <- function(input,
   pseudobulk <- input$parameters$pseudobulk
 
   # Validate retrieved parameters
-  .validInput(p_adjust_method, "p_adjust_method")
-  .validInput(pseudobulk, "pseudobulk", list("permuteDE", input))
-  .validInput(de_method, "de_method", list("permuteDE", pseudobulk, input))
-  .validInput(de_test, "de_test", de_method)
-  .validInput(de_params, "de_params", list(de_method, de_test))
+  .validInput(input = p_adjust_method,
+              name = "p_adjust_method",
+              class = "character",
+              len = 1)
+  .validInput(input = pseudobulk,
+              name = "pseudobulk",
+              class = "character",
+              len = 1,
+              caller = "permuteDE",
+              other = input)
+  .validInput(input = de_method,
+              name = "de_method",
+              class = "character",
+              len = 1,
+              caller = "permuteDE",
+              other = list(pseudobulk, input))
+  .validInput(input = de_test,
+              name = "de_test",
+              class = "character",
+              len = 1,
+              other = de_method)
+  .validInput(input = de_params,
+              name = "de_params",
+              class = "list",
+              other = list(de_method, de_test))
 
   # Additional validation
-  .validInput(permute_by, "permute_by", list(input, pseudobulk))
-  .validInput(permute_within, "permute_within", list(input, design_formula))
+  .validInput(input = permute_by,
+              name = "permute_by",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(input, pseudobulk))
+  .validInput(input = permute_within,
+              name = "permute_within",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(input, design_formula))
 
   # Set use_splits
   if (is.null(use_splits)) {
@@ -175,9 +236,9 @@ permuteDE <- function(input,
   if (!is.null(permute_within)) {
     if (length(permute_within) == 1) {
       group_key$permute_within <- .retrieveData(object = NULL,
-                                            metadata = group_key,
-                                            type = "cell_metadata",
-                                            name = permute_within)
+                                                metadata = group_key,
+                                                type = "cell_metadata",
+                                                name = permute_within)
     } else {
       group_key$permute_within <- permute_within
     }
@@ -361,7 +422,7 @@ permuteDE <- function(input,
                                                   n_group1 = n_reference_group,
                                                   n_combinations = n_iterations,
                                                   confound_check = confound_check,
-                                                  message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
+                                                  progress_message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
                                                   random_seed = random_seed,
                                                   verbose = TRUE)
         current_n_iterations <- ncol(permuted_group_indices)
@@ -420,7 +481,7 @@ permuteDE <- function(input,
         # DE tools create dense matrix copies internally: each worker needs roughly
         # 5x the sparse matrix size. Target a 4 GB ceiling for concurrent workers.
         if (pseudobulk == "none") {
-          bytes_per_worker <- as.numeric(object.size(current_mat)) * 5
+          bytes_per_worker <- as.numeric(utils::object.size(current_mat)) * 5
           effective_cores <- max(1L, min(n_cores, floor(4e9 / bytes_per_worker)))
           if (effective_cores < n_cores && verbose) {
             message(format(Sys.time(), "%Y-%m-%d %X"),

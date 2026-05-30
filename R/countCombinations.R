@@ -12,12 +12,16 @@
 #' replicates in one group (k) (doesn't matter which group).
 #'
 #' (3) Column names indicating replicate and group metadata columns in a
-#' provided 'Seurat' or 'SingleCellExperiment' object.
+#' provided 'Seurat' or 'SingleCellExperiment' object or a provided
+#' metadata dataframe.
 #'
 #' @param object An optional 'Seurat' or 'SingleCellExperiment' object. If
 #' \code{NULL}, \code{countCombinations} will expect either (1) vector input to
 #' parameters \code{replicate_label} and \code{group_label} or (2) numeric input
 #' to parameters \code{n_replicates} and \code{n_group1}.
+#' @param metadata An optional dataframe containing relevant metadata columns
+#' corresponding to the data provided to parameter \code{object}. Default =
+#' \code{NULL} looks for metadata in \code{object} or other provided inputs.
 #' @param replicate_labels A string indicating the name of the
 #' metadata column containing the biological replicate labels or a character
 #' vector containing the biological replicate labels in order.
@@ -37,6 +41,7 @@
 #' @export
 #'
 countCombinations <- function(object = NULL,
+                              metadata = NULL,
                               replicate_labels = NULL,
                               group_labels = NULL,
                               use_cells = NULL,
@@ -47,12 +52,39 @@ countCombinations <- function(object = NULL,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(object, "object", "countCombinations")
-  .validInput(replicate_labels, "replicate_labels", list(object, "not applicable"))
-  .validInput(group_labels, "group_labels", object)
-  .validInput(use_cells, "use_cells", list(object, "not applicable"))
-  .validInput(n_replicates, "n_replicates")
-  .validInput(n_group1, "n_group1", n_replicates)
+  .validInput(input = object,
+              name = "object",
+              null_allowed = TRUE,
+              class = c("Seurat", "SingleCellExperiment", "matrix", "Matrix"))
+  .validInput(input = metadata,
+              name = "metadata",
+              null_allowed = TRUE,
+              class = "data.frame",
+              other = object)
+  .validInput(input = replicate_labels,
+              name = "replicate_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric"),
+              other = list(object, metadata, "not applicable"))
+  .validInput(input = group_labels,
+              name = "group_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(object, metadata))
+  .validInput(input = use_cells,
+              name = "use_cells",
+              null_allowed = TRUE,
+              class = "character",
+              other = list(object, "not applicable"))
+  .validInput(input = n_replicates,
+              name = "n_replicates",
+              null_allowed = TRUE,
+              class = "numeric")
+  .validInput(input = n_group1,
+              name = "n_group1",
+              null_allowed = TRUE,
+              class = "numeric",
+              other = n_replicates)
 
   # ---------------------------------------------------------------------------
   # Calculate number of combinations
@@ -85,10 +117,12 @@ countCombinations <- function(object = NULL,
         stop("When input for 'replicate_labels' and 'group_labels' are single values, input must be provided to parameter 'object'.")
       }
       replicates <- .retrieveData(object = object,
+                                  metadata = metadata,
                                   type = "cell_metadata",
                                   name = replicate_labels,
                                   use_cells = use_cells)
       groups <- .retrieveData(object = object,
+                              metadata = metadata,
                               type = "cell_metadata",
                               name = group_labels,
                               use_cells = use_cells)

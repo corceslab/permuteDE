@@ -40,7 +40,7 @@
 #' to generate. Defaults to 1000.
 #' @param confound_check An optional dataframe of covariates for which to
 #' exclude permutations that are perfectly confounded. Defaults to \code{NULL}.
-#' @param message A character string indicating additional progress messaging
+#' @param progress_message A character string indicating additional progress messaging
 #' (internal use). Defaults to "".
 #' @param random_seed A numeric value indicating the random seed to be used.
 #' Defaults to 1.
@@ -62,24 +62,62 @@ getCombinations <- function(object = NULL,
                             n_group1 = NULL,
                             n_combinations = 1000,
                             confound_check = NULL,
-                            message = "",
+                            progress_message = "",
                             random_seed = 1,
                             verbose = TRUE) {
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(object, "object", "getCombinations")
-  .validInput(metadata, "metadata", object)
-  .validInput(replicate_labels, "replicate_labels", list(object, metadata, "not applicable"))
-  .validInput(group_labels, "group_labels", list(object, metadata))
-  .validInput(use_cells, "use_cells", list(object, "not applicable"))
-  .validInput(n_replicates, "n_replicates")
-  .validInput(n_group1, "n_group1", n_replicates)
-  .validInput(n_combinations, "n_combinations")
-  .validInput(message, "message")
-  .validInput(random_seed, "random_seed")
-  .validInput(verbose, "verbose")
+  .validInput(input = object,
+              name = "object",
+              null_allowed = TRUE,
+              class = c("Seurat", "SingleCellExperiment", "matrix", "Matrix"))
+  .validInput(input = metadata,
+              name = "metadata",
+              null_allowed = TRUE,
+              class = "data.frame",
+              other = object)
+  .validInput(input = replicate_labels,
+              name = "replicate_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric"),
+              other = list(object, metadata, "not applicable"))
+  .validInput(input = group_labels,
+              name = "group_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(object, metadata))
+  .validInput(input = use_cells,
+              name = "use_cells",
+              null_allowed = TRUE,
+              class = "character",
+              other = list(object, "not applicable"))
+  .validInput(input = n_replicates,
+              name = "n_replicates",
+              null_allowed = TRUE,
+              class = "numeric")
+  .validInput(input = n_group1,
+              name = "n_group1",
+              null_allowed = TRUE,
+              class = "numeric",
+              other = n_replicates)
+  .validInput(input = n_combinations,
+              name = "n_combinations",
+              class = "numeric",
+              len = 1)
+  .validInput(input = progress_message,
+              name = "progress_message",
+              class = "character",
+              len = 1)
+  .validInput(input = random_seed,
+              name = "random_seed",
+              class = "numeric",
+              len = 1)
+  .validInput(input = verbose,
+              name = "verbose",
+              class = "logical",
+              len = 1)
 
   # Set seed
   set.seed(random_seed)
@@ -143,13 +181,27 @@ getCombinations <- function(object = NULL,
     if (dplyr::n_distinct(groups) != 2) {
       stop("Input value for parameter 'group_labels' must represent a cell metadata column (or a vector of group labels) that contains exactly 2 groups for the selected data, please supply valid input!")
     }
+    # Check that each replicate belongs to exactly one group
+    problem_replicates <- data.frame(replicate = replicates,
+                                     group = groups) |>
+      dplyr::summarise(n_groups = dplyr::n_distinct(group), .by = replicate) |>
+      dplyr::filter(n_groups > 1) |>
+      dplyr::pull(replicate)
+    if (length(problem_replicates) > 0) {
+      stop("Each replicate must belong to exactly one group. ", "The following replicate label(s) appear in multiple groups: ",
+           paste(problem_replicates, collapse = ", "), ".")
+    }
     # Count unique replicates and unique replicates in one group
     n_replicates <- dplyr::n_distinct(replicates)
     n_group1 <- dplyr::n_distinct(replicates[groups == groups[1]])
   }
 
   # Additional validation
-  .validInput(confound_check, "confound_check", sum(n_replicates))
+  .validInput(input = confound_check,
+              name = "confound_check",
+              null_allowed = TRUE,
+              class = "data.frame",
+              other = sum(n_replicates))
 
   # ---------------------------------------------------------------------------
   # If n_replicates and n_group1 contain multiple values, send to sub function
@@ -160,7 +212,7 @@ getCombinations <- function(object = NULL,
                                                       n_group1 = n_group1,
                                                       n_combinations = n_combinations,
                                                       confound_check = confound_check,
-                                                      message = message,
+                                                      progress_message = progress_message,
                                                       verbose = verbose)
   } else {
     # Check whether possible number of combinations is < requested number of combinations
@@ -170,7 +222,7 @@ getCombinations <- function(object = NULL,
       if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Input ", n_combinations,
                            " for parameter 'n_combinations' exceeds the number of possible combinations ",
                            n_possible_combinations,". Only ", n_possible_combinations,
-                           " combinations will be generated", message, ".")
+                           " combinations will be generated", progress_message, ".")
       n_combinations <- n_possible_combinations
     }
 
@@ -181,7 +233,7 @@ getCombinations <- function(object = NULL,
     # Progress
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
                          n_combinations, " of ", n_possible_combinations,
-                         " possible combinations", message, "..")
+                         " possible combinations", progress_message, "..")
 
     # When efficient, generate all combinations, then sample
     if (n_possible_combinations < 1000000) {
@@ -200,7 +252,10 @@ getCombinations <- function(object = NULL,
           # Retain combination?
           return(!any(exclude))
         }))
-        all_combinations <- all_combinations[, keep]
+        all_combinations <- all_combinations[, keep, drop = FALSE]
+        if (ncol(all_combinations) == 0) {
+          stop("No valid combinations remain after excluding covariate-confounded combinations.")
+        }
         # Report if any were excluded
         if (ncol(all_combinations) < n_possible_combinations) {
           # Report if number of possible combinations is now lower than what is requested
@@ -217,43 +272,54 @@ getCombinations <- function(object = NULL,
           }
         }
       }
-      output_combinations <- all_combinations[, sample(1:ncol(all_combinations), n_combinations)]
+      output_combinations <- all_combinations[, sample(1:ncol(all_combinations), n_combinations), drop = FALSE]
     } else {
       # Set up collection of combinations
       output_combinations <- vector("list", n_combinations)
       count <- 0
       n_excluded_confound_check <- 0
-      
+
       # Track how many candidate combinations have been tested
       n_tested <- 0
-      
+
       # Set up environment to track previously encountered combinations
       seen_combinations <- new.env(hash = TRUE, parent = emptyenv())
-      # optional: pre-size the hash table a bit
-      # seen_combinations <- new.env(hash = TRUE, size = n_combinations, parent = emptyenv())
-      
+
       # Generate new unique combinations
       while (count < n_combinations) {
+        # Avoid forever loop
+        if (n_tested > 10 * n_combinations) {
+          if (verbose) {
+            message(
+              format(Sys.time(), "%Y-%m-%d %X"),
+              " : >90% of tested combinations have been excluded due to covariate confounds. Could not find ",
+              n_combinations, " unique combinations. Stopping search at ", count,
+              " to prevent a potential infinite loop.."
+            )
+          }
+          break
+        }
+
         possible_comb <- sample(n_replicates, n_group1)
-        
+
         # Compact key for uniqueness check
         # If you have digest installed, this is better than pasting all IDs together:
         comb_key <- digest::digest(sort(possible_comb), algo = "xxhash64")
-        
+
         # Check if unique
         if (!exists(comb_key, envir = seen_combinations, inherits = FALSE)) {
           assign(comb_key, TRUE, envir = seen_combinations)
           n_tested <- n_tested + 1
-          
+
           # If checking for covariate confounds, remove if perfectly confounded
           if (!is.null(confound_check)) {
             group_i <- rep(1, n_replicates)
             group_i[possible_comb] <- 0
-            
+
             exclude <- apply(confound_check, 2, FUN = function(j) {
               all(colSums(table(group_i, droplevels(factor(j))) > 0) == 1)
             })
-            
+
             if (any(exclude)) {
               keep <- FALSE
               n_excluded_confound_check <- n_excluded_confound_check + 1
@@ -263,28 +329,15 @@ getCombinations <- function(object = NULL,
           } else {
             keep <- TRUE
           }
-          
+
           # Add to output
           if (keep) {
             count <- count + 1
             output_combinations[[count]] <- possible_comb
           }
-          
-          # Avoid forever loop
-          if (n_tested > 10 * n_combinations) {
-            if (verbose) {
-              message(
-                format(Sys.time(), "%Y-%m-%d %X"),
-                " : >90% of tested combinations have been excluded due to covariate confounds. Could not find ",
-                n_combinations, " unique combinations. Stopping search at ", count,
-                " to prevent a potential infinite loop.."
-              )
-            }
-            break
-          }
         }
       }
-      
+
       # Report if any were excluded due to covariate confounds
       if (verbose && n_excluded_confound_check > 0) {
         message(
@@ -292,10 +345,15 @@ getCombinations <- function(object = NULL,
           n_excluded_confound_check, " initially sampled combination(s) excluded due to covariate confounds.."
         )
       }
-      
+
       # Drop any NULLs if we exited early
       output_combinations <- output_combinations[seq_len(count)]
-      
+
+      # If count = 0, stop
+      if (count == 0) {
+        stop("No valid combinations remain after excluding covariate-confounded combinations.")
+      }
+
       # Simplify combinations to a matrix
       output_combinations <- do.call(cbind, output_combinations)
 
@@ -311,18 +369,18 @@ getCombinations <- function(object = NULL,
 # n_group1 -- Vector of number of replicates in group 1 within each partition
 # n_combinations -- A numeric value indicating the number of combinations to generate.
 # confound_check -- Optional dataframe for checking covariate confounds
-# message -- Optional string to report message
+# progress_message -- Optional string to report message
 # verbose -- Logical value to indicate verbose output
 
 .getStratifiedCombinations <- function(n_replicates,
                                        n_group1,
                                        n_combinations = 1000,
                                        confound_check = NULL,
-                                       message = "",
+                                       progress_message = "",
                                        verbose = TRUE) {
   # Number of partitions
   n_partitions <- length(n_replicates)
-  
+
   # Total possible combinations across partitions (log)
   log_n_possible_combinations <- sum(lchoose(n_replicates, n_group1))
   if (log_n_possible_combinations < log(.Machine$double.xmax)) {
@@ -330,7 +388,7 @@ getCombinations <- function(object = NULL,
   } else {
     n_possible_combinations <- Inf
   }
-  
+
   # Check whether possible number of combinations is < requested number of combinations
   if (is.finite(n_possible_combinations) && n_possible_combinations < n_combinations) {
     if (verbose) {
@@ -338,48 +396,48 @@ getCombinations <- function(object = NULL,
         format(Sys.time(), "%Y-%m-%d %X"), " : Input ", n_combinations,
         " for parameter 'n_combinations' exceeds the number of possible combinations ",
         n_possible_combinations, ". Only ", n_possible_combinations,
-        " combinations will be generated", message, "."
+        " combinations will be generated", progress_message, "."
       )
     }
     n_combinations <- n_possible_combinations
   }
-  
+
   # ---------------------------------------------------------------------------
   # Generate combinations
   # ---------------------------------------------------------------------------
-  
+
   if (verbose) {
     if (is.finite(n_possible_combinations)) {
       message(
         format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
         n_combinations, " of ", n_possible_combinations,
-        " possible combinations", message, ".."
+        " possible combinations", progress_message, ".."
       )
     } else {
       message(
         format(Sys.time(), "%Y-%m-%d %X"), " : Generating ",
         n_combinations, " from a very large set of possible combinations",
-        message, ".."
+        progress_message, ".."
       )
     }
   }
-  
+
   # Build global index ranges for each partition
   partition_indices <- split(
     seq_len(sum(n_replicates)),
     rep.int(seq_along(n_replicates), n_replicates)
   )
-  
+
   # Decide whether to enumerate all combinations within each partition
   log_n_combinations_per_partition <- lchoose(n_replicates, n_group1)
   generate_all <- log_n_combinations_per_partition <= log(1000000)
-  
+
   # Precompute per-partition combination sets when feasible
   combinations_by_partition <- vector("list", n_partitions)
   for (p in seq_len(n_partitions)) {
     indices_p <- partition_indices[[p]]
     n_group1_p <- n_group1[[p]]
-    
+
     if (isTRUE(generate_all[p])) {
       combinations_by_partition[[p]] <- utils::combn(
         indices_p,
@@ -390,21 +448,21 @@ getCombinations <- function(object = NULL,
       combinations_by_partition[[p]] <- NULL
     }
   }
-  
+
   # Set up collection of combinations
   output_combinations <- vector("list", n_combinations)
   count <- 0L
   n_excluded_confound_check <- 0L
-  
+
   # Set up environment to track previously encountered combinations
   seen_combinations <- new.env(hash = TRUE, parent = emptyenv())
-  
+
   # Generate new unique combinations
   while (count < n_combinations) {
     possible_comb <- unlist(
       lapply(seq_len(n_partitions), function(p) {
         combinations_p <- combinations_by_partition[[p]]
-        
+
         if (!is.null(combinations_p)) {
           combinations_p[[sample.int(length(combinations_p), 1L)]]
         } else {
@@ -413,23 +471,23 @@ getCombinations <- function(object = NULL,
       }),
       use.names = FALSE
     )
-    
+
     # Compact uniqueness key
     comb_key <- digest::digest(sort(possible_comb), algo = "xxhash64")
-    
+
     # Check if unique
     if (!exists(comb_key, envir = seen_combinations, inherits = FALSE)) {
       assign(comb_key, TRUE, envir = seen_combinations)
-      
+
       # If checking for covariate confounds, remove if perfectly confounded
       if (!is.null(confound_check)) {
         group_i <- rep(1, sum(n_replicates))
         group_i[possible_comb] <- 0
-        
+
         exclude <- apply(confound_check, 2, FUN = function(j) {
           all(colSums(table(group_i, droplevels(factor(j))) > 0) == 1)
         })
-        
+
         if (any(exclude)) {
           keep <- FALSE
           n_excluded_confound_check <- n_excluded_confound_check + 1L
@@ -439,13 +497,13 @@ getCombinations <- function(object = NULL,
       } else {
         keep <- TRUE
       }
-      
+
       # Add to output
       if (keep) {
         count <- count + 1L
         output_combinations[[count]] <- possible_comb
       }
-      
+
       # Avoid forever loop
       if (length(ls(envir = seen_combinations, all.names = TRUE)) > 10 * n_combinations) {
         if (verbose) {
@@ -459,7 +517,7 @@ getCombinations <- function(object = NULL,
       }
     }
   }
-  
+
   # Report if any were excluded due to covariate confounds
   if (verbose && n_excluded_confound_check > 0) {
     message(
@@ -467,13 +525,13 @@ getCombinations <- function(object = NULL,
       n_excluded_confound_check, " initially sampled combination(s) due to covariate confounds.."
     )
   }
-  
+
   # Drop any NULLs if we exited early
   output_combinations <- output_combinations[seq_len(count)]
-  
+
   # Simplify combinations to a matrix
   output_combinations <- do.call(cbind, output_combinations)
-  
+
   # Return matrix of combinations
   return(output_combinations)
 }

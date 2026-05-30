@@ -103,10 +103,24 @@ permuteDEpalette <- function(type = "discrete",
   # Check parameter input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(type, "type")
-  .validInput(n, "n")
-  .validInput(palette, "palette", type)
-  .validInput(swatch, "swatch")
+  .validInput(input = type,
+              name = "type",
+              class = "character",
+              len = 1)
+  .validInput(input = n,
+              name = "n",
+              null_allowed = TRUE,
+              class = "numeric",
+              len = 1)
+  .validInput(input = palette,
+              name = "palette",
+              null_allowed = TRUE,
+              class = "character",
+              other = type)
+  .validInput(input = swatch,
+              name = "swatch",
+              class = "logical",
+              len = 1)
 
   # ---------------------------------------------------------------------------
   # Create palette
@@ -157,8 +171,8 @@ permuteDEpalette <- function(type = "discrete",
     } else {
       .requirePackage("Polychrome", source = "cran")
       palette_values <- Polychrome::createPalette(N = n,
-                                          seedcolors = starting_colors,
-                                          range = c(50, 80))
+                                                  seedcolors = starting_colors,
+                                                  range = c(50, 80))
       names(palette_values) <- NULL
     }
   } else if (type == "gradient") {
@@ -268,15 +282,47 @@ plotVolcano <- function(input,
 
   .requirePackage("ggrepel", source = "cran")
 
-  .validInput(input, "input", "plotVolcano")
-  .validInput(alpha, "alpha")
-  .validInput(lfc_threshold, "lfc_threshold")
-  .validInput(use_splits, "use_splits", list(input, "plotVolcano"))
-  .validInput(title, "title")
-  .validInput(subtitle, "subtitle")
-  .validInput(n_max_label, "n_max_label")
-  .validInput(label_features, "label_features", n_max_label)
-  .validInput(center, "center")
+  .validInput(input = input,
+              name = "input",
+              class = "list",
+              caller = "plotVolcano")
+  .validInput(input = alpha,
+              name = "alpha",
+              class = "numeric",
+              len = 1)
+  .validInput(input = lfc_threshold,
+              name = "lfc_threshold",
+              class = "numeric",
+              len = 1)
+  .validInput(input = use_splits,
+              name = "use_splits",
+              null_allowed = TRUE,
+              class = "vector",
+              caller = "plotVolcano",
+              other = input)
+  .validInput(input = title,
+              name = "title",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1)
+  .validInput(input = subtitle,
+              name = "subtitle",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1)
+  .validInput(input = n_max_label,
+              name = "n_max_label",
+              class = "numeric",
+              len = 1)
+  .validInput(input = label_features,
+              name = "label_features",
+              null_allowed = TRUE,
+              class = "character",
+              other = n_max_label)
+  .validInput(input = center,
+              name = "center",
+              class = "logical",
+              len = 1)
 
   # ---------------------------------------------------------------------------
   # Set up
@@ -450,11 +496,30 @@ plotHistogram <- function(input,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(input, "input", "plotHistogram")
-  .validInput(use_splits, "use_splits", list(input, "plotHistogram"))
-  .validInput(title, "title")
-  .validInput(subtitle, "subtitle")
-  .validInput(label_pvalue, "label_pvalue")
+  .validInput(input = input,
+              name = "input",
+              class = "list",
+              caller = "plotHistogram")
+  .validInput(input = use_splits,
+              name = "use_splits",
+              null_allowed = TRUE,
+              class = "vector",
+              caller = "plotHistogram",
+              other = input)
+  .validInput(input = title,
+              name = "title",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1)
+  .validInput(input = subtitle,
+              name = "subtitle",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1)
+  .validInput(input = label_pvalue,
+              name = "label_pvalue",
+              class = "logical",
+              len = 1)
 
   # ---------------------------------------------------------------------------
   # Set up
@@ -579,7 +644,7 @@ plotHistogram <- function(input,
 #' indicated split.
 #'
 #' @param input Output from function \code{runDE}.
-#' @param feature A character string indicating which feature to plot.
+#' @param feature_name A character string indicating which feature to plot.
 #' @param use_splits A character string or vector containing the names of splits
 #' to use. Defaults to \code{NULL}, which will try all splits.
 #' @param normalization_method A character string indicating which normalization
@@ -604,7 +669,7 @@ plotHistogram <- function(input,
 #' @export
 #'
 plotFeature <- function(input,
-                        feature,
+                        feature_name,
                         use_splits = NULL,
                         normalization_method = "cpm",
                         plot_type = "boxplot",
@@ -622,15 +687,46 @@ plotFeature <- function(input,
     .requirePackage("ggrepel", source = "cran")
   }
 
-  .validInput(input, "input", "plotFeature")
-  .validInput(feature, "feature")
-  .validInput(use_splits, "use_splits", list(input, "plotFeature"))
-  .validInput(plot_type, "plot_type")
-  .validInput(normalization_method, "normalization_method")
-  .validInput(title, "title")
-  .validInput(subtitle, "subtitle")
-  .validInput(label_replicates, "label_replicates")
-  .validInput(label_statistics, "label_statistics")
+  .validInput(input = input,
+              name = "input",
+              class = "list",
+              caller = "plotFeature")
+  .validInput(input = feature_name,
+              name = "feature_name",
+              class = "character",
+              len = 1)
+  .validInput(input = use_splits,
+              name = "use_splits",
+              null_allowed = TRUE,
+              class = "vector",
+              caller = "plotFeature",
+              other = input)
+  .validInput(input = plot_type,
+              name = "plot_type",
+              class = "character",
+              len = 1)
+  .validInput(input = normalization_method,
+              name = "normalization_method",
+              class = "character",
+              len = 1)
+  .validInput(input = title,
+              name = "title",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1)
+  .validInput(input = subtitle,
+              name = "subtitle",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1)
+  .validInput(input = label_replicates,
+              name = "label_replicates",
+              class = "logical",
+              len = 1)
+  .validInput(input = label_statistics,
+              name = "label_statistics",
+              class = "logical",
+              len = 1)
 
   # ---------------------------------------------------------------------------
   # Set up
@@ -671,35 +767,35 @@ plotFeature <- function(input,
     if (normalization_method == "cpm") {
       split_results_s <- edgeR::cpm(y = split_results_s)
       if (plot_type == "bar_se") {
-        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(CPM, mean &plusmn; SE)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "*<br>(CPM, mean &plusmn; SE)")
       } else if (plot_type == "bar_sd") {
-        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(CPM, mean &plusmn; SD)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "*<br>(CPM, mean &plusmn; SD)")
       } else {
-        y_axis_title <- paste0("Normalized expression of *", feature, "* (CPM)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "* (CPM)")
       }
     } else if (normalization_method == "log_cpm") {
       split_results_s <- edgeR::cpm(y = split_results_s,
                                     log = TRUE)
       if (plot_type == "bar_se") {
-        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Log CPM, mean &plusmn; SE)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "*<br>(Log CPM, mean &plusmn; SE)")
       } else if (plot_type == "bar_sd") {
-        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Log CPM, mean &plusmn; SD)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "*<br>(Log CPM, mean &plusmn; SD)")
       } else {
-        y_axis_title <- paste0("Normalized expression of *", feature, "* (Log CPM)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "* (Log CPM)")
       }
     } else {
       if (plot_type == "bar_se") {
-        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Mean &plusmn; SE)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "*<br>(Mean &plusmn; SE)")
       } else if (plot_type == "bar_sd") {
-        y_axis_title <- paste0("Normalized expression of *", feature, "*<br>(Mean &plusmn; SD)")
+        y_axis_title <- paste0("Normalized expression of *", feature_name, "*<br>(Mean &plusmn; SD)")
       } else {
-        y_axis_title <- paste0("Expression of *", feature, "*")
+        y_axis_title <- paste0("Expression of *", feature_name, "*")
       }
     }
 
     # Set title & subtitle
     if (is.null(title)) {
-      current_title <- paste0("*", feature, "*")
+      current_title <- paste0("*", feature_name, "*")
     } else {
       current_title <- title
     }
@@ -710,20 +806,19 @@ plotFeature <- function(input,
     }
 
     # If feature is not in matrix, return NULL
-    if (!(feature %in% rownames(split_results_s))) {
-      warning(" Feature '", feature, "' is not present in split '", s, "'.")
+    if (!(feature_name %in% rownames(split_results_s))) {
+      warning(" Feature '", feature_name, "' is not present in split '", s, "'.")
       return(NULL)
     } else {
       # Extract feature & proceed
-      feature_s <- data.frame(value = split_results_s[feature,],
+      feature_s <- data.frame(value = split_results_s[feature_name,],
                               replicate = input$metadata$group_key[colnames(split_results_s), "replicate"],
                               group = input$metadata$group_key[colnames(split_results_s), "group"])
       feature_s$group <- stats::relevel(factor(feature_s$group), ref = reference_group)
 
       # If labeling statistics, extract
-      f <- feature
       feature_statistics <- dplyr::filter(input$DE_results,
-                                          feature == f,
+                                          feature == feature_name,
                                           split == s)
       if (nrow(feature_statistics) == 0) {
         label_statistics <- FALSE
@@ -902,18 +997,66 @@ plotDimReduction <- function(reduction,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(reduction, "reduction")
-  .validInput(input, "input", "plotDimReduction")
-  .validInput(use_cells, "use_cells", list(t(reduction), "none"))
-  .validInput(color_by, "color_by", list(split_labels, input))
-  .validInput(split_labels, "split_labels", list(reduction, color_by, "plotDimReduction"))
-  .validInput(feature_values, "feature_values", list(reduction, use_cells, color_by))
-  .validInput(feature_name, "feature_name", color_by)
-  .validInput(permutation_test_alpha, "permutation_test_alpha", color_by)
-  .validInput(label_splits, "label_splits")
-  .validInput(label_statistics, "label_statistics")
-  .validInput(color_limits, "color_limits", color_by)
-  .validInput(fix_coords, "fix_coords")
+  .validInput(input = reduction,
+              name = "reduction",
+              class = "matrix")
+  .validInput(input = input,
+              name = "input",
+              null_allowed = TRUE,
+              class = "list",
+              caller = "plotDimReduction")
+  .validInput(input = use_cells,
+              name = "use_cells",
+              null_allowed = TRUE,
+              class = "character",
+              other = list(t(reduction), "not applicable"))
+  .validInput(input = color_by,
+              name = "color_by",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = list(split_labels, input))
+  .validInput(input = split_labels,
+              name = "split_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              caller = "plotDimReduction",
+              other = list(reduction, color_by))
+  .validInput(input = feature_values,
+              name = "feature_values",
+              null_allowed = is.null(color_by) || color_by != "feature",
+              class = "numeric",
+              other = list(reduction, use_cells, color_by))
+  .validInput(input = feature_name,
+              name = "feature_name",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              caller = "plotDimReduction",
+              other = color_by)
+  .validInput(input = permutation_test_alpha,
+              name = "permutation_test_alpha",
+              class = "numeric",
+              len = 1,
+              other = color_by)
+  .validInput(input = label_splits,
+              name = "label_splits",
+              class = "logical",
+              len = 1)
+  .validInput(input = label_statistics,
+              name = "label_statistics",
+              class = "logical",
+              len = 1)
+  .validInput(input = color_limits,
+              name = "color_limits",
+              null_allowed = TRUE,
+              class = "numeric",
+              len = 2,
+              other = color_by)
+  .validInput(input = fix_coords,
+              name = "fix_coords",
+              class = "logical",
+              len = 1)
 
   # ---------------------------------------------------------------------------
   # Set up
@@ -933,8 +1076,8 @@ plotDimReduction <- function(reduction,
   tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
   # Add dimensionality reduction
   tmp_seurat@reductions$dim_reduction <- Seurat::CreateDimReducObject(embeddings = reduction,
-                                                                                       key = 'dimreduction_',
-                                                                                       assay = 'tmp')
+                                                                      key = 'dimreduction_',
+                                                                      assay = 'tmp')
   # Add color groupings
   na_color <- "#BBBBBB"
   na_cutoff_low <- NA
@@ -961,8 +1104,8 @@ plotDimReduction <- function(reduction,
     }
     tmp_seurat$color_groups <- split_labels
     palette_values <- permuteDEpalette(type = "discrete",
-                                n = dplyr::n_distinct(split_labels),
-                                palette = palette)
+                                       n = dplyr::n_distinct(split_labels),
+                                       palette = palette)
     color_legend <- ""
     if (label_splits == TRUE) {
       add_labels <- TRUE
@@ -993,7 +1136,7 @@ plotDimReduction <- function(reduction,
     tmp_seurat$pvalue <- key$pvalue[match(split_labels, key$split)]
     # Color palette
     palette_values <- permuteDEpalette(type = "gradient",
-                                palette = palette)
+                                       palette = palette)
     if (color_by == "n_sig") {
       color_legend <- "Number of<br>significant<br>DE features"
       if (all(is.na(tmp_seurat$n_sig))) {
@@ -1068,7 +1211,7 @@ plotDimReduction <- function(reduction,
     tmp_seurat$color_groups <- feature_values
     # Color palette
     palette_values <- permuteDEpalette(type = "gradient",
-                                palette = palette)
+                                       palette = palette)
     # Set NA cutoff
     if (!is.null(color_limits)) {
       na_cutoff_low <- color_limits[1]

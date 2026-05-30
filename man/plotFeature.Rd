@@ -6,7 +6,7 @@
 \usage{
 plotFeature(
   input,
-  feature,
+  feature_name,
   use_splits = NULL,
   normalization_method = "cpm",
   plot_type = "boxplot",
@@ -19,7 +19,7 @@ plotFeature(
 \arguments{
 \item{input}{Output from function \code{runDE}.}
 
-\item{feature}{A character string indicating which feature to plot.}
+\item{feature_name}{A character string indicating which feature to plot.}
 
 \item{use_splits}{A character string or vector containing the names of splits
 to use. Defaults to \code{NULL}, which will try all splits.}

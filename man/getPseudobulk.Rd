@@ -7,7 +7,7 @@
 getPseudobulk(
   object,
   metadata = NULL,
-  replicate_labels,
+  replicate_labels = NULL,
   split_labels = NULL,
   use_cells = NULL,
   min_cells_per_split = 100,
@@ -35,7 +35,8 @@ corresponding to the data provided to parameter \code{object}. Default =
 \item{replicate_labels}{A string indicating the name of the
 metadata column containing the biological replicate labels or a character
 vector containing the biological replicate labels in order. The biological
-replicate labels are used to construct/define the pseudobulks.}
+replicate labels are used to construct/define the pseudobulks. Default =
+\code{NULL} allowed only when \code{pseudobulk} is "none".}
 
 \item{split_labels}{A string indicating the name of a
 column by which to split the cells prior to pseudobulking and performing
@@ -97,8 +98,6 @@ Can be set to \code{FALSE} for a cleaner output.}
 \value{
 Returns a list containing the following elements: \describe{
 \item{PB_values}{A list of feature x replicate matri(ces) containing
-pseudobulk values for each feature, one matrix per split}
-\item{exclude_features}{A list of feature x replicate matri(ces) containing
 pseudobulk values for each feature, one matrix per split}
 \item{metadata}{Dataframe record of quality control metrics for each split}
 \item{parameters}{List recording parameter values used}

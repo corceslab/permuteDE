@@ -14,7 +14,7 @@ getCombinations(
   n_group1 = NULL,
   n_combinations = 1000,
   confound_check = NULL,
-  message = "",
+  progress_message = "",
   random_seed = 1,
   verbose = TRUE
 )
@@ -55,7 +55,7 @@ to generate. Defaults to 1000.}
 \item{confound_check}{An optional dataframe of covariates for which to
 exclude permutations that are perfectly confounded. Defaults to \code{NULL}.}
 
-\item{message}{A character string indicating additional progress messaging
+\item{progress_message}{A character string indicating additional progress messaging
 (internal use). Defaults to "".}
 
 \item{random_seed}{A numeric value indicating the random seed to be used.

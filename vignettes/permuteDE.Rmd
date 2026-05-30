@@ -297,7 +297,7 @@ runDE_output <- runDE(object = pb_matrix,
                       group_labels = groups,
                       reference_group = "WT",
                       pseudobulk = "supplied",
-                      n_cores = 1)
+                      n_cores = 2)
 ```
 
 
@@ -408,6 +408,7 @@ We highly encourage users to use pseudobulk differential expression analysis, as
 ```{r, eval = FALSE}
 runDE_output <- runDE(object = sample_data,
                       group_labels = "group",
+                      split_labels = "cell_type",
                       reference_group = "WT",
                       pseudobulk = "none",
                       n_cores = 2)

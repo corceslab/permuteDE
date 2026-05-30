@@ -156,32 +156,134 @@ runDE <- function(object,
 
   time1 <- Sys.time()
 
-  .validInput(object, "object", "runDE")
-  .validInput(metadata, "metadata", object)
-  .validInput(pseudobulk, "pseudobulk", list("runDE", object))
-  .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
-  .validInput(group_labels, "group_labels", list(object, metadata))
-  .validInput(split_labels, "split_labels", list(object, metadata, "runDE"))
-  .validInput(use_cells, "use_cells", list(object, pseudobulk))
-  .validInput(reference_group, "reference_group", list(object, metadata, group_labels, use_cells))
-  .validInput(design, "design", list(object, metadata, group_labels))
-  .validInput(normalize_prefilter, "normalize_prefilter")
-  .validInput(p_adjust_method, "p_adjust_method")
-  .validInput(min_cells_per_split, "min_cells_per_split", list(pseudobulk))
-  .validInput(min_cells_per_replicate, "min_cells_per_replicate", list(pseudobulk, "runDE"))
-  .validInput(min_replicates_per_split, "min_replicates_per_split", list(pseudobulk, "runDE"))
-  .validInput(min_replicates_per_group, "min_replicates_per_group")
-  .validInput(min_cells_per_feature, "min_cells_per_feature", list(pseudobulk))
-  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
-  .validInput(force_balance, "force_balance", pseudobulk)
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_layer, "use_layer", list(object, use_assay))
-  .validInput(de_method, "de_method", list("runDE", pseudobulk, object, use_assay, use_layer, use_cells))
-  .validInput(de_test, "de_test", de_method)
-  .validInput(de_params, "de_params", list(de_method, de_test))
-  .validInput(random_seed, "random_seed")
-  .validInput(n_cores, "n_cores")
-  .validInput(verbose, "verbose")
+  .validInput(input = object,
+              name = "object",
+              class = c("Seurat", "SingleCellExperiment", "matrix", "Matrix"))
+  .validInput(input = metadata,
+              name = "metadata",
+              null_allowed = TRUE,
+              class = "data.frame",
+              other = object)
+  .validInput(input = pseudobulk,
+              name = "pseudobulk",
+              class = "character",
+              len = 1,
+              caller = "runDE",
+              other = object)
+  .validInput(input = replicate_labels,
+              name = "replicate_labels",
+              null_allowed = pseudobulk == "none",
+              class = c("character", "factor", "numeric"),
+              other = list(object, metadata, pseudobulk))
+  .validInput(input = group_labels,
+              name = "group_labels",
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(object, metadata))
+  .validInput(input = split_labels,
+              name = "split_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(object, metadata, "runDE"))
+  .validInput(input = use_cells,
+              name = "use_cells",
+              null_allowed = TRUE,
+              class = "character",
+              other = list(object, pseudobulk))
+  .validInput(input = reference_group,
+              name = "reference_group",
+              null_allowed = TRUE,
+              len = 1,
+              other = list(object, metadata, group_labels, use_cells))
+  .validInput(input = design,
+              name = "design",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = list(object, metadata, group_labels))
+  .validInput(input = normalize_prefilter,
+              name = "normalize_prefilter",
+              class = "logical",
+              len = 1)
+  .validInput(input = p_adjust_method,
+              name = "p_adjust_method",
+              class = "character",
+              len = 1)
+  .validInput(input = min_cells_per_split,
+              name = "min_cells_per_split",
+              class = "numeric",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = min_cells_per_replicate,
+              name = "min_cells_per_replicate",
+              class = "numeric",
+              len = 1,
+              caller = "runDE",
+              other = pseudobulk)
+  .validInput(input = min_replicates_per_split,
+              name = "min_replicates_per_split",
+              class = "numeric",
+              len = 1,
+              caller = "runDE",
+              other = pseudobulk)
+  .validInput(input = min_replicates_per_group,
+              name = "min_replicates_per_group",
+              class = "numeric",
+              len = 1)
+  .validInput(input = min_cells_per_feature,
+              name = "min_cells_per_feature",
+              class = "numeric",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = min_prop_cells_per_feature,
+              name = "min_prop_cells_per_feature",
+              class = "numeric",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = force_balance,
+              name = "force_balance",
+              class = "logical",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = use_assay,
+              name = "use_assay",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = object)
+  .validInput(input = use_layer,
+              name = "use_layer",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = list(object, use_assay))
+  .validInput(input = de_method,
+              name = "de_method",
+              class = "character",
+              len = 1,
+              caller = "runDE",
+              other = list(pseudobulk, object, use_assay, use_layer, use_cells))
+  .validInput(input = de_test,
+              name = "de_test",
+              class = "character",
+              len = 1,
+              other = de_method)
+  .validInput(input = de_params,
+              name = "de_params",
+              class = "list",
+              other = list(de_method, de_test))
+  .validInput(input = random_seed,
+              name = "random_seed",
+              class = "numeric",
+              len = 1)
+  .validInput(input = n_cores,
+              name = "n_cores",
+              null_allowed = TRUE,
+              class = "numeric",
+              len = 1)
+  .validInput(input = verbose,
+              name = "verbose",
+              class = "logical",
+              len = 1)
 
   # ---------------------------------------------------------------------------
   # Set up
@@ -198,7 +300,7 @@ runDE <- function(object,
 
   # Set defaults
   if (is.null(n_cores)) {
-    n_cores <- parallel::detectCores() - 2
+    n_cores <- max(1, parallel::detectCores() - 2)
   }
 
   # Random seed reproducibility
@@ -358,6 +460,7 @@ runDE <- function(object,
     # Generate pseudobulk matri(ces) or filter count matrix
     # Returns a list containing one matrix per split
     output_list <- getPseudobulk(object = object,
+                                 metadata = metadata,
                                  replicate_labels = replicate_labels,
                                  split_labels = split_labels,
                                  use_cells = use_cells,
@@ -368,6 +471,8 @@ runDE <- function(object,
                                  min_prop_cells_per_feature = min_prop_cells_per_feature,
                                  filter = !normalize_prefilter,
                                  pseudobulk = pseudobulk,
+                                 use_assay = use_assay,
+                                 use_layer = use_layer,
                                  n_cores = n_cores,
                                  verbose = verbose)
     if (pseudobulk == "generate") {
@@ -438,13 +543,14 @@ runDE <- function(object,
     return(m)
   })
   # Remove NULL elements
-  matrix_list <- matrix_list[lengths(matrix_list) > 0]
-  if (verbose & any(lengths(matrix_list) == 0)) {
-    message("Skipped ", sum(lengths(matrix_list) == 0), " split label",
-            ifelse((lengths(matrix_list) == 0) == 1, "", "s"),
+  keep_matrix <- lengths(matrix_list) > 0
+  skipped_labels <- names(matrix_list)[!keep_matrix]
+  matrix_list <- matrix_list[keep_matrix]
+  if (verbose && length(skipped_labels) > 0) {
+    message("Skipped ", length(skipped_labels), " split label",
+            ifelse(length(skipped_labels) == 1, "", "s"),
             " due to insufficient replicates per group: ",
-            paste0(setdiff(pre_labels, names(matrix_list)),
-                   collapse = ", "))
+            paste0(skipped_labels, collapse = ", "))
   }
 
   # Create corresponding list of replicates/groups
@@ -469,79 +575,151 @@ runDE <- function(object,
     proceed <- FALSE
   } else if (verbose) {
     message(format(Sys.time(), "%Y-%m-%d %X"), " : Running DE on ", length(matrix_list),
-                       ifelse(length(matrix_list) == 1, " matrix..", " matrices.."))
+            ifelse(length(matrix_list) == 1, " matrix..", " matrices.."))
   }
 
   if (proceed == TRUE) {
-    # for each item in matrix_list
-    de_results_list <- pbmcapply::pbmclapply(seq_len(length(matrix_list)),
-                                             FUN = function(i) {
-                                               n_groups <- dplyr::n_distinct(target_list[[i]]$group)
-                                               if (n_groups == 2) {
-                                                 group_factor <- factor(target_list[[i]]$group)
-                                                 group_factor <- stats::relevel(group_factor, ref = reference_group)
-                                                 target_list[[i]]$group <- group_factor
+    # Define function to call correct DE method
+    .callDE <- function(i) {
+      worker_warnings <- character()
+      de_results_i <- withCallingHandlers(
+        {
+          n_groups <- dplyr::n_distinct(target_list[[i]]$group)
+          if (n_groups == 2) {
+            group_factor <- factor(target_list[[i]]$group)
+            group_factor <- stats::relevel(group_factor, ref = reference_group)
+            target_list[[i]]$group <- group_factor
+            if (!is.null(design)) {
+              design_i <- stats::model.matrix(design_formula, data = target_list[[i]])
+            } else {
+              design_i <- stats::model.matrix(~ group, data = target_list[[i]])
+            }
+            exclude_features_i <- if (is.null(exclude_features)) {
+              NULL
+            } else {
+              exclude_features[[i]]
+            }
 
-                                                 if (!is.null(design)) {
-                                                   design_i <- stats::model.matrix(design_formula, data = target_list[[i]])
-                                                 } else {
-                                                   design_i <- stats::model.matrix(~ group, data = target_list[[i]])
-                                                 }
+            de_results_i <- switch(de_method,
+                                   edgeR = .runDE.edgeR(mat = matrix_list[[i]],
+                                                        targets = target_list[[i]],
+                                                        design = design_i,
+                                                        de_test = de_test,
+                                                        de_params = de_params,
+                                                        normalize_prefilter = normalize_prefilter,
+                                                        exclude_features = exclude_features_i),
+                                   DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
+                                                          targets = target_list[[i]],
+                                                          design = design_i,
+                                                          de_test = de_test,
+                                                          de_params = de_params,
+                                                          normalize_prefilter = normalize_prefilter,
+                                                          exclude_features = exclude_features_i),
+                                   limma = .runDE.limma(mat = matrix_list[[i]],
+                                                        targets = target_list[[i]],
+                                                        design = design_i,
+                                                        de_test = de_test,
+                                                        de_params = de_params,
+                                                        normalize_prefilter = normalize_prefilter,
+                                                        exclude_features = exclude_features_i),
+                                   presto = .runDE.presto(mat = matrix_list[[i]],
+                                                          targets = target_list[[i]],
+                                                          de_test = de_test,
+                                                          de_params = de_params,
+                                                          normalize_prefilter = normalize_prefilter,
+                                                          exclude_features = exclude_features_i,
+                                                          non_reference_group = non_reference_group),
+                                   BPCells = .runDE.BPCells(mat = matrix_list[[i]],
+                                                            targets = target_list[[i]],
+                                                            de_test = de_test,
+                                                            de_params = de_params,
+                                                            normalize_prefilter = normalize_prefilter,
+                                                            exclude_features = exclude_features_i,
+                                                            non_reference_group = non_reference_group))
+            de_results_i <- de_results_i |>
+              dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
+                            split = names(matrix_list)[i]) |>
+              dplyr::arrange(padj)
+          } else {
+            de_results_i <- NULL
 
-                                                 de_results_i <- switch(de_method,
-                                                                        edgeR = .runDE.edgeR(mat = matrix_list[[i]],
-                                                                                             targets = target_list[[i]],
-                                                                                             design = design_i,
-                                                                                             de_test = de_test,
-                                                                                             de_params = de_params,
-                                                                                             normalize_prefilter = normalize_prefilter,
-                                                                                             exclude_features = exclude_features[[i]]),
-                                                                        DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
-                                                                                               targets = target_list[[i]],
-                                                                                               design = design_i,
-                                                                                               de_test = de_test,
-                                                                                               de_params = de_params,
-                                                                                               normalize_prefilter = normalize_prefilter,
-                                                                                               exclude_features = exclude_features[[i]]),
-                                                                        limma = .runDE.limma(mat = matrix_list[[i]],
-                                                                                             targets = target_list[[i]],
-                                                                                             design = design_i,
-                                                                                             de_test = de_test,
-                                                                                             de_params = de_params,
-                                                                                             normalize_prefilter = normalize_prefilter,
-                                                                                             exclude_features = exclude_features[[i]]),
-                                                                        presto = .runDE.presto(mat = matrix_list[[i]],
-                                                                                               targets = target_list[[i]],
-                                                                                               de_test = de_test,
-                                                                                               de_params = de_params,
-                                                                                               normalize_prefilter = normalize_prefilter,
-                                                                                               exclude_features = exclude_features[[i]],
-                                                                                               non_reference_group = non_reference_group),
-                                                                        BPCells = .runDE.BPCells(mat = matrix_list[[i]],
-                                                                                                 targets = target_list[[i]],
-                                                                                                 de_test = de_test,
-                                                                                                 de_params = de_params,
-                                                                                                 normalize_prefilter = normalize_prefilter,
-                                                                                                 exclude_features = exclude_features[[i]],
-                                                                                                 non_reference_group = non_reference_group))
-                                                 de_results_i <- de_results_i |>
-                                                   dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
-                                                                 split = names(matrix_list)[i]) |>
-                                                   dplyr::arrange(padj)
-                                               } else {
-                                                 de_results_i <- NULL
-                                                 if (verbose) message("Skipped split label ", names(matrix_list)[i],
-                                                                      ", only ", n_groups,
-                                                                      " group (", unique(target_list[[i]]$group),
-                                                                      ") present.")
-                                               }
-                                               return(de_results_i)
-                                             },
-                                             mc.cores = n_cores,
-                                             mc.set.seed = TRUE)
-    de_results <- do.call(rbind, de_results_list)
-    de_results <- de_results |>
-      data.frame()
+            if (verbose) {
+              message("Skipped split label ", names(matrix_list)[i],
+                      ", only ", n_groups,
+                      " group (", unique(target_list[[i]]$group),
+                      ") present.")
+            }
+          }
+          de_results_i
+        },
+        warning = function(w) {
+          worker_warnings <<- c(worker_warnings, conditionMessage(w))
+          invokeRestart("muffleWarning")
+        }
+      )
+      return(list(result = de_results_i,
+                  warnings = worker_warnings))
+    }
+
+    # Use pblapply vs pbmcapply depending on # of cores
+    if (n_cores == 1) {
+      de_output_list <- lapply(
+        X = seq_len(length(matrix_list)),
+        FUN = .callDE
+      )
+    } else {
+      de_output_list <- pbmcapply::pbmclapply(
+        X = seq_len(length(matrix_list)),
+        FUN = .callDE,
+        mc.cores = n_cores,
+        mc.set.seed = TRUE
+      )
+    }
+
+    # Check that every worker returned the expected wrapper structure
+    bad_outputs <- !vapply(de_output_list,
+                           FUN = function(x) {
+                             is.list(x) &&
+                               all(c("result", "warnings") %in% names(x))
+                           },
+                           FUN.VALUE = logical(1))
+    if (any(bad_outputs)) {
+      stop("DE failed for one or more splits. ",
+           "At least one worker returned an unexpected result. ",
+           "Try rerunning with n_cores = 1 for a clearer error message.")
+    }
+
+    # Extract the DE results
+    de_results_list <- lapply(de_output_list, `[[`, "result")
+
+    # Extract and combine warnings captured inside each worker
+    de_warnings <- unlist(lapply(de_output_list, `[[`, "warnings"), use.names = FALSE)
+    # Report unique warnings if verbose output is enabled
+    if (verbose && length(de_warnings) > 0) {
+      warning("Warnings occurred during DE:\n",
+              paste(unique(de_warnings), collapse = "\n"))
+    }
+
+    # Check that each split returned either NULL or a dataframe
+    bad_results <- !vapply(de_results_list,
+                           FUN = function(x) is.null(x) || is.data.frame(x),
+                           FUN.VALUE = logical(1))
+    if (any(bad_results)) {
+      stop("DE failed for one or more splits. ",
+           "At least one worker returned a non-data.frame result. ",
+           "Try rerunning with n_cores = 1 for a clearer error message.")
+    }
+
+    # Remove skipped results
+    de_results_list <- Filter(Negate(is.null), de_results_list)
+
+    # Combine split-specific DE tables into one result dataframe
+    if (length(de_results_list) == 0) {
+      de_results <- NULL
+    } else {
+      de_results <- do.call(rbind, de_results_list)
+      de_results <- data.frame(de_results)
+    }
   } else {
     de_results <- NULL
   }
@@ -830,11 +1008,11 @@ runDE <- function(object,
 
     # Wilcoxon rank sum test p-values
     pvalues <- apply(cpm_mat, 1,
-      FUN = function(x) {
-        return(min(2 * min(do.call(limma::rankSumTestWithCorrelation, c(list("index" = group1_indices,
-                                                                             "statistics" = x),
-                                                                        de_params[["rankSumTestWithCorrelation"]]))), 1))
-      }
+                     FUN = function(x) {
+                       return(min(2 * min(do.call(limma::rankSumTestWithCorrelation, c(list("index" = group1_indices,
+                                                                                            "statistics" = x),
+                                                                                       de_params[["rankSumTestWithCorrelation"]]))), 1))
+                     }
     )
 
     # LFC
@@ -847,8 +1025,8 @@ runDE <- function(object,
 
     # Results
     limma_results <- data.frame(feature = rownames(cpm_mat),
-                                 lfc = lfcs,
-                                 pvalue = pvalues)
+                                lfc = lfcs,
+                                pvalue = pvalues)
     rownames(limma_results) <- NULL
   }
   return(limma_results)
@@ -862,7 +1040,7 @@ runDE <- function(object,
 # de_params -- Additional parameters to pass to cpm and/or wilcoxauc
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
 # exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
-
+# non_reference_group -- String indicating the non-reference group
 .runDE.presto <- function(mat,
                           targets,
                           de_test = "wilcox_cpm",
@@ -918,47 +1096,45 @@ runDE <- function(object,
 # de_params -- Additional parameters to pass to cpm and/or wilcoxauc
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
 # exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
-
+# non_reference_group -- String indicating the non-reference group
 .runDE.BPCells <- function(mat,
-                          targets,
-                          de_test = "wilcox_cpm",
-                          de_params = list(),
-                          normalize_prefilter = FALSE,
-                          exclude_features = NULL,
-                          non_reference_group) {
-
+                           targets,
+                           de_test = "wilcox_cpm",
+                           de_params = list(),
+                           normalize_prefilter = FALSE,
+                           exclude_features = NULL,
+                           non_reference_group) {
   .requirePackage("BPCells", installInfo = "devtools::install_github('bnprks/BPCells/r')")
-
-  # Get library sizes
-  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
-                                        "group" = targets$group),
-                                   de_params[["DGEList"]]))
-  lib_sizes <- dge$samples[colnames(mat), "lib.size"]
-  # If filtering, do so
-  if (normalize_prefilter & !is.null(exclude_features)) {
-    mat <- mat[!(rownames(mat) %in% exclude_features),]
+  if (!methods::is(mat, "IterableMatrix")) {
+    stop("Input matrix to '.runDE.BPCells()' must be class 'IterableMatrix'.")
   }
-  # Normalization
-  if (de_test == "wilcox_cpm") {
-    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
-                                          "lib.size" = lib_sizes),
-                                     de_params[["cpm"]]))
-  } else if (de_test == "wilcox_log_cpm") {
-    cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
-                                          "lib.size" = lib_sizes,
-                                          "log" = TRUE),
-                                     de_params[["cpm"]]))
+  # Library sizes are column sums of the raw count matrix.
+  lib_sizes <- Matrix::colSums(mat)
+  if (any(lib_sizes == 0)) {
+    stop("Cannot calculate CPM: at least one cell/sample has zero total counts.")
+  }
+  # If requested, filter features after calculating library sizes.
+  if (normalize_prefilter && !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
   }
 
-  # Run Wilcoxon rank sum test
-  wilcox_results <- do.call(BPCells::marker_features, c(list("mat" = cpm_mat,
-                                                             "groups" = targets$group),
-                                                        de_params[["marker_features"]]))
-  wilcox_results <- wilcox_results |> dplyr::filter(foreground == non_reference_group)
+  # CPM
+  cpm_mat <- BPCells::multiply_cols(mat,
+                                    1e6 / lib_sizes[colnames(mat)])
 
-  # Group indices
-  group1_indices <- which(targets$group == levels(targets$group)[1])
-  group2_indices <- which(targets$group == levels(targets$group)[2])
+  # Log transformation
+  if (de_test == "wilcox_log_cpm") {
+    cpm_mat <- log1p(cpm_mat)
+  }
+
+  # Run Wilcoxon rank sum test using BPCells.
+  wilcox_results <- do.call(BPCells::marker_features,
+                            c(list(mat = cpm_mat,
+                                   groups = targets$group),
+                              de_params[["marker_features"]]))
+
+  wilcox_results <- wilcox_results |>
+    dplyr::filter(foreground == non_reference_group)
 
   # LFC
   if ("pseudocount" %in% de_params[["lfc"]]) {
@@ -966,13 +1142,26 @@ runDE <- function(object,
   } else {
     pseudocount <- 1
   }
-  lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
+
+  if (de_test == "wilcox_log_cpm") {
+    # cpm_mat is log1p-transformed using the natural log.
+    # Difference of means is in natural-log units, so divide by log(2)
+    # to report log2-scale fold change (see marker_features docs)
+    wilcox_results <- wilcox_results |>
+      dplyr::mutate(lfc = (foreground_mean - background_mean) / log(2))
+  } else {
+    # cpm_mat is CPM-scale, so calculate log2 fold-change from group means
+    # (see marker_features docs)
+    wilcox_results <- wilcox_results |>
+      dplyr::mutate(lfc = log2((foreground_mean + pseudocount) /(background_mean + pseudocount)))
+  }
 
   # Results
   wilcox_results <- wilcox_results |>
     dplyr::transmute(feature,
-                     lfc = lfcs,
+                     lfc,
                      pvalue = p_val_raw)
+
   rownames(wilcox_results) <- NULL
 
   return(wilcox_results)

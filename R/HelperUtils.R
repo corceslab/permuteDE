@@ -1,14 +1,14 @@
 # ---------------------------------------------------------------------------
-# Helper Functions
+# Helper functions
 # ---------------------------------------------------------------------------
 
 # Retrieve data from an object
 #
-# object A 'Seurat' or 'SingleCellExperiment' object
-# metadata Optional metadata dataframe
-# type A string indicating data type to retrieve
-# name A string under which data are stored
-# use_cells (Optional) A string vector of cell names to subset
+# object    -- A 'Seurat' or 'SingleCellExperiment' object
+# metadata  -- Optional metadata dataframe
+# type      -- A string indicating data type to retrieve
+# name      -- A string under which data are stored
+# use_cells -- (Optional) A string vector of cell names to subset
 .retrieveData <- function(object = NULL,
                           metadata = NULL,
                           type,
@@ -60,8 +60,6 @@
     } else {
       cell_IDs <- colnames(object[[use_assay]])
     }
-  } else if (methods::is(object, "SingleCellExperiment")) {
-    cell_IDs <- rownames(object@colData)
   } else {
     cell_IDs <- colnames(object)
   }
@@ -144,14 +142,22 @@
       use_assay <- Seurat::DefaultAssay(object)
     } else {
       # Check that input assay is present in object
-      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+      .validInput(input = use_assay,
+                  name = "use_assay",
+                  class = "character",
+                  len = 1,
+                  other = object)
     }
     # Determine which layer to use
     if (is.null(use_layer)) {
       use_layer <- "counts"
     }
     # Check that selected layer is present within selected assay in object
-    .validInput(use_layer, "use_layer", list(object, use_assay, FALSE, NULL))
+    .validInput(input = use_layer,
+                name = "use_layer",
+                class = "character",
+                len = 1,
+                other = list(object, use_assay))
     # Extract matrix
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Fetching feature x cell matrix using '", use_assay, "' assay and '", use_layer, "' layer..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
@@ -189,6 +195,7 @@
               " features provided by 'use_features' in 'use_matrix': \n",
               unused_features)
     }
+    use_features <- use_features[use_features %in% rownames(use_matrix)]
   } else {
     use_features <- rownames(use_matrix)
   }
@@ -214,11 +221,12 @@
               " cells provided by 'use_cells' in 'use_matrix': \n",
               unused_cells)
     }
+    use_cells <- use_cells[use_cells %in% colnames(use_matrix)]
   } else {
     use_cells <- colnames(use_matrix)
   }
 
-  use_matrix <- use_matrix[use_features, use_cells]
+  use_matrix <- use_matrix[use_features, use_cells, drop = FALSE]
   return(use_matrix)
 }
 
@@ -235,7 +243,11 @@
     # Get assay
     if (is.null(use_assay)) {
       use_assay <- "counts"
-      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+      .validInput(input = use_assay,
+                  name = "use_assay",
+                  class = "character",
+                  len = 1,
+                  other = object)
     }
     use_matrix <- object@assays@data[[use_assay]]
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Fetching feature x cell matrix using '", use_assay, "' assay..")
@@ -267,6 +279,7 @@
               " features provided by 'use_features' in 'use_matrix': \n",
               unused_features)
     }
+    use_features <- use_features[use_features %in% rownames(use_matrix)]
   } else {
     use_features <- rownames(use_matrix)
   }
@@ -292,11 +305,12 @@
               " cells provided by 'use_cells' in 'use_matrix': \n",
               unused_cells)
     }
+    use_cells <- use_cells[use_cells %in% colnames(use_matrix)]
   } else {
     use_cells <- colnames(use_matrix)
   }
 
-  use_matrix <- use_matrix[use_features, use_cells]
+  use_matrix <- use_matrix[use_features, use_cells, drop = FALSE]
   return(use_matrix)
 }
 
@@ -336,6 +350,7 @@
               " features provided by 'use_features' in 'use_matrix': \n",
               unused_features)
     }
+    use_features <- use_features[use_features %in% rownames(use_matrix)]
   } else {
     use_features <- rownames(use_matrix)
   }
@@ -361,11 +376,12 @@
               " cells provided by 'use_cells' in 'use_matrix': \n",
               unused_cells)
     }
+    use_cells <- use_cells[use_cells %in% colnames(use_matrix)]
   } else {
     use_cells <- colnames(use_matrix)
   }
 
-  use_matrix <- use_matrix[use_features, use_cells]
+  use_matrix <- use_matrix[use_features, use_cells, drop = FALSE]
   return(use_matrix)
 }
 
@@ -378,19 +394,22 @@
 # load -- Whether to load package
 # installInfo -- Installation info
 # source -- cran/bioc, etc.
-.requirePackage <- function(x = NULL, load = TRUE, installInfo = NULL, source = NULL){
-  if(x %in% rownames(utils::installed.packages())){
-    if(load){
+.requirePackage <- function(x = NULL,
+                            load = TRUE,
+                            installInfo = NULL,
+                            source = NULL) {
+  if (x %in% rownames(utils::installed.packages())){
+    if (load){
       suppressPackageStartupMessages(require(x, character.only = TRUE))
-    }else{
+    } else {
       return(0)
     }
-  }else{
+  } else {
     if (!is.null(source) & is.null(installInfo)) {
       if (tolower(source) == "cran") {
-        installInfo <- paste0('install.packages("',x,'")')
+        installInfo <- paste0('install.packages("', x, '")')
       } else if (tolower(source) == "bioc"){
-        installInfo <- paste0('BiocManager::install("',x,'")')
+        installInfo <- paste0('BiocManager::install("', x, '")')
       } else {
         stop("Unrecognized package source, available are cran/bioc!")
       }

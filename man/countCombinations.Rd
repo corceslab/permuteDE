@@ -6,6 +6,7 @@
 \usage{
 countCombinations(
   object = NULL,
+  metadata = NULL,
   replicate_labels = NULL,
   group_labels = NULL,
   use_cells = NULL,
@@ -18,6 +19,10 @@ countCombinations(
 \code{NULL}, \code{countCombinations} will expect either (1) vector input to
 parameters \code{replicate_label} and \code{group_label} or (2) numeric input
 to parameters \code{n_replicates} and \code{n_group1}.}
+
+\item{metadata}{An optional dataframe containing relevant metadata columns
+corresponding to the data provided to parameter \code{object}. Default =
+\code{NULL} looks for metadata in \code{object} or other provided inputs.}
 
 \item{replicate_labels}{A string indicating the name of the
 metadata column containing the biological replicate labels or a character
@@ -54,5 +59,6 @@ Users may provide input in three ways:
 replicates in one group (k) (doesn't matter which group).
 
 (3) Column names indicating replicate and group metadata columns in a
-provided 'Seurat' or 'SingleCellExperiment' object.
+provided 'Seurat' or 'SingleCellExperiment' object or a provided
+metadata dataframe.
 }

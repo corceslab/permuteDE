@@ -14,7 +14,8 @@
 #' @param replicate_labels A string indicating the name of the
 #' metadata column containing the biological replicate labels or a character
 #' vector containing the biological replicate labels in order. The biological
-#' replicate labels are used to construct/define the pseudobulks.
+#' replicate labels are used to construct/define the pseudobulks. Default =
+#' \code{NULL} allowed only when \code{pseudobulk} is "none".
 #' @param split_labels A string indicating the name of a
 #' column by which to split the cells prior to pseudobulking and performing
 #' differential expression (e.g., cell types). Alternately, a character vector
@@ -63,8 +64,6 @@
 #' @return Returns a list containing the following elements: \describe{
 #'   \item{PB_values}{A list of feature x replicate matri(ces) containing
 #'   pseudobulk values for each feature, one matrix per split}
-#'   \item{exclude_features}{A list of feature x replicate matri(ces) containing
-#'   pseudobulk values for each feature, one matrix per split}
 #'   \item{metadata}{Dataframe record of quality control metrics for each split}
 #'   \item{parameters}{List recording parameter values used}
 #'   }
@@ -72,7 +71,7 @@
 #'
 getPseudobulk <- function(object,
                           metadata = NULL,
-                          replicate_labels,
+                          replicate_labels = NULL,
                           split_labels = NULL,
                           use_cells = NULL,
                           min_cells_per_split = 100,
@@ -91,26 +90,91 @@ getPseudobulk <- function(object,
   # Check input validity
   # ---------------------------------------------------------------------------
 
-  .validInput(object, "object", "getPseudobulk")
-  .validInput(metadata, "metadata", object)
-  .validInput(replicate_labels, "replicate_labels", list(object, metadata, pseudobulk))
-  .validInput(split_labels, "split_labels", list(object, metadata, "getPseudobulk"))
-  .validInput(use_cells, "use_cells", list(object, pseudobulk))
-  .validInput(min_cells_per_split, "min_cells_per_split", list(pseudobulk))
-  .validInput(min_cells_per_replicate, "min_cells_per_replicate", list(pseudobulk, "getPseudobulk"))
-  .validInput(min_replicates_per_split, "min_replicates_per_split", list(pseudobulk, "getPseudobulk"))
-  .validInput(min_cells_per_feature, "min_cells_per_feature", list(pseudobulk))
-  .validInput(min_prop_cells_per_feature, "min_prop_cells_per_feature", pseudobulk)
-  .validInput(filter, "filter")
-  .validInput(pseudobulk, "pseudobulk", list("getPseudobulk", object))
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_layer, "use_layer", list(object, use_assay))
-  .validInput(n_cores, "n_cores")
-  .validInput(verbose, "verbose")
+  .validInput(input = object,
+              name = "object",
+              class = c("Seurat", "SingleCellExperiment", "matrix", "Matrix"))
+  .validInput(input = metadata,
+              name = "metadata",
+              null_allowed = TRUE,
+              class = "data.frame",
+              other = object)
+  .validInput(input = pseudobulk,
+              name = "pseudobulk",
+              class = "character",
+              len = 1,
+              caller = "getPseudobulk",
+              other = object)
+  .validInput(input = replicate_labels,
+              name = "replicate_labels",
+              null_allowed = pseudobulk == "none",
+              class = c("character", "factor", "numeric"),
+              other = list(object, metadata, pseudobulk))
+  .validInput(input = split_labels,
+              name = "split_labels",
+              null_allowed = TRUE,
+              class = c("character", "factor", "numeric", "logical"),
+              other = list(object, metadata))
+  .validInput(input = use_cells,
+              name = "use_cells",
+              null_allowed = TRUE,
+              class = "character",
+              other = list(object, pseudobulk))
+  .validInput(input = min_cells_per_split,
+              name = "min_cells_per_split",
+              class = "numeric",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = min_cells_per_replicate,
+              name = "min_cells_per_replicate",
+              class = "numeric",
+              len = 1,
+              caller = "getPseudobulk",
+              other = pseudobulk)
+  .validInput(input = min_replicates_per_split,
+              name = "min_replicates_per_split",
+              class = "numeric",
+              len = 1,
+              caller = "getPseudobulk",
+              other = pseudobulk)
+  .validInput(input = min_cells_per_feature,
+              name = "min_cells_per_feature",
+              class = "numeric",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = min_prop_cells_per_feature,
+              name = "min_prop_cells_per_feature",
+              class = "numeric",
+              len = 1,
+              other = pseudobulk)
+  .validInput(input = filter,
+              name = "filter",
+              class = "logical",
+              len = 1)
+  .validInput(input = use_assay,
+              name = "use_assay",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = object)
+  .validInput(input = use_layer,
+              name = "use_layer",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = list(object, use_assay))
+  .validInput(input = n_cores,
+              name = "n_cores",
+              null_allowed = TRUE,
+              class = "numeric",
+              len = 1)
+  .validInput(input = verbose,
+              name = "verbose",
+              class = "logical",
+              len = 1)
 
   # Set defaults
   if (is.null(n_cores)) {
-    n_cores <- parallel::detectCores() - 2
+    n_cores <- max(1, parallel::detectCores() - 2)
   }
 
   # Object type
@@ -226,7 +290,7 @@ getPseudobulk <- function(object,
   if (pseudobulk == "generate") {
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Generating ", n_splits,
                          " pseudobulk ", ifelse(n_splits == 1, "matrix..", "matrices.."))
-    if (verbose & n_splits != nrow(filter_table)) {
+    if (verbose && n_splits != nrow(filter_table)) {
       message("Skipped ", nrow(filter_table) - n_splits, " split label",
               ifelse((nrow(filter_table) - n_splits) == 1, "", "s"),
               " due to insufficient cells/replicates: ",
@@ -236,11 +300,11 @@ getPseudobulk <- function(object,
   } else {
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Filtering ", n_splits,
                          " count ", ifelse(n_splits == 1, "matrix..", "matrices.."))
-    if (verbose & n_splits != nrow(filter_table)) {
-      message("Skipped ", nrow(filter_table) - n_splits, " split label",
-              ifelse((nrow(filter_table) - n_splits) == 1, "", "s"),
+    if (verbose && n_splits != length(filter_table)) {
+      message("Skipped ", length(filter_table) - n_splits, " split label",
+              ifelse((length(filter_table) - n_splits) == 1, "", "s"),
               " due to insufficient cells: ",
-              paste0(setdiff(rownames(filter_table), unique(splits)),
+              paste0(setdiff(names(filter_table), unique(splits)),
                      collapse = ", "))
     }
   }
@@ -252,18 +316,24 @@ getPseudobulk <- function(object,
                                use_layer = use_layer,
                                use_cells = use_cells,
                                verbose = verbose)
-    
-    # n_cores workers in parallel multiplies the open-file count and can
-    # quickly exceed the OS ulimit.  Detect this and fall back to sequential
-    # processing so that at most one set of file handles is active at a time.   
-    is_bpcells <- inherits(count_matrix, "IterableMatrix")                                                                                                                         
-    if (is_bpcells && n_cores > 1) {                                                                                                                                               
-      if (verbose) message("BPCells on-disk matrix detected: using sequential processing to avoid 'Too many open files' errors. If an error still exists, please increase file size limits by running 'ulimit -n'")                                                  
-      n_cores_use <- 1L
-      } else {                                                                                                                                                                       
-        n_cores_use <- n_cores                                                                                                                                                       
+
+    # BPCells on-disk matrices can keep many file handles open
+    # Using multiple forked workers can multiply the number of open file handles
+    # and exceed the OS open-file limit
+    # If BPCells input is detected, use sequential processing for pseudobulk step
+    is_BPCells <- methods::is(count_matrix, "IterableMatrix") ||
+      inherits(count_matrix, "IterableMatrix")
+    if (is_BPCells && n_cores > 1) {
+      if (verbose) {
+        message("BPCells on-disk matrix detected: using sequential processing ",
+          "during pseudobulk generation to avoid 'Too many open files' errors. ",
+          "If this error still occurs, increase the open-file limit with 'ulimit -n'.")
       }
-    
+      n_cores_use <- 1L
+    } else {
+      n_cores_use <- n_cores
+    }
+
     # Create list of feature x replicate pseudobulk matrices, one per split
     output_list <- pbmcapply::pbmclapply(keep_splits, FUN = function(s) {
       # Subset matrix to split s
@@ -329,11 +399,15 @@ getPseudobulk <- function(object,
             seq.int(i, min(i + chunk_size - 1L, n_nonzero_features))
           })
         }
+
         # Create pseudobulk matrix
         out_chunks <- lapply(row_chunks, function(i) {
           count_matrix_s[i, , drop = FALSE] %*% model_mat
         })
         output_mat <- do.call(rbind, out_chunks)
+
+        # Convert to dgCMatrix
+        output_mat <- methods::as(output_mat, "dgCMatrix")
 
       } else {
         output_mat <- count_matrix_s
