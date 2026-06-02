@@ -1,3 +1,5 @@
+# permuteDE 0.2.0
+
 # permuteDE 0.1.1
 
 * BPCells compatibility
