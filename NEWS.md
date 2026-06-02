@@ -1,5 +1,9 @@
 # permuteDE 0.2.0
 
+* Created tests for all functions
+* Added compatibility with complex designs correcting for covariates
+* Improved overall compatibility across DE methods/tests and input object types
+
 # permuteDE 0.1.1
 
 * BPCells compatibility
