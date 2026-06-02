@@ -2,46 +2,11 @@
 # Tests for function getPseudobulk
 # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Test helpers
-# ---------------------------------------------------------------------------
-
-# Make a test count matrix
-makeCounts <- function() {
-  matrix(
-    c(
-      # c1 c2 c3 c4 c5 c6 c7 c8
-      1,  2,  0,  0,  5,  5,  0,  0,  # gene1
-      0,  0,  3,  4,  0,  0,  6,  6,  # gene2
-      1,  1,  1,  1,  1,  1,  1,  1,  # gene3
-      0,  0,  0,  0,  0,  0,  0,  0   # gene4
-    ),
-    nrow = 4,
-    byrow = TRUE,
-    dimnames = list(paste0("gene", 1:4),
-                    paste0("cell", 1:8)))
-}
-
-# Make test replicate labels
-makeReplicates <- function() {
-  c("1", "1", "2", "2", "3", "3", "4", "4")
-}
-
-# Make test split labels
-makeSplits <- function() {
-  c("split1", "split1", "split1", "split1", "split2", "split2", "split2", "split2")
-}
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 # Matrix input
-
 test_that("getPseudobulk generates one pseudobulk matrix from matrix input", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   output <- getPseudobulk(object = counts,
-                          replicate_labels = makeReplicates(),
+                          replicate_labels = makeSmallReplicates(),
                           min_cells_per_split = 1,
                           min_cells_per_replicate = 1,
                           min_replicates_per_split = 1,
@@ -62,10 +27,10 @@ test_that("getPseudobulk generates one pseudobulk matrix from matrix input", {
 })
 
 test_that("getPseudobulk generates one pseudobulk matrix per split with proper output structure", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   output <- getPseudobulk(object = counts,
-                          replicate_labels = makeReplicates(),
-                          split_labels = makeSplits(),
+                          replicate_labels = makeSmallReplicates(),
+                          split_labels = makeSmallSplits(),
                           min_cells_per_split = 1,
                           min_cells_per_replicate = 1,
                           min_replicates_per_split = 1,
@@ -100,15 +65,16 @@ test_that("getPseudobulk generates one pseudobulk matrix per split with proper o
   expect_type(output$metadata$exclude_features, "list")
 
   # Check that features with zero counts are removed
-  expect_false("gene4" %in% rownames(output$PB_values$all))
+  expect_false("gene4" %in% rownames(output$PB_values$split1))
+  expect_false("gene4" %in% rownames(output$PB_values$split2))
   expect_equal(output$metadata$metrics$n_all_features, c(4, 4))
   expect_equal(output$metadata$metrics$n_nonzero_features, c(3, 3))
 })
 
 test_that("getPseudobulk filters features using min_cells_per_feature", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   output <- getPseudobulk(object = counts,
-                          replicate_labels = makeReplicates(),
+                          replicate_labels = makeSmallReplicates(),
                           min_cells_per_split = 1,
                           min_cells_per_replicate = 1,
                           min_replicates_per_split = 1,
@@ -120,9 +86,9 @@ test_that("getPseudobulk filters features using min_cells_per_feature", {
 })
 
 test_that("getPseudobulk reports excluded features without removing them when filter is FALSE", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   output <- getPseudobulk(object = counts,
-                          replicate_labels = makeReplicates(),
+                          replicate_labels = makeSmallReplicates(),
                           min_cells_per_split = 1,
                           min_cells_per_replicate = 1,
                           min_replicates_per_split = 1,
@@ -135,12 +101,12 @@ test_that("getPseudobulk reports excluded features without removing them when fi
 })
 
 test_that("getPseudobulk with pseudobulk none returns cell-level matrices", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   expect_warning(
     expect_warning(
       expect_warning(
         output <- getPseudobulk(object = counts,
-                                split_labels = makeSplits(),
+                                split_labels = makeSmallSplits(),
                                 min_cells_per_split = 1,
                                 min_cells_per_replicate = 1,
                                 min_replicates_per_split = 1,
@@ -158,7 +124,7 @@ test_that("getPseudobulk with pseudobulk none returns cell-level matrices", {
 })
 
 test_that("getPseudobulk with pseudobulk none reports skipped splits correctly", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   split_labels <- c("split1", "split1", "split1", "split1", "split1", "split1",
                     "split2", "split2")
   expect_warning(
@@ -187,9 +153,9 @@ test_that("getPseudobulk with pseudobulk none reports skipped splits correctly",
 })
 
 test_that("getPseudobulk respects use_cells", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   output <- getPseudobulk(object = counts,
-                          replicate_labels = makeReplicates()[1:4],
+                          replicate_labels = makeSmallReplicates()[1:4],
                           use_cells = paste0("cell", 1:4),
                           min_cells_per_split = 1,
                           min_cells_per_replicate = 1,
@@ -202,7 +168,7 @@ test_that("getPseudobulk respects use_cells", {
 })
 
 test_that("getPseudobulk errors when label vectors have the wrong length", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   expect_error(getPseudobulk(object = counts,
                              replicate_labels = c("rep1", "rep2"),
                              min_cells_per_split = 1,
@@ -211,7 +177,7 @@ test_that("getPseudobulk errors when label vectors have the wrong length", {
                              n_cores = 1),
                "same length and in the same order as the supplied cells")
   expect_error(getPseudobulk(object = counts,
-                             replicate_labels = makeReplicates(),
+                             replicate_labels = makeSmallReplicates(),
                              split_labels = c("split1", "split2"),
                              min_cells_per_split = 1,
                              min_cells_per_replicate = 1,
@@ -221,8 +187,8 @@ test_that("getPseudobulk errors when label vectors have the wrong length", {
 })
 
 test_that("getPseudobulk errors when labels contain NA", {
-  counts <- makeCounts()
-  replicates <- makeReplicates()
+  counts <- makeSmallCounts()
+  replicates <- makeSmallReplicates()
   replicates[1] <- NA
   expect_error(getPseudobulk(object = counts,
                              replicate_labels = replicates,
@@ -231,11 +197,11 @@ test_that("getPseudobulk errors when labels contain NA", {
                              min_replicates_per_split = 1,
                              n_cores = 1),
                "replicate_labels.*cannot be NA")
-  replicates <- makeReplicates()
-  splits <- makeSplits()
+  replicates <- makeSmallReplicates()
+  splits <- makeSmallSplits()
   splits[1] <- NA
   expect_error(getPseudobulk(object = counts,
-                             replicate_labels = makeReplicates(),
+                             replicate_labels = makeSmallReplicates(),
                              split_labels = splits,
                              min_cells_per_split = 1,
                              min_cells_per_replicate = 1,
@@ -245,10 +211,10 @@ test_that("getPseudobulk errors when labels contain NA", {
 })
 
 test_that("getPseudobulk removes replicate-split pairs with too few cells", {
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   output <- getPseudobulk(object = counts,
-                          replicate_labels = makeReplicates(),
-                          split_labels = makeSplits(),
+                          replicate_labels = makeSmallReplicates(),
+                          split_labels = makeSmallSplits(),
                           min_cells_per_split = 1,
                           min_cells_per_replicate = 3,
                           min_replicates_per_split = 1,
@@ -260,9 +226,9 @@ test_that("getPseudobulk removes replicate-split pairs with too few cells", {
 })
 
 test_that("getPseudobulk retrieves replicate and split labels from metadata", {
-  counts <- makeCounts()
-  metadata <- data.frame(replicate = makeReplicates(),
-                         split = makeSplits(),
+  counts <- makeSmallCounts()
+  metadata <- data.frame(replicate = makeSmallReplicates(),
+                         split = makeSmallSplits(),
                          row.names = colnames(counts))
   output <- getPseudobulk(object = counts,
                           metadata = metadata,
@@ -283,9 +249,9 @@ test_that("getPseudobulk retrieves replicate and split labels from metadata", {
 test_that("getPseudobulk works with SingleCellExperiment input", {
   testthat::skip_if_not_installed("SingleCellExperiment")
   testthat::skip_if_not_installed("S4Vectors")
-  counts <- makeCounts()
-  col_data <- S4Vectors::DataFrame(replicate = makeReplicates(),
-                                   split = makeSplits(),
+  counts <- makeSmallCounts()
+  col_data <- S4Vectors::DataFrame(replicate = makeSmallReplicates(),
+                                   split = makeSmallSplits(),
                                    row.names = colnames(counts))
   object <- suppressWarnings(SingleCellExperiment::SingleCellExperiment(assays = list(counts = counts),
                                                                         colData = col_data))
@@ -316,11 +282,11 @@ test_that("getPseudobulk works with SingleCellExperiment input", {
 # Seurat input
 test_that("getPseudobulk works with Seurat input", {
   testthat::skip_if_not_installed("Seurat")
-  counts <- makeCounts()
+  counts <- makeSmallCounts()
   object <- suppressWarnings(Seurat::CreateSeuratObject(counts = counts,
                                                         meta.data = data.frame(
-                                                          replicate = makeReplicates(),
-                                                          split = makeSplits(),
+                                                          replicate = makeSmallReplicates(),
+                                                          split = makeSmallSplits(),
                                                           row.names = colnames(counts))))
   output <- getPseudobulk(object = object,
                           replicate_labels = "replicate",

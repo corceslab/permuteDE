@@ -70,14 +70,14 @@
 #
 # Extract a matrix from provided object
 #
-# object -- An object of class Seurat or SingleCellExperiment or matrix
-# use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
-# use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
-# use_layer -- For Seurat objects, a character string indicating the layer/slot to use
-# use_features -- A vector of feature names to use to subset the matrix
-# exclude_features -- A vector of feature names to exclude from the matrix
-# use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output
+# object            -- An object of class Seurat or SingleCellExperiment or matrix
+# use_matrix        -- If there is a user-supplied matrix, do not retrieve a matrix from the object
+# use_assay         -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
+# use_layer         -- For Seurat objects, a character string indicating the layer/slot to use
+# use_features      -- A vector of feature names to use to subset the matrix
+# exclude_features  -- A vector of feature names to exclude from the matrix
+# use_cells         -- A vector of cell IDs to use to subset the matrix
+# verbose           -- A boolean value indicating whether to use verbose output
 .getMatrix <- function(object = NULL,
                        use_matrix = NULL,
                        use_assay = NULL,
@@ -119,14 +119,14 @@
 
 # Extract a matrix from a Seurat object
 #
-# object -- A Seurat object
-# use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
-# use_assay -- a string indicating the assay to use
-# use_layer -- a string indicating the layer/slot to use
-# use_features -- A vector of feature names to use to subset the matrix
-# exclude_features -- A vector of feature names to exclude from the matrix
-# use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output
+# object            -- A Seurat object
+# use_matrix        -- If there is a user-supplied matrix, do not retrieve a matrix from the object
+# use_assay         -- a string indicating the assay to use
+# use_layer         -- a string indicating the layer/slot to use
+# use_features      -- A vector of feature names to use to subset the matrix
+# exclude_features  -- A vector of feature names to exclude from the matrix
+# use_cells         -- A vector of cell IDs to use to subset the matrix
+# verbose           -- A boolean value indicating whether to use verbose output
 .getMatrix.Seurat <- function(object,
                               use_matrix,
                               use_assay,
@@ -230,6 +230,16 @@
   return(use_matrix)
 }
 
+# Extract a matrix from a SingleCellExperiment object
+#
+# object            -- A SingleCellExperiment object
+# use_matrix        -- If there is a user-supplied matrix, do not retrieve a matrix from the object
+# use_assay         -- a string indicating the assay to use
+# use_layer         -- a string indicating the layer/slot to use (not used here)
+# use_features      -- A vector of feature names to use to subset the matrix
+# exclude_features  -- A vector of feature names to exclude from the matrix
+# use_cells         -- A vector of cell IDs to use to subset the matrix
+# verbose           -- A boolean value indicating whether to use verbose output
 .getMatrix.SingleCellExperiment <- function(object,
                                             use_matrix,
                                             use_assay,
@@ -316,12 +326,12 @@
 
 # Extract/subset a matrix
 #
-# object -- A matrix
-# use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
-# use_features -- A vector of feature names to use to subset the matrix
-# exclude_features -- A vector of feature names to exclude from the matrix
-# use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output
+# object            -- A matrix
+# use_matrix        -- If there is a user-supplied matrix, do not retrieve a matrix from the object
+# use_features      -- A vector of feature names to use to subset the matrix
+# exclude_features  -- A vector of feature names to exclude from the matrix
+# use_cells         -- A vector of cell IDs to use to subset the matrix
+# verbose           -- A boolean value indicating whether to use verbose output
 .getMatrix.matrix <- function(object,
                               use_matrix,
                               use_features,
@@ -390,10 +400,10 @@
 # Load required package
 # Adapted from ArchR code, Jeffrey Granja & Ryan Corces
 #
-# x -- Name of package
-# load -- Whether to load package
+# x           -- Name of package
+# load        -- Whether to load package
 # installInfo -- Installation info
-# source -- cran/bioc, etc.
+# source      -- cran/bioc, etc.
 .requirePackage <- function(x = NULL,
                             load = TRUE,
                             installInfo = NULL,

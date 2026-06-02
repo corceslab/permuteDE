@@ -188,6 +188,11 @@ permuteDE <- function(input,
               class = "list",
               other = list(de_method, de_test))
 
+  # Set design formula
+  if (is.null(design_formula)) {
+    design_formula <- stats::as.formula("~ group")
+  }
+
   # Additional validation
   .validInput(input = permute_by,
               name = "permute_by",
@@ -379,9 +384,9 @@ permuteDE <- function(input,
       } else {
         # Establish whether there are any potential covariate confounders to check
         confound_check <- NULL
-        if (!is.null(design_formula)) {
-          # Get terms of design formula
-          terms <- attr(terms(design_formula), "term.labels")
+        # Get terms of design formula
+        terms <- attr(terms(design_formula), "term.labels")
+        if (length(terms) > 1) {
           # Remove last term (group)
           terms <- terms[-length(terms)]
           # Create interaction terms if necessary
@@ -402,9 +407,9 @@ permuteDE <- function(input,
           # Subset current group key to just columns that are terms of design formula
           confound_check <- current_group_key[, check_terms, drop = FALSE]
           # Subset to categorical only
-          categorical_cols <- apply(confound_check, 2, FUN = function(i) {
-            intersect(methods::is(i), c("character", "factor", "logical")) > 0
-          })
+          categorical_cols <- vapply(confound_check, FUN = function(i) {
+            length(intersect(methods::is(i), c("character", "factor", "logical"))) > 0
+          }, FUN.VALUE = logical(1))
           confound_check <- confound_check[, categorical_cols, drop = FALSE]
           # If there are any columns left, check those for confounds
           if (ncol(confound_check) > 0) {
@@ -424,7 +429,7 @@ permuteDE <- function(input,
                                                   confound_check = confound_check,
                                                   progress_message = paste0(" for split ", current_split, " (", s, "/", n_splits, ")"),
                                                   random_seed = random_seed,
-                                                  verbose = TRUE)
+                                                  verbose = verbose)
         current_n_iterations <- ncol(permuted_group_indices)
 
         # Reorder if stratified by permute_within
@@ -503,50 +508,57 @@ permuteDE <- function(input,
           group_factor <- stats::relevel(group_factor, ref = reference_group)
           targets_i$group <- group_factor
 
-          if (!is.null(design_formula)) {
-            design_i <- stats::model.matrix(design_formula, data = targets_i)
-          } else {
-            design_i <- stats::model.matrix(~ group, data = targets_i)
-          }
+          design_i <- stats::model.matrix(design_formula, data = targets_i)
 
-          de_results_i <- switch(de_method,
-                                 edgeR = .runDE.edgeR(mat = current_mat,
-                                                      targets = targets_i,
-                                                      design = design_i,
-                                                      de_test = de_test,
-                                                      de_params = de_params),
-                                 DESeq2 = .runDE.DESeq2(mat = current_mat,
-                                                        targets = targets_i,
-                                                        design = design_i,
-                                                        de_test = de_test,
-                                                        de_params = de_params),
-                                 limma = .runDE.limma(mat = current_mat,
-                                                      targets = targets_i,
-                                                      design = design_i,
-                                                      de_test = de_test,
-                                                      de_params = de_params),
-                                 presto = .runDE.presto(mat = current_mat,
-                                                        targets = targets_i,
-                                                        de_test = de_test,
-                                                        de_params = de_params),
-                                 BPCells = .runDE.BPCells(mat = current_mat,
-                                                          targets = targets_i,
-                                                          de_test = de_test,
-                                                          de_params = de_params))
-          de_results_i <- de_results_i |>
+          de_output_i <- switch(de_method,
+                                edgeR = .runDE.edgeR(mat = current_mat,
+                                                     targets = targets_i,
+                                                     design = design_i,
+                                                     de_test = de_test,
+                                                     de_params = de_params),
+                                DESeq2 = .runDE.DESeq2(mat = current_mat,
+                                                       targets = targets_i,
+                                                       design = design_i,
+                                                       design_formula = design_formula,
+                                                       de_test = de_test,
+                                                       de_params = de_params),
+                                limma = .runDE.limma(mat = current_mat,
+                                                     targets = targets_i,
+                                                     design = design_i,
+                                                     de_test = de_test,
+                                                     de_params = de_params),
+                                presto = .runDE.presto(mat = current_mat,
+                                                       targets = targets_i,
+                                                       de_test = de_test,
+                                                       de_params = de_params,
+                                                       non_reference_group = non_reference_group),
+                                BPCells = .runDE.BPCells(mat = current_mat,
+                                                         targets = targets_i,
+                                                         de_test = de_test,
+                                                         de_params = de_params,
+                                                         non_reference_group = non_reference_group))
+
+          de_results_i <- de_output_i$results |>
             dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                           permutation = i,
                           split = current_split) |>
             dplyr::arrange(padj)
+
           if (return_all != TRUE) {
             de_results_i <- de_results_i |>
               dplyr::group_by(split, permutation) |>
-              dplyr::summarise(
-                n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
-                min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-                max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-                min_lfc_all = min(lfc),
-                max_lfc_all = max(lfc)) |>
+              dplyr::summarise(n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+                               min_lfc_sig = {
+                                 sig <- padj < alpha & abs(lfc) > lfc_threshold
+                                 if (any(sig, na.rm = TRUE)) min(lfc[sig], na.rm = TRUE) else NA_real_
+                               },
+                               max_lfc_sig = {
+                                 sig <- padj < alpha & abs(lfc) > lfc_threshold
+                                 if (any(sig, na.rm = TRUE)) max(lfc[sig], na.rm = TRUE) else NA_real_
+                               },
+                               min_lfc_all = min(lfc, na.rm = TRUE),
+                               max_lfc_all = max(lfc, na.rm = TRUE),
+                               .groups = "drop") |>
               data.frame() |>
               dplyr::mutate(reference_group_overlap = ref_group_overlap[i],
                             non_reference_group_overlap = non_ref_group_overlap[i]) |>
@@ -615,11 +627,19 @@ permuteDE <- function(input,
           permutation_DE_summary_s <- permutation_DE_results_s |>
             dplyr::group_by(split, permutation) |>
             dplyr::summarise(
-              n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
-              min_lfc_sig = ifelse(n_sig > 0, min(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-              max_lfc_sig = ifelse(n_sig > 0, max(lfc[padj < alpha & abs(lfc) > lfc_threshold]), NA),
-              min_lfc_all = min(lfc),
-              max_lfc_all = max(lfc)) |>
+              n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold, na.rm = TRUE),
+              min_lfc_sig = {
+                sig <- padj < alpha & abs(lfc) > lfc_threshold
+                if (any(sig, na.rm = TRUE)) min(lfc[sig], na.rm = TRUE) else NA_real_
+              },
+              max_lfc_sig = {
+                sig <- padj < alpha & abs(lfc) > lfc_threshold
+                if (any(sig, na.rm = TRUE)) max(lfc[sig], na.rm = TRUE) else NA_real_
+              },
+              min_lfc_all = min(lfc, na.rm = TRUE),
+              max_lfc_all = max(lfc, na.rm = TRUE),
+              .groups = "drop"
+            ) |>
             data.frame() |>
             dplyr::mutate(reference_group_overlap = ref_group_overlap,
                           non_reference_group_overlap = non_ref_group_overlap) |>

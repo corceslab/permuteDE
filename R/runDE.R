@@ -59,6 +59,8 @@
 #' passed to specific DE functions. The name of each element must be the
 #' specific DE function to which those parameters are passed. Defaults to an
 #' empty list.
+#' @param return_raw_de A Boolean value indicating whether to also return the
+#' raw output from the selected DE method/test. Defaults to \code{FALSE}.
 #' @param normalize_prefilter A Boolean value indicating whether
 #' normalization should be applied before (\code{TRUE}) or after (\code{FALSE})
 #' filtering out features with low counts. Defaults to \code{FALSE}.
@@ -135,6 +137,7 @@ runDE <- function(object,
                   de_method = "edgeR",
                   de_test = "LRT",
                   de_params = list(),
+                  return_raw_de = FALSE,
                   normalize_prefilter = FALSE,
                   p_adjust_method = "fdr",
                   min_cells_per_split = 100,
@@ -189,17 +192,15 @@ runDE <- function(object,
               null_allowed = TRUE,
               class = "character",
               other = list(object, pseudobulk))
+  .validInput(input = return_raw_de,
+              name = "return_raw_de",
+              class = "logical",
+              len = 1)
   .validInput(input = reference_group,
               name = "reference_group",
               null_allowed = TRUE,
               len = 1,
               other = list(object, metadata, group_labels, use_cells))
-  .validInput(input = design,
-              name = "design",
-              null_allowed = TRUE,
-              class = "character",
-              len = 1,
-              other = list(object, metadata, group_labels))
   .validInput(input = normalize_prefilter,
               name = "normalize_prefilter",
               class = "logical",
@@ -271,6 +272,12 @@ runDE <- function(object,
               name = "de_params",
               class = "list",
               other = list(de_method, de_test))
+  .validInput(input = design,
+              name = "design",
+              null_allowed = TRUE,
+              class = "character",
+              len = 1,
+              other = list(object, metadata, group_labels, de_test))
   .validInput(input = random_seed,
               name = "random_seed",
               class = "numeric",
@@ -428,7 +435,7 @@ runDE <- function(object,
       }
     }
   } else {
-    design_formula <- NULL
+    design_formula <- stats::as.formula("~ group")
   }
 
   group_key <- group_key |>
@@ -582,6 +589,8 @@ runDE <- function(object,
     # Define function to call correct DE method
     .callDE <- function(i) {
       worker_warnings <- character()
+      raw_results_i <- NULL
+
       de_results_i <- withCallingHandlers(
         {
           n_groups <- dplyr::n_distinct(target_list[[i]]$group)
@@ -589,18 +598,15 @@ runDE <- function(object,
             group_factor <- factor(target_list[[i]]$group)
             group_factor <- stats::relevel(group_factor, ref = reference_group)
             target_list[[i]]$group <- group_factor
-            if (!is.null(design)) {
-              design_i <- stats::model.matrix(design_formula, data = target_list[[i]])
-            } else {
-              design_i <- stats::model.matrix(~ group, data = target_list[[i]])
-            }
+
+            design_i <- stats::model.matrix(design_formula, data = target_list[[i]])
             exclude_features_i <- if (is.null(exclude_features)) {
               NULL
             } else {
               exclude_features[[i]]
             }
 
-            de_results_i <- switch(de_method,
+            de_output_i <- switch(de_method,
                                    edgeR = .runDE.edgeR(mat = matrix_list[[i]],
                                                         targets = target_list[[i]],
                                                         design = design_i,
@@ -611,6 +617,7 @@ runDE <- function(object,
                                    DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
                                                           targets = target_list[[i]],
                                                           design = design_i,
+                                                          design_formula = design_formula,
                                                           de_test = de_test,
                                                           de_params = de_params,
                                                           normalize_prefilter = normalize_prefilter,
@@ -636,12 +643,14 @@ runDE <- function(object,
                                                             normalize_prefilter = normalize_prefilter,
                                                             exclude_features = exclude_features_i,
                                                             non_reference_group = non_reference_group))
-            de_results_i <- de_results_i |>
+            de_results_i <- de_output_i$results |>
               dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                             split = names(matrix_list)[i]) |>
               dplyr::arrange(padj)
+            raw_results_i <- de_output_i$raw_results
           } else {
             de_results_i <- NULL
+            raw_results_i <- NULL
 
             if (verbose) {
               message("Skipped split label ", names(matrix_list)[i],
@@ -657,7 +666,8 @@ runDE <- function(object,
           invokeRestart("muffleWarning")
         }
       )
-      return(list(result = de_results_i,
+      return(list(results = de_results_i,
+                  raw_results = raw_results_i,
                   warnings = worker_warnings))
     }
 
@@ -680,7 +690,7 @@ runDE <- function(object,
     bad_outputs <- !vapply(de_output_list,
                            FUN = function(x) {
                              is.list(x) &&
-                               all(c("result", "warnings") %in% names(x))
+                               all(c("results", "raw_results", "warnings") %in% names(x))
                            },
                            FUN.VALUE = logical(1))
     if (any(bad_outputs)) {
@@ -690,7 +700,14 @@ runDE <- function(object,
     }
 
     # Extract the DE results
-    de_results_list <- lapply(de_output_list, `[[`, "result")
+    de_results_list <- lapply(de_output_list, `[[`, "results")
+
+    # If requested, extract raw DE results
+    if (return_raw_de) {
+      raw_de_results_list <- lapply(de_output_list, `[[`, "raw_results")
+      names(raw_de_results_list) <- names(matrix_list)
+      raw_de_results_list <- raw_de_results_list[!vapply(raw_de_results_list, is.null, logical(1))]
+    }
 
     # Extract and combine warnings captured inside each worker
     de_warnings <- unlist(lapply(de_output_list, `[[`, "warnings"), use.names = FALSE)
@@ -722,6 +739,7 @@ runDE <- function(object,
     }
   } else {
     de_results <- NULL
+    raw_de_results_list <- NULL
   }
 
   # ---------------------------------------------------------------------------
@@ -761,6 +779,7 @@ runDE <- function(object,
                          "de_method" = de_method,
                          "de_test" = de_test,
                          "de_params" = de_params,
+                         "return_raw_de" = return_raw_de,
                          "normalize_prefilter" = normalize_prefilter,
                          "p_adjust_method" = p_adjust_method,
                          "min_cells_per_split" = min_cells_per_split,
@@ -776,29 +795,45 @@ runDE <- function(object,
                          "n_cores" = n_cores)
 
   # Return output
-  if (pseudobulk == "none") {
-    return(list("DE_results" = de_results,
-                "cell_values" = matrix_list,
-                "metadata" = metadata_list,
-                "parameters" = parameter_list))
+  if (return_raw_de) {
+    if (pseudobulk == "none") {
+      return(list("DE_results" = de_results,
+                  "raw_DE_results" = raw_de_results_list,
+                  "cell_values" = matrix_list,
+                  "metadata" = metadata_list,
+                  "parameters" = parameter_list))
+    } else {
+      return(list("DE_results" = de_results,
+                  "raw_DE_results" = raw_de_results_list,
+                  "PB_values" = matrix_list,
+                  "metadata" = metadata_list,
+                  "parameters" = parameter_list))
+    }
   } else {
-    return(list("DE_results" = de_results,
-                "PB_values" = matrix_list,
-                "metadata" = metadata_list,
-                "parameters" = parameter_list))
+    if (pseudobulk == "none") {
+      return(list("DE_results" = de_results,
+                  "cell_values" = matrix_list,
+                  "metadata" = metadata_list,
+                  "parameters" = parameter_list))
+    } else {
+      return(list("DE_results" = de_results,
+                  "PB_values" = matrix_list,
+                  "metadata" = metadata_list,
+                  "parameters" = parameter_list))
+    }
   }
 }
 
 
 # Run edgeR differential expression ---------------------------
 #
-# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
-# targets -- A dataframe containing sample to group key
-# design -- A model.matrix design object
-# de_test -- Which test to use for differential expression
-# de_params -- Additional parameters to pass
+# mat                 -- A feature x replicate pseudobulk matrix or a feature x cell matrix
+# targets             -- A dataframe containing sample to group key
+# design              -- A model.matrix design object
+# de_test             -- Which test to use for differential expression
+# de_params           -- Additional parameters to pass
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
-# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+# exclude_features    -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.edgeR <- function(mat,
                          targets,
@@ -845,32 +880,35 @@ runDE <- function(object,
                                                 de_params[["glmLRT"]])),
                  exact = fit)
   # Compile results
-  edgeR_results <- edgeR::topTags(object = test,
-                                  n = Inf,
-                                  adjust.method = "none") |>
+  raw_results <- edgeR::topTags(object = test,
+                                n = Inf,
+                                adjust.method = "none") |>
     data.frame()
-  edgeR_results <- edgeR_results |>
-    dplyr::transmute(feature = rownames(edgeR_results),
+  edgeR_results <- raw_results |>
+    dplyr::transmute(feature = rownames(raw_results),
                      lfc = logFC,
                      pvalue = PValue)
   rownames(edgeR_results) <- NULL
 
-  return(edgeR_results)
+  return(list("results" = edgeR_results,
+              "raw_results" = raw_results))
 }
 
 # Run DESeq2 differential expression ---------------------------
 #
-# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
-# targets -- A dataframe containing sample to group key (splits to keep)
-# design -- A model.matrix design object
-# de_test -- Which test to use for differential expression
-# de_params -- Additional parameters to pass
+# mat                 -- A feature x replicate pseudobulk matrix or a feature x cell matrix
+# targets             -- A dataframe containing sample to group key (splits to keep)
+# design              -- A model.matrix design object
+# design_formula      -- The design formula
+# de_test             -- Which test to use for differential expression
+# de_params           -- Additional parameters to pass
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
-# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+# exclude_features    -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.DESeq2 <- function(mat,
                           targets,
                           design,
+                          design_formula,
                           de_test = "LRT",
                           de_params = list(),
                           normalize_prefilter = FALSE,
@@ -878,56 +916,80 @@ runDE <- function(object,
 
   .requirePackage("DESeq2", source = "bioc")
 
+  # Default DESeq2 to quiet output
+  if (is.null(de_params[["DESeq"]])) {
+    de_params[["DESeq"]] <- list()
+  }
+  if (is.null(de_params[["DESeq"]][["quiet"]])) {
+    de_params[["DESeq"]][["quiet"]] <- TRUE
+  }
+
   # Construct DESeq2 dataset
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
                                         colData = targets,
                                         design = design)
+
   # Estimate size factors
-  dds <- do.call(DESeq2::estimateSizeFactors, c(list("object" = dds),
+  dds <- do.call(DESeq2::estimateSizeFactors, c(list(object = dds),
                                                 de_params[["estimateSizeFactors"]]))
-  # If filtering, do so
-  if (normalize_prefilter & !is.null(exclude_features)) {
-    mat <- mat[!(rownames(mat) %in% exclude_features),]
+
+  # If filtering, do so after size factor estimation so the size factors are
+  # calculated from the original matrix.
+  if (normalize_prefilter && !is.null(exclude_features)) {
+    mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
+
     dds_filtered <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
                                                    colData = targets,
                                                    design = design)
+
     DESeq2::sizeFactors(dds_filtered) <- DESeq2::sizeFactors(dds)
     dds <- dds_filtered
   }
 
   # Run DESeq
   if (de_test == "LRT") {
-    reduced_design <- stats::model.matrix(~ 1, data = targets)
-    dds <- do.call(DESeq2::DESeq, c(list("object" = dds,
-                                         "test" = "LRT",
-                                         "reduced" = reduced_design),
-                                    de_params[["DESeq"]]))
+    # Reduce formula
+    term_labels <- attr(stats::terms(design_formula), "term.labels")
+    if (length(term_labels) <= 1) {
+      reduced_formula <- stats::as.formula("~ 1")
+    } else {
+      reduced_terms <- term_labels[-length(term_labels)]
+      reduced_formula <- stats::as.formula(paste("~", paste(reduced_terms, collapse = " + ")))
+    }
+    reduced_design <- stats::model.matrix(reduced_formula, data = targets)
+
+    dds <- do.call(DESeq2::DESeq, c(list(object = dds,
+                                         test = "LRT",
+                                         reduced = reduced_design), de_params[["DESeq"]]))
   } else if (de_test == "Wald") {
-    dds <- do.call(DESeq2::DESeq, c(list("object" = dds,
-                                         "test" = "Wald"),
+    dds <- do.call(DESeq2::DESeq, c(list(object = dds,
+                                         test = "Wald"),
                                     de_params[["DESeq"]]))
   }
 
-  DESeq2_results <- DESeq2::results(dds) |>
+  raw_results <- DESeq2::results(dds) |>
     data.frame()
-  DESeq2_results <- DESeq2_results |>
-    dplyr::transmute(feature = rownames(DESeq2_results),
+
+  DESeq2_results <- raw_results |>
+    dplyr::transmute(feature = rownames(raw_results),
                      lfc = log2FoldChange,
                      pvalue = pvalue)
+
   rownames(DESeq2_results) <- NULL
 
-  return(DESeq2_results)
+  return(list("results" = DESeq2_results,
+              "raw_results" = raw_results))
 }
 
 # Run limma differential expression ---------------------------
 #
-# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
-# targets -- A dataframe containing sample to group key
-# design -- A model.matrix design object
-# de_test -- Which test to use for differential expression
-# de_params -- Additional parameters to pass
+# mat                 -- A feature x replicate pseudobulk matrix or a feature x cell matrix
+# targets             -- A dataframe containing sample to group key
+# design              -- A model.matrix design object
+# de_test             -- Which test to use for differential expression
+# de_params           -- Additional parameters to pass
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
-# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+# exclude_features    -- A vector of feature names to filter out if normalize_prefilter is TRUE
 
 .runDE.limma <- function(mat,
                          targets,
@@ -977,10 +1039,10 @@ runDE <- function(object,
     fit <- do.call(limma::eBayes, c(list("fit" = fit),
                                     de_params[["eBayes"]]))
 
-    limma_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
+    raw_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
       data.frame()
-    limma_results <- limma_results |>
-      dplyr::transmute(feature = rownames(limma_results),
+    limma_results <- raw_results |>
+      dplyr::transmute(feature = rownames(raw_results),
                        lfc = logFC,
                        pvalue = P.Value)
     rownames(limma_results) <- NULL
@@ -1028,18 +1090,23 @@ runDE <- function(object,
                                 lfc = lfcs,
                                 pvalue = pvalues)
     rownames(limma_results) <- NULL
+
+    # Raw results are the same here
+    raw_results <- limma_results
   }
-  return(limma_results)
+
+  return(list("results" = limma_results,
+              "raw_results" = raw_results))
 }
 
 # Run Wilcoxon rank sum test differential expression using presto ---------------------------
 #
-# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix
-# targets -- A dataframe containing sample to group key
-# de_test -- Which test to use for differential expression
-# de_params -- Additional parameters to pass to cpm and/or wilcoxauc
+# mat                 -- A feature x replicate pseudobulk matrix or a feature x cell matrix
+# targets             -- A dataframe containing sample to group key
+# de_test             -- Which test to use for differential expression
+# de_params           -- Additional parameters to pass to cpm and/or wilcoxauc
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
-# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+# exclude_features    -- A vector of feature names to filter out if normalize_prefilter is TRUE
 # non_reference_group -- String indicating the non-reference group
 .runDE.presto <- function(mat,
                           targets,
@@ -1074,28 +1141,29 @@ runDE <- function(object,
                                      de_params[["cpm"]]))
   }
   # Run Wilcoxon rank sum test
-  wilcox_results <- do.call(presto::wilcoxauc, c(list("X" = cpm_mat,
-                                                      "y" = targets$group),
-                                                 de_params[["wilcoxauc"]]))
-  wilcox_results <- wilcox_results |> dplyr::filter(group == non_reference_group)
+  raw_results <- do.call(presto::wilcoxauc, c(list("X" = cpm_mat,
+                                                   "y" = targets$group),
+                                              de_params[["wilcoxauc"]]))
+  presto_results <- raw_results |> dplyr::filter(group == non_reference_group)
 
-  wilcox_results <- wilcox_results |>
+  presto_results <- presto_results |>
     dplyr::transmute(feature,
                      lfc = logFC,
                      pvalue = pval)
-  rownames(wilcox_results) <- NULL
+  rownames(presto_results) <- NULL
 
-  return(wilcox_results)
+  return(list("results" = presto_results,
+              "raw_results" = raw_results))
 }
 
 # Run Wilcoxon rank sum test differential expression using BPCells ---------------------------
 #
-# mat -- A feature x replicate pseudobulk matrix or a feature x cell matrix (must be IterableMatrix)
-# targets -- A dataframe containing sample to group key
-# de_test -- Which test to use for differential expression
-# de_params -- Additional parameters to pass to cpm and/or wilcoxauc
+# mat                 -- A feature x replicate pseudobulk matrix or a feature x cell matrix (must be IterableMatrix)
+# targets             -- A dataframe containing sample to group key
+# de_test             -- Which test to use for differential expression
+# de_params           -- Additional parameters to pass to cpm and/or wilcoxauc
 # normalize_prefilter -- Whether to get normalization/size factors before filtering out features
-# exclude_features -- A vector of feature names to filter out if normalize_prefilter is TRUE
+# exclude_features    -- A vector of feature names to filter out if normalize_prefilter is TRUE
 # non_reference_group -- String indicating the non-reference group
 .runDE.BPCells <- function(mat,
                            targets,
@@ -1128,12 +1196,12 @@ runDE <- function(object,
   }
 
   # Run Wilcoxon rank sum test using BPCells.
-  wilcox_results <- do.call(BPCells::marker_features,
-                            c(list(mat = cpm_mat,
-                                   groups = targets$group),
-                              de_params[["marker_features"]]))
+  raw_results <- do.call(BPCells::marker_features,
+                             c(list(mat = cpm_mat,
+                                    groups = targets$group),
+                               de_params[["marker_features"]]))
 
-  wilcox_results <- wilcox_results |>
+  BPCells_results <- raw_results |>
     dplyr::filter(foreground == non_reference_group)
 
   # LFC
@@ -1147,22 +1215,23 @@ runDE <- function(object,
     # cpm_mat is log1p-transformed using the natural log.
     # Difference of means is in natural-log units, so divide by log(2)
     # to report log2-scale fold change (see marker_features docs)
-    wilcox_results <- wilcox_results |>
+    BPCells_results <- BPCells_results |>
       dplyr::mutate(lfc = (foreground_mean - background_mean) / log(2))
   } else {
     # cpm_mat is CPM-scale, so calculate log2 fold-change from group means
     # (see marker_features docs)
-    wilcox_results <- wilcox_results |>
+    BPCells_results <- BPCells_results |>
       dplyr::mutate(lfc = log2((foreground_mean + pseudocount) /(background_mean + pseudocount)))
   }
 
   # Results
-  wilcox_results <- wilcox_results |>
+  BPCells_results <- BPCells_results |>
     dplyr::transmute(feature,
                      lfc,
                      pvalue = p_val_raw)
 
-  rownames(wilcox_results) <- NULL
+  rownames(BPCells_results) <- NULL
 
-  return(wilcox_results)
+  return(list("results" = BPCells_results,
+              "raw_results" = raw_results))
 }

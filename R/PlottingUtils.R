@@ -9,8 +9,8 @@
 #'
 #' @param color Color of text and lines of the plot
 #' @param base_size The size of the font for the axis labels
-#' @param base_line_size The line width for most lines
-#' @param base_rect_size The line width for rectangular boxes
+#' @param base_line_linewidth The line width for most lines
+#' @param base_rect_linewidth The line width for rectangular boxes
 #' @param axis_title_size The font size of the axis title
 #' @param plot_title_size The font size of the plot title
 #' @param plot_margin_cm The margin around the plot in centimeters
@@ -25,8 +25,8 @@
 #' @export
 permuteDEtheme <- function(color = "black",
                            base_size = 10,
-                           base_line_size = 0.5,
-                           base_rect_size = 0.5,
+                           base_line_linewidth = 0.5,
+                           base_rect_linewidth = 0.5,
                            axis_title_size = 12,
                            plot_title_size = 14,
                            plot_margin_cm = 1,
@@ -46,9 +46,9 @@ permuteDEtheme <- function(color = "black",
     panel.background = ggplot2::element_rect(fill = "transparent", colour = NA),
     panel.grid.major = ggplot2::element_blank(),
     panel.grid.minor = ggplot2::element_blank(),
-    panel.border = ggplot2::element_rect(fill = NA, color = color, size = (4/3) * base_rect_size),
+    panel.border = ggplot2::element_rect(fill = NA, color = color, linewidth = (4/3) * base_rect_linewidth),
     axis.ticks.length = grid::unit(axis_tick_length_mm, "mm"),
-    axis.ticks = ggplot2::element_line(color = color, size = (4/3) * base_line_size),
+    axis.ticks = ggplot2::element_line(color = color, linewidth = (4/3) * base_line_linewidth),
     legend.key = ggplot2::element_rect(fill = "transparent", colour = NA),
     legend.text = ggplot2::element_text(color = color, size = legend_text_size),
     legend.title = ggplot2::element_text(color = color, size = legend_text_size, hjust = legend_title_hjust, vjust = legend_title_vjust),
@@ -354,7 +354,7 @@ plotVolcano <- function(input,
                               wilcox_cpm = "Wilcoxon Rank Sum Test with CPM normalization\n",
                               wilcox_log_cpm = "Wilcoxon Rank Sum Test with log CPM normalization\n",
                               paste0(de_test, "\n")),
-                       switch("fdr",
+                       switch(p_adjust_method,
                               holm =  paste0("Holm method, \u03b1 = ", alpha),
                               hochberg = paste0("Hochberg adjustment, \u03b1 = ", alpha),
                               hommel = paste0("Hommel procedure, \u03b1 = ", alpha),
@@ -416,12 +416,21 @@ plotVolcano <- function(input,
       dplyr::mutate(sig_group = ifelse(lfc > lfc_threshold & padj < alpha, paste0("Higher in ", non_reference_group),
                                        ifelse(lfc < lfc_threshold*(-1) & padj < alpha, paste0("Higher in ", reference_group),
                                               "Not significant")))
-    if (is.null(label_features)) {
-      label_features <- dplyr::arrange(dplyr::filter(split_results_s, padj < alpha, abs(lfc) > lfc_threshold),
-                                       padj, -abs(lfc))$feature[1:min(n_max_label, nrow(dplyr::filter(split_results_s, padj < alpha)))]
+    label_features_s <- label_features
+
+    if (is.null(label_features_s)) {
+      sig_results_s <- dplyr::filter(split_results_s,
+                                     padj < alpha,
+                                     abs(lfc) > lfc_threshold)
+      if (nrow(sig_results_s) == 0) {
+        label_features_s <- character(0)
+      } else {
+        label_features_s <- dplyr::arrange(sig_results_s, padj, -abs(lfc))$feature[seq_len(min(n_max_label, nrow(sig_results_s)))]
+      }
     }
+
     label_split_results_s <- split_results_s |>
-      dplyr::filter(feature %in% label_features)
+      dplyr::filter(feature %in% label_features_s)
 
     # Plot
     ggplot2::ggplot(data = split_results_s,
@@ -820,10 +829,12 @@ plotFeature <- function(input,
       feature_statistics <- dplyr::filter(input$DE_results,
                                           feature == feature_name,
                                           split == s)
+
+      label_statistics_s <- label_statistics
       if (nrow(feature_statistics) == 0) {
-        label_statistics <- FALSE
+        label_statistics_s <- FALSE
       }
-      if (label_statistics == TRUE) {
+      if (label_statistics_s == TRUE) {
         if (!("DE_results" %in% names(input))) {
           stop("When parameter 'label_statistics' is set to TRUE, list provided to parameter 'input' must contain an elements named 'DE_results'. Please supply valid input!")
         }
@@ -903,7 +914,7 @@ plotFeature <- function(input,
                                                                                    corral.width = 0.2))
       }
       # Add LFC & p-value
-      if (label_statistics == TRUE) {
+      if (label_statistics_s == TRUE) {
         # Set range
         y_max <- max(feature_s$value, na.rm = TRUE)
         y_range <- y_max - y_min
@@ -1063,8 +1074,8 @@ plotDimReduction <- function(reduction,
   # ---------------------------------------------------------------------------
 
   # Subset if necessary
-  if(!is.null(use_cells)) {
-    reduction <- reduction_[use_cells, ]
+  if (!is.null(use_cells)) {
+    reduction <- reduction[use_cells, , drop = FALSE]
   }
 
   # Create temporary Seurat object

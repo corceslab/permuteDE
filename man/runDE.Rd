@@ -17,6 +17,7 @@ runDE(
   de_method = "edgeR",
   de_test = "LRT",
   de_params = list(),
+  return_raw_de = FALSE,
   normalize_prefilter = FALSE,
   p_adjust_method = "fdr",
   min_cells_per_split = 100,
@@ -95,6 +96,9 @@ and "BPCells" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".}
 passed to specific DE functions. The name of each element must be the
 specific DE function to which those parameters are passed. Defaults to an
 empty list.}
+
+\item{return_raw_de}{A Boolean value indicating whether to also return the
+raw output from the selected DE method/test. Defaults to \code{FALSE}.}
 
 \item{normalize_prefilter}{A Boolean value indicating whether
 normalization should be applied before (\code{TRUE}) or after (\code{FALSE})

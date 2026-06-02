@@ -7,8 +7,8 @@
 permuteDEtheme(
   color = "black",
   base_size = 10,
-  base_line_size = 0.5,
-  base_rect_size = 0.5,
+  base_line_linewidth = 0.5,
+  base_rect_linewidth = 0.5,
   axis_title_size = 12,
   plot_title_size = 14,
   plot_margin_cm = 1,
@@ -26,9 +26,9 @@ permuteDEtheme(
 
 \item{base_size}{The size of the font for the axis labels}
 
-\item{base_line_size}{The line width for most lines}
+\item{base_line_linewidth}{The line width for most lines}
 
-\item{base_rect_size}{The line width for rectangular boxes}
+\item{base_rect_linewidth}{The line width for rectangular boxes}
 
 \item{axis_title_size}{The font size of the axis title}
 

@@ -135,24 +135,8 @@ consisting of mouse brain snRNA-seq data, stored as a Seurat object.</p>
 <span><span class="co"># Seurat object containing a count matrix, UMAP coordinates, and cell metadata</span></span>
 <span><span class="fu"><a href="../reference/plotDimReduction.html">plotDimReduction</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">reductions</span><span class="op">$</span><span class="va">umap</span><span class="op">@</span><span class="va">cell.embeddings</span>,</span>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
-<span>                 color_by <span class="op">=</span> <span class="st">"split"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: The `size` argument of `element_line()` is deprecated as of ggplot2 3.4.0.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Please use the `linewidth` argument instead.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">permuteDE</span> package.</span></span>
-<span><span class="co">#&gt;   Please report the issue at</span></span>
-<span><span class="co">#&gt;   <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/cathrinesant/permuteDE/issues&gt;</span>.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once every 8 hours.</span></span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">generated.</span></span></span>
-<span><span class="co">#&gt; Warning: The `size` argument of `element_rect()` is deprecated as of ggplot2 3.4.0.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Please use the `linewidth` argument instead.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">permuteDE</span> package.</span></span>
-<span><span class="co">#&gt;   Please report the issue at</span></span>
-<span><span class="co">#&gt;   <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/cathrinesant/permuteDE/issues&gt;</span>.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once every 8 hours.</span></span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">generated.</span></span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="700"></p>
+<span>                 color_by <span class="op">=</span> <span class="st">"split"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" width="700"></p>
 <hr>
 </div>
 </div>
@@ -209,13 +193,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:34 : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:34 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:20 PM : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:20 PM : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:34 : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-06-02 12:32:21 PM : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -269,25 +253,25 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:35 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:35 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:35 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:35 : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:39 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:39 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:39 : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:45 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:45 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:45 : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:51 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:51 : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:51 : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:54 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:54 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:54 : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:58 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:58 : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2026-04-08 12:50:58 : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-06-02 12:32:23 PM : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:23 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:23 PM : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:23 PM : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:36 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:36 PM : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:36 PM : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:55 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:55 PM : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:32:55 PM : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:15 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:15 PM : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:15 PM : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:27 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:27 PM : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:27 PM : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:39 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:39 PM : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-02 12:33:39 PM : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -349,7 +333,7 @@ parameter <code>use_splits</code> to the relevant split name(s).</p>
 <span><span class="va">volcano_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotVolcano.html">plotVolcano</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span><span class="op">)</span></span>
 <span><span class="co"># Display examples</span></span>
 <span><span class="va">volcano_plots</span><span class="op">[[</span><span class="st">"Inhibitory Neurons"</span><span class="op">]</span><span class="op">]</span> <span class="op">|</span> <span class="va">volcano_plots</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" width="700"></p>
 <p>To generate histograms for each permutation test (or a single split),
 use function <code><a href="../reference/plotHistogram.html">plotHistogram()</a></code>. These histograms display the
 distribution of the number of significant differentially expressed
@@ -362,7 +346,7 @@ histogram for a specific split or subset of splits, set parameter
 <span><span class="va">histogram_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plotHistogram.html">plotHistogram</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">permuteDE_output</span><span class="op">)</span></span>
 <span><span class="co"># Display examples</span></span>
 <span><span class="va">histogram_plots</span><span class="op">[[</span><span class="st">"Inhibitory Neurons"</span><span class="op">]</span><span class="op">]</span> <span class="op">|</span> <span class="va">histogram_plots</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" width="700"></p>
 <p>One way to summarise the results from permuteDE is to color a UMAP by
 the number of differentially expressed features in each split (in this
 case, cell type).</p>
@@ -372,7 +356,7 @@ case, cell type).</p>
 <span>                 input <span class="op">=</span> <span class="va">permuteDE_output</span>,</span>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
 <span>                 color_by <span class="op">=</span> <span class="st">"n_sig"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" width="700"></p>
 <p>In this plot, cell types are grayed out if the permutation test
 p-value was &gt; 0.05.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
@@ -382,7 +366,7 @@ p-value was &gt; 0.05.</p>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
 <span>                 color_by <span class="op">=</span> <span class="st">"n_sig"</span>,</span>
 <span>                 permutation_test_alpha <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" width="700"></p>
 <p>Or we can color by the p-values from the permutation test.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example UMAP showing permutation testing p-value for each split</span></span>
@@ -391,7 +375,7 @@ p-value was &gt; 0.05.</p>
 <span>                 split_labels <span class="op">=</span> <span class="va">sample_data</span><span class="op">$</span><span class="va">cell_type</span>,</span>
 <span>                 color_by <span class="op">=</span> <span class="st">"pvalue"</span>,</span>
 <span>                 palette <span class="op">=</span> <span class="st">"frozen"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" width="700"></p>
 <p>This function can also be used analogously to
 <code><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">Seurat::FeaturePlot()</a></code> to show the values for a single
 feature across the cells.</p>
@@ -401,7 +385,7 @@ feature across the cells.</p>
 <span>                 feature_values <span class="op">=</span> <span class="va">sample_data</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">RNA</span><span class="op">$</span><span class="va">counts</span><span class="op">[</span><span class="st">"App"</span>,<span class="op">]</span>,</span>
 <span>                 feature_name <span class="op">=</span> <span class="st">"*App*"</span>,</span>
 <span>                 color_by <span class="op">=</span> <span class="st">"feature"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" width="700"></p>
 <p>To plot the results for a single feature, use function
 <code><a href="../reference/plotFeature.html">plotFeature()</a></code>. By default, this function will apply CPM
 normalization (using <code><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">edgeR::cpm()</a></code>), but this can be changed
@@ -413,7 +397,7 @@ using the parameter <code>normalization_method</code>.</p>
 <span>                             use_splits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Inhibitory Neurons"</span>, <span class="st">"Oligodendrocytes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># Display examples</span></span>
 <span><span class="va">feature_plots</span><span class="op">[[</span><span class="st">"Inhibitory Neurons"</span><span class="op">]</span><span class="op">]</span> <span class="op">|</span> <span class="va">feature_plots</span><span class="op">[[</span><span class="st">"Oligodendrocytes"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" width="700"></p>
 <hr>
 </div>
 </div>
@@ -513,7 +497,7 @@ feature x cell matrix:</p>
 <span>                      group_labels <span class="op">=</span> <span class="va">groups</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      pseudobulk <span class="op">=</span> <span class="st">"supplied"</span>,</span>
-<span>                      n_cores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -661,6 +645,7 @@ as output so that they can be subsequently passed to function
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">runDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runDE.html">runDE</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">sample_data</span>,</span>
 <span>                      group_labels <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      pseudobulk <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
@@ -687,7 +672,7 @@ replicate.</p>
 <code>BPCells</code> <code>IterableMatrix</code> (which can greatly
 improve computational efficiency), the only differential method that is
 currently compatible is <code>BPCells</code>, which uses function
-<code>BPCells::marker_features()</code>.</p>
+<code><a href="https://bnprks.github.io/BPCells/reference/marker_features.html" class="external-link">BPCells::marker_features()</a></code>.</p>
 <p>In such cases, please specify parameters
 <code>de_method = "BPCells"</code> and
 <code>de_test = "wilcox_log_cpm"</code> or
@@ -706,7 +691,7 @@ using function <code><a href="../reference/permuteDEpalette.html">permuteDEpalet
 <span>                  n <span class="op">=</span> <span class="fl">10</span>, </span>
 <span>                  palette <span class="op">=</span> <span class="st">"choir"</span>, </span>
 <span>                  swatch <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="permuteDE_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" alt="" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-2.png" class="r-plt" alt="" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-3.png" class="r-plt" alt="" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-4.png" class="r-plt" alt="" width="700"></p>
+<p><img src="permuteDE_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-2.png" class="r-plt" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-3.png" class="r-plt" width="700"><img src="permuteDE_files/figure-html/unnamed-chunk-30-4.png" class="r-plt" width="700"></p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

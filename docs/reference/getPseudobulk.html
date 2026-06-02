@@ -49,7 +49,7 @@ a dataset, such as cell types.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">getPseudobulk</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
 <span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">replicate_labels</span>,</span>
+<span>  replicate_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  split_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use_cells <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_cells_per_split <span class="op">=</span> <span class="fl">100</span>,</span>
@@ -86,7 +86,8 @@ corresponding to the data provided to parameter <code>object</code>. Default =
 <dd><p>A string indicating the name of the
 metadata column containing the biological replicate labels or a character
 vector containing the biological replicate labels in order. The biological
-replicate labels are used to construct/define the pseudobulks.</p></dd>
+replicate labels are used to construct/define the pseudobulks. Default =
+<code>NULL</code> allowed only when <code>pseudobulk</code> is "none".</p></dd>
 
 
 <dt id="arg-split-labels">split_labels<a class="anchor" aria-label="anchor" href="#arg-split-labels"></a></dt>
@@ -175,10 +176,6 @@ Can be set to <code>FALSE</code> for a cleaner output.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Returns a list containing the following elements:</p><dl><dt>PB_values</dt>
-<dd><p>A list of feature x replicate matri(ces) containing
-pseudobulk values for each feature, one matrix per split</p></dd>
-
-<dt>exclude_features</dt>
 <dd><p>A list of feature x replicate matri(ces) containing
 pseudobulk values for each feature, one matrix per split</p></dd>
 

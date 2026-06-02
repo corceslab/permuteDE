@@ -73,6 +73,7 @@
                   "normalize_prefilter",
                   "progress_message",
                   "return_all",
+                  "return_raw_de",
                   "swatch",
                   "verbose")) {
     return(invisible(NULL))
@@ -190,8 +191,8 @@
                   "split_labels")) {
     # split_label has particular requirements for function plotDimReduction
     if (name == "split_labels" && !is.null(caller) && caller == "plotDimReduction") {
-      if (is.null(other[[2]]) || other[[2]] != "split") {
-        warning(" Input for '", name, "' is not used for provided value of parameter 'color_by'.")
+      if (is.null(other[[2]]) || !(other[[2]] %in% c("split", "n_sig", "pvalue"))) {
+        warning(" Input for '", name, "' is not used for value '", other[[2]], "' of parameter 'color_by'.")
         return(invisible(NULL))
       }
       if (length(input) != nrow(other[[1]])) {
@@ -352,6 +353,10 @@
           stop("Input value for '", name, "' must be a positive integer. Please supply valid input!")
         }
       }
+    }
+    # n_iterations >= 2
+    if (name == "n_iterations" && input < 2) {
+        stop("Input value for '", name, "' must be at least 2. Please supply valid input!")
     }
     # Warnings
     if (name %in% c("min_cells_per_split", "min_cells_per_replicate", "min_cells_per_feature") && other == "supplied") {
@@ -681,6 +686,13 @@
   }
 
   if (name == "design") {
+    # Stop if DE test is incompatible
+    if (other[[4]] %in% c("wilcox_cpm", "wilcox_log_cpm", "exact")) {
+      stop("Complex formulas for parameter '", name,
+           "' are not supported when input to parameter 'de_test' is '", other[[4]],
+           "'. This test does not model covariates.")
+    }
+
     if (!grepl("^\\s*~", input)) {
       stop("Input value for '", name, "' must be a one-sided formula starting with '~'. Please supply valid input!")
     }
