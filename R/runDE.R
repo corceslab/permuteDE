@@ -683,20 +683,12 @@ runDE <- function(object,
                   warnings = worker_warnings))
     }
 
-    # Use pblapply vs pbmcapply depending on # of cores
-    if (n_cores == 1) {
-      de_output_list <- lapply(
-        X = seq_len(length(matrix_list)),
-        FUN = .callDE
-      )
-    } else {
-      de_output_list <- pbmcapply::pbmclapply(
-        X = seq_len(length(matrix_list)),
-        FUN = .callDE,
-        mc.cores = n_cores,
-        mc.set.seed = TRUE
-      )
-    }
+    # Get DE results
+    de_output_list <- pbmcapply::pbmclapply(
+      X = seq_len(length(matrix_list)),
+      FUN = .callDE,
+      mc.cores = n_cores,
+      mc.set.seed = TRUE)
 
     # Check that every worker returned the expected wrapper structure
     bad_outputs <- !vapply(de_output_list,
