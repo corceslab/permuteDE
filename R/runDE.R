@@ -355,6 +355,12 @@ runDE <- function(object,
   }
   replicates <- as.character(replicates)
 
+  # For pre-generated pseudobulk, must match column names
+  if (pseudobulk == "supplied" && !identical(as.character(replicates), colnames(object))) {
+    stop("When parameter 'pseudobulk' is 'supplied', values provided to parameter 'replicate_labels' ",
+      "must match the supplied pseudobulk matrix column names exactly and in the same order.")
+  }
+
   # Group labels
   if (length(group_labels) == 1) {
     groups <- .retrieveData(object = object,
@@ -498,14 +504,20 @@ runDE <- function(object,
     # Returns a list containing one pseudobulk matrix (feature x replicate) per split
     if (is.null(split_labels)) {
       split_labels <- rep("all", length(replicates))
-    } else if (length(split_labels) != length(replicates)) { # Check length
-      if (pseudobulk == "supplied") {
-        stop("When a vector is provided for 'split_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
-      } else {
-        stop("When a vector is provided for 'split_labels', it must be the same length and in the same order as the supplied cells.")
-      }
+    } else if (length(split_labels) == 1) {
+      split_labels <- .retrieveData(object = object,
+                                    metadata = metadata,
+                                    type = "cell_metadata",
+                                    name = split_labels,
+                                    use_cells = NULL)
+    } else if (length(split_labels) != length(replicates)) {
+      stop("When a vector is provided for 'split_labels', it must be the same length and in the same order as the supplied pseudobulk matrix columns.")
+    }
+    if (any(is.na(split_labels))) {
+      stop("Values provided for 'split_labels' cannot be NA.")
     }
     split_indices <- split(seq_along(split_labels), split_labels)
+
     # Filter
     keep_indices <- split_indices[lengths(split_indices) >= min_replicates_per_split]
     n_splits <- length(keep_indices)

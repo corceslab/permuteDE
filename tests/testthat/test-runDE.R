@@ -138,3 +138,73 @@ test_that("runDE DE_results match across comparable input types", {
     }
   }
 })
+
+test_that("runDE requires replicate_labels to match supplied pseudobulk column names", {
+  input <- setInput.PBMatrix()
+
+  # Positive control: exact column-name labels should work.
+  metadata_ok <- input$metadata
+  metadata_ok$replicate_id <- rownames(metadata_ok)
+
+  warnings <- character()
+
+  output <- withCallingHandlers(runDE(object = input$object,
+                                      metadata = metadata_ok,
+                                      replicate_labels = "replicate_id",
+                                      group_labels = input$group_labels,
+                                      split_labels = NULL,
+                                      pseudobulk = "supplied",
+                                      de_method = "edgeR",
+                                      de_test = "LRT",
+                                      min_replicates_per_split = 1,
+                                      min_replicates_per_group = 1,
+                                      n_cores = 1,
+                                      verbose = FALSE),
+                                warning = function(w) {
+                                  warnings <<- c(warnings, conditionMessage(w))
+                                  invokeRestart("muffleWarning")
+                                })
+
+  expect_true(any(grepl("min_cells_per_split.*not used", warnings)))
+  expect_true(any(grepl("min_cells_per_replicate.*not used", warnings)))
+  expect_true(any(grepl("min_cells_per_feature.*not used", warnings)))
+  expect_true(any(grepl("min_prop_cells_per_feature.*not used", warnings)))
+
+  expectValidOutput.runDE(output)
+  expect_equal(output$parameters$pseudobulk, "supplied")
+  expect_true(identical(output$metadata$group_key$replicate, colnames(input$object)))
+
+  # Negative control: sample labels are same length/order, but do not match
+  # the supplied pseudobulk matrix column names.
+  expect_error(suppressWarnings(runDE(object = input$object,
+                                      metadata = input$metadata,
+                                      replicate_labels = "replicate",
+                                      group_labels = input$group_labels,
+                                      split_labels = NULL,
+                                      pseudobulk = "supplied",
+                                      de_method = "edgeR",
+                                      de_test = "LRT",
+                                      min_replicates_per_split = 1,
+                                      min_replicates_per_group = 1,
+                                      n_cores = 1,
+                                      verbose = FALSE)),
+               "replicate_labels.*match.*column names|column names.*replicate_labels")
+
+  # Negative control: same labels as column names, but wrong order.
+  metadata_wrong_order <- metadata_ok
+  metadata_wrong_order$replicate_id <- rev(metadata_wrong_order$replicate_id)
+
+  expect_error(suppressWarnings(runDE(object = input$object,
+                                      metadata = metadata_wrong_order,
+                                      replicate_labels = "replicate_id",
+                                      group_labels = input$group_labels,
+                                      split_labels = NULL,
+                                      pseudobulk = "supplied",
+                                      de_method = "edgeR",
+                                      de_test = "LRT",
+                                      min_replicates_per_split = 1,
+                                      min_replicates_per_group = 1,
+                                      n_cores = 1,
+                                      verbose = FALSE)),
+               "replicate_labels.*match.*column names|column names.*replicate_labels")
+})
