@@ -937,22 +937,24 @@ runDE <- function(object,
   }
 
   # Construct DESeq2 dataset
-  dds <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
-                                        colData = targets,
-                                        design = design)
+  dds <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(
+      countData = mat,
+      colData = targets,
+      design = design))
 
   # Estimate size factors
-  dds <- do.call(DESeq2::estimateSizeFactors, c(list(object = dds),
-                                                de_params[["estimateSizeFactors"]]))
+  dds <- do.call(DESeq2::estimateSizeFactors,
+    c(list(object = dds),
+      de_params[["estimateSizeFactors"]]))
 
-  # If filtering, do so after size factor estimation so the size factors are
-  # calculated from the original matrix.
+  # If filtering, do so after size factor estimation
+  # so the size factors are calculated from the original matrix
   if (normalize_prefilter && !is.null(exclude_features)) {
     mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
 
-    dds_filtered <- DESeq2::DESeqDataSetFromMatrix(countData = mat,
-                                                   colData = targets,
-                                                   design = design)
+    dds_filtered <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(countData = mat,
+        colData = targets,
+        design = design))
 
     DESeq2::sizeFactors(dds_filtered) <- DESeq2::sizeFactors(dds)
     dds <- dds_filtered
