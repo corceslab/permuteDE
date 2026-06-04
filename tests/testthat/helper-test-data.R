@@ -154,15 +154,18 @@ expectedValueName <- function(pseudobulk) {
 expectValidOutput.runDE <- function(output) {
   # Check names
   expected_name <- expectedValueName(output$parameters$pseudobulk)
+
   expected_names <- c("DE_results", expected_name, "metadata", "parameters")
   if (isTRUE(output$parameters$return_raw_de)) {
     expected_names <- c("DE_results", "raw_DE_results", expected_name, "metadata", "parameters")
   }
+
   expect_named(output, expected_names)
 
   # Check DE_results structure
   expect_s3_class(output$DE_results, "data.frame")
-  expect_true(all(c("feature", "lfc", "pvalue", "padj", "split") %in% colnames(output$DE_results)))
+  expect_true(all(c("feature", "lfc", "pvalue", "padj", "split") %in%
+                    colnames(output$DE_results)))
   expect_gt(nrow(output$DE_results), 0)
 
   # Check DE_results content
@@ -194,14 +197,11 @@ expectValidOutput.runDE <- function(output) {
   for (split_i in unique(output$DE_results$split)) {
     rows_i <- output$DE_results$split == split_i
 
-    expect_equal(
-      output$DE_results$padj[rows_i],
-      stats::p.adjust(
-        output$DE_results$pvalue[rows_i],
-        method = output$parameters$p_adjust_method
-      ),
-      tolerance = 1e-12
-    )
+    expect_equal(output$DE_results$padj[rows_i],
+                 stats::p.adjust(
+                   output$DE_results$pvalue[rows_i],
+                   method = output$parameters$p_adjust_method),
+                 tolerance = 1e-12)
   }
 
   # Check output matrices/cell values
@@ -214,10 +214,75 @@ expectValidOutput.runDE <- function(output) {
     expect_false("PB_values" %in% names(output))
   }
 
+  # Check metadata names
   expect_true("group_key" %in% names(output$metadata))
+  expect_true("replicates_by_split" %in% names(output$metadata))
+  expect_true("n_replicates_by_split" %in% names(output$metadata))
   expect_true("time" %in% names(output$metadata))
-}
 
+  # Check group_key
+  expect_s3_class(output$metadata$group_key, "data.frame")
+  expect_true(all(c("replicate", "group") %in%
+                    colnames(output$metadata$group_key)))
+  expect_type(output$metadata$group_key$replicate, "character")
+  expect_false(anyNA(output$metadata$group_key$replicate))
+
+  # Check replicates_by_split
+  expect_s3_class(output$metadata$replicates_by_split, "data.frame")
+  expect_true(all(c("split", "replicate", "group") %in%
+                    colnames(output$metadata$replicates_by_split)))
+
+  expect_type(output$metadata$replicates_by_split$split, "character")
+  expect_type(output$metadata$replicates_by_split$replicate, "character")
+  expect_false(anyNA(output$metadata$replicates_by_split$split))
+  expect_false(anyNA(output$metadata$replicates_by_split$replicate))
+
+  expect_setequal(output$metadata$replicates_by_split$split,
+                  names(output[[expected_name]]))
+
+  for (split_i in names(output[[expected_name]])) {
+    rows_i <- output$metadata$replicates_by_split$split == split_i
+    expect_setequal(output$metadata$replicates_by_split$replicate[rows_i],
+                    colnames(output[[expected_name]][[split_i]]))
+  }
+
+  # Check n_replicates_by_split
+  expect_s3_class(output$metadata$n_replicates_by_split, "data.frame")
+  expect_true(all(c("split", "n_reference_group", "n_non_reference_group") %in%
+                    colnames(output$metadata$n_replicates_by_split)))
+
+  expect_type(output$metadata$n_replicates_by_split$split, "character")
+  expect_true(is.numeric(output$metadata$n_replicates_by_split$n_reference_group))
+  expect_true(is.numeric(output$metadata$n_replicates_by_split$n_non_reference_group))
+
+  expect_false(anyNA(output$metadata$n_replicates_by_split$split))
+  expect_false(anyNA(output$metadata$n_replicates_by_split$n_reference_group))
+  expect_false(anyNA(output$metadata$n_replicates_by_split$n_non_reference_group))
+
+  expect_setequal(output$metadata$n_replicates_by_split$split,
+                  names(output[[expected_name]]))
+
+  expect_true(all(output$metadata$n_replicates_by_split$n_reference_group >= 1))
+  expect_true(all(output$metadata$n_replicates_by_split$n_non_reference_group >= 1))
+
+  for (split_i in names(output[[expected_name]])) {
+    replicate_rows_i <- output$metadata$replicates_by_split$split == split_i
+    count_rows_i <- output$metadata$n_replicates_by_split$split == split_i
+
+    expect_equal(sum(count_rows_i), 1L)
+
+    split_groups_i <- output$metadata$replicates_by_split$group[replicate_rows_i]
+
+    expect_equal(output$metadata$n_replicates_by_split$n_reference_group[count_rows_i],
+                 sum(split_groups_i == output$parameters$reference_group))
+
+    expect_equal(output$metadata$n_replicates_by_split$n_non_reference_group[count_rows_i],
+                 sum(split_groups_i == output$parameters$non_reference_group))
+  }
+
+  # Check time metadata
+  expect_s3_class(output$metadata$time, "data.frame")
+}
 # Make set of expectations for permuteDE output ---------------------------
 #
 # output     -- permuteDE output
@@ -598,6 +663,7 @@ getInputGrid <- function(input_info) {
 testCase.runDE <- function(input,
                            de_method,
                            de_test,
+                           de_params = list(),
                            pseudobulk,
                            split_labels = NULL,
                            design = NULL,
@@ -628,6 +694,7 @@ testCase.runDE <- function(input,
                                       pseudobulk = pseudobulk,
                                       de_method = de_method,
                                       de_test = de_test,
+                                      de_params = de_params,
                                       return_raw_de = return_raw_de,
                                       design = design,
                                       min_cells_per_split = 1,

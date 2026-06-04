@@ -1,3 +1,7 @@
+# permuteDE 0.2.1
+
+* Users can return results for all covariates in complex model designs
+
 # permuteDE 0.2.0
 
 * Created tests for all functions

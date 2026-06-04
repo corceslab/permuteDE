@@ -95,7 +95,10 @@ and "BPCells" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".}
 \item{de_params}{A list of lists containing additional parameters to be
 passed to specific DE functions. The name of each element must be the
 specific DE function to which those parameters are passed. Defaults to an
-empty list.}
+empty list. The special top-level option
+\code{return_all_coefficients = TRUE} can be used with
+\code{return_raw_de = TRUE} for coefficient-based model tests to include raw
+results for all model coefficients.}
 
 \item{return_raw_de}{A Boolean value indicating whether to also return the
 raw output from the selected DE method/test. Defaults to \code{FALSE}.}

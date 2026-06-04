@@ -9,7 +9,7 @@ using indicated differential expression analysis methods."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">permuteDE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -158,7 +158,10 @@ and "BPCells" ("wilcox_cpm", "wilcox_log_cpm"). Defaults to "LRT".</p></dd>
 <dd><p>A list of lists containing additional parameters to be
 passed to specific DE functions. The name of each element must be the
 specific DE function to which those parameters are passed. Defaults to an
-empty list.</p></dd>
+empty list. The special top-level option
+<code>return_all_coefficients = TRUE</code> can be used with
+<code>return_raw_de = TRUE</code> for coefficient-based model tests to include raw
+results for all model coefficients.</p></dd>
 
 
 <dt id="arg-return-raw-de">return_raw_de<a class="anchor" aria-label="anchor" href="#arg-return-raw-de"></a></dt>

@@ -309,7 +309,12 @@ runDE_output <- runDE(object = pb_matrix,
 
 To run differential expression analysis accounting for multiple factors/covariates, set parameter `design` in function `runDE()` to a character string providing the desired model formula.
 
-Note that complex model formulas are not compatible with the Wilcoxon rank sum test.
+*Important notes:*
+
+* Complex model formulas are not compatible with the Wilcoxon rank sum test
+
+* By default, only results for the group comparison are returned; to see results for covariates set parameter `de_params` to 
+`list(return_all_coefficients = TRUE)` and parameter `return_raw_de` to `TRUE`
 
 Here is an example comparing the groups within the sample data while additionally correcting for batch effects.
 

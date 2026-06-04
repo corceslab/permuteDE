@@ -544,24 +544,90 @@
 
   if (name == "de_params") {
     if (length(input) == 0) return(invisible(NULL))
-    allowed_values <- switch(other[[1]],
-                             edgeR = switch(other[[2]],
-                                            LRT = c("DGEList", "calcNormFactors", "estimateDisp", "glmQLFit", "glmQLFTest"),
-                                            QLF = c("DGEList", "calcNormFactors", "estimateDisp", "glmFit", "glmLRT"),
-                                            exact = c("DGEList", "calcNormFactors", "estimateDisp", "exactTest")),
-                             DESeq2 = c("estimateSizeFactors", "DESeq"),
-                             limma = switch(other[[2]],
-                                            trend = c("DGEList", "calcNormFactors", "cpm", "lmFit", "eBayes"),
-                                            voom = c("DGEList", "calcNormFactors", "voom", "lmFit", "eBayes"),
-                                            wilcox_cpm = c("DGEList", "cpm", "rankSumTestWithCorrelation", "lfc"),
-                                            wilcox_log_cpm = c("DGEList", "cpm", "rankSumTestWithCorrelation", "lfc")),
-                             presto = c("DGEList", "cpm", "wilcoxauc"),
-                             BPCells = c("DGEList", "cpm", "marker_features", "lfc"))
+
+    de_method <- other[[1]]
+    de_test <- other[[2]]
+    return_raw_de <- other[[3]]
+
+    function_values <- switch(de_method,
+      edgeR = switch(de_test,
+        LRT = c("DGEList", "calcNormFactors", "estimateDisp", "glmFit", "glmLRT"),
+        QLF = c("DGEList", "calcNormFactors", "estimateDisp", "glmQLFit", "glmQLFTest"),
+        exact = c("DGEList", "calcNormFactors", "estimateDisp", "exactTest")),
+      DESeq2 = c("estimateSizeFactors", "DESeq"),
+      limma = switch(de_test,
+        trend = c("DGEList", "calcNormFactors", "cpm", "lmFit", "eBayes"),
+        voom = c("DGEList", "calcNormFactors", "voom", "lmFit", "eBayes"),
+        wilcox_cpm = c("DGEList", "cpm", "rankSumTestWithCorrelation", "lfc"),
+        wilcox_log_cpm = c("DGEList", "cpm", "rankSumTestWithCorrelation", "lfc")),
+      presto = c("DGEList", "cpm", "wilcoxauc"),
+      BPCells = c("DGEList", "cpm", "marker_features", "lfc"))
+
+    allowed_values <- c(function_values, "return_all_coefficients")
+
     if (!all(names(input) %in% allowed_values)) {
-      stop("When supplying additional parameters to '", name, "' for use with '", de_method, ": ", de_test,
-           "', please provide a list of lists, where each secondary list is named according to the allowed functions (",
-           paste0(allowed_values, collapse = ", "), ").")
+      stop("When supplying additional parameters to '", name, "' for use with '",
+        de_method, ": ", de_test,
+        "', please provide a list where each element is named according to the allowed functions/options (",
+        paste0(allowed_values, collapse = ", "), ").")
     }
+
+    if ("return_all_coefficients" %in% names(input) &&
+        (!is.logical(input[["return_all_coefficients"]]) ||
+         length(input[["return_all_coefficients"]]) != 1)) {
+      stop("Input 'de_params$return_all_coefficients' must be a single value of class logical.")
+    }
+
+    supports_all_coefficients <- ((de_method == "edgeR" && de_test %in% c("LRT", "QLF")) ||
+        (de_method == "limma" && de_test %in% c("trend", "voom")) ||
+        (de_method == "DESeq2" && de_test == "Wald"))
+
+    if (isTRUE(input[["return_all_coefficients"]]) &&
+        !supports_all_coefficients) {
+      stop("Input 'de_params$return_all_coefficients = TRUE' is only supported for ",
+        "coefficient-based model tests: edgeR LRT/QLF, limma trend/voom, and DESeq2 Wald.")
+    }
+
+    if ("return_all_coefficients" %in% names(input) &&
+        isFALSE(return_raw_de)) {
+      warning("Value provided for 'return_all_coefficients' in 'de_params' will not be used ",
+        "when parameter 'return_raw_de' is FALSE.")
+    }
+
+    # All backend function parameters should still be supplied as lists.
+    # Special top-level options such as return_all_coefficients are checked separately.
+    function_param_names <- intersect(names(input), function_values)
+
+    if (!all(vapply(input[function_param_names], is.list, logical(1)))) {
+      stop("When supplying function-specific parameters to '", name, "', each ",
+        "function-specific element must be a list. The only non-list option currently ",
+        "allowed is 'return_all_coefficients'.")
+    }
+
+    # The tested coefficient/contrast is controlled internally
+    # so standardized DE_results always correspond to the group effect
+    # Cannot override this through de_params
+    if (de_method == "edgeR" && de_test == "LRT" && "glmLRT" %in% names(input) &&
+        any(c("coef", "contrast") %in% names(input[["glmLRT"]]))) {
+      stop("Do not supply 'coef' or 'contrast' in 'de_params$glmLRT'. ",
+        "The tested coefficient is controlled internally so 'DE_results' always ",
+        "corresponds to the group effect. Use 'de_params$return_all_coefficients = TRUE' ",
+        "with 'return_raw_de = TRUE' to inspect all coefficient-level results.")
+    }
+    if (de_method == "edgeR" && de_test == "QLF" && "glmQLFTest" %in% names(input) &&
+        any(c("coef", "contrast") %in% names(input[["glmQLFTest"]]))) {
+      stop("Do not supply 'coef' or 'contrast' in 'de_params$glmQLFTest'. ",
+        "The tested coefficient is controlled internally so 'DE_results' always ",
+        "corresponds to the group effect. Use 'de_params$return_all_coefficients = TRUE' ",
+        "with 'return_raw_de = TRUE' to inspect all coefficient-level results.")
+    }
+    if (de_method == "DESeq2" && "DESeq" %in% names(input) &&
+        any(c("test", "reduced", "full") %in% names(input[["DESeq"]]))) {
+      stop( "Do not supply 'test', 'reduced', or 'full' in 'de_params$DESeq'. ",
+        "These are controlled internally so 'DE_results' always corresponds to ",
+        "the requested DESeq2 test and group effect.")
+    }
+
     return(invisible(NULL))
   }
 

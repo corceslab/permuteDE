@@ -58,7 +58,10 @@
 #' @param de_params A list of lists containing additional parameters to be
 #' passed to specific DE functions. The name of each element must be the
 #' specific DE function to which those parameters are passed. Defaults to an
-#' empty list.
+#' empty list. The special top-level option
+#' \code{return_all_coefficients = TRUE} can be used with
+#' \code{return_raw_de = TRUE} for coefficient-based model tests to include raw
+#' results for all model coefficients.
 #' @param return_raw_de A Boolean value indicating whether to also return the
 #' raw output from the selected DE method/test. Defaults to \code{FALSE}.
 #' @param normalize_prefilter A Boolean value indicating whether
@@ -271,7 +274,7 @@ runDE <- function(object,
   .validInput(input = de_params,
               name = "de_params",
               class = "list",
-              other = list(de_method, de_test))
+              other = list(de_method, de_test, return_raw_de))
   .validInput(input = design,
               name = "design",
               null_allowed = TRUE,
@@ -358,7 +361,7 @@ runDE <- function(object,
   # For pre-generated pseudobulk, must match column names
   if (pseudobulk == "supplied" && !identical(as.character(replicates), colnames(object))) {
     stop("When parameter 'pseudobulk' is 'supplied', values provided to parameter 'replicate_labels' ",
-      "must match the supplied pseudobulk matrix column names exactly and in the same order.")
+         "must match the supplied pseudobulk matrix column names exactly and in the same order.")
   }
 
   # Group labels
@@ -580,6 +583,28 @@ runDE <- function(object,
   })
   names(target_list) <- names(matrix_list)
 
+  # Store replicates used for each split
+  replicates_by_split <- do.call(rbind,
+                                 lapply(names(target_list), function(split_i) {
+                                   targets_i <- target_list[[split_i]]
+                                   data.frame(split = split_i,
+                                              replicate = rownames(targets_i),
+                                              group = as.character(targets_i$group),
+                                              stringsAsFactors = FALSE,
+                                              row.names = NULL)
+                                 }))
+  n_replicates_by_split <- do.call(rbind,
+                                   lapply(names(target_list), function(split_i) {
+                                     targets_i <- target_list[[split_i]]
+                                     n_reference_group <- sum(targets_i$group == reference_group)
+                                     n_non_reference_group <- sum(targets_i$group == non_reference_group)
+                                     data.frame(split = split_i,
+                                                n_reference_group = n_reference_group,
+                                                n_non_reference_group = n_non_reference_group,
+                                                stringsAsFactors = FALSE,
+                                                row.names = NULL)
+                                   }))
+
   # ---------------------------------------------------------------------------
   # Perform pseudobulk differential expression
   # ---------------------------------------------------------------------------
@@ -619,42 +644,42 @@ runDE <- function(object,
             }
 
             de_output_i <- switch(de_method,
-                                   edgeR = .runDE.edgeR(mat = matrix_list[[i]],
-                                                        targets = target_list[[i]],
-                                                        design = design_i,
-                                                        de_test = de_test,
-                                                        de_params = de_params,
-                                                        normalize_prefilter = normalize_prefilter,
-                                                        exclude_features = exclude_features_i),
-                                   DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
-                                                          targets = target_list[[i]],
-                                                          design = design_i,
-                                                          design_formula = design_formula,
-                                                          de_test = de_test,
-                                                          de_params = de_params,
-                                                          normalize_prefilter = normalize_prefilter,
-                                                          exclude_features = exclude_features_i),
-                                   limma = .runDE.limma(mat = matrix_list[[i]],
-                                                        targets = target_list[[i]],
-                                                        design = design_i,
-                                                        de_test = de_test,
-                                                        de_params = de_params,
-                                                        normalize_prefilter = normalize_prefilter,
-                                                        exclude_features = exclude_features_i),
-                                   presto = .runDE.presto(mat = matrix_list[[i]],
-                                                          targets = target_list[[i]],
-                                                          de_test = de_test,
-                                                          de_params = de_params,
-                                                          normalize_prefilter = normalize_prefilter,
-                                                          exclude_features = exclude_features_i,
-                                                          non_reference_group = non_reference_group),
-                                   BPCells = .runDE.BPCells(mat = matrix_list[[i]],
-                                                            targets = target_list[[i]],
-                                                            de_test = de_test,
-                                                            de_params = de_params,
-                                                            normalize_prefilter = normalize_prefilter,
-                                                            exclude_features = exclude_features_i,
-                                                            non_reference_group = non_reference_group))
+                                  edgeR = .runDE.edgeR(mat = matrix_list[[i]],
+                                                       targets = target_list[[i]],
+                                                       design = design_i,
+                                                       de_test = de_test,
+                                                       de_params = de_params,
+                                                       normalize_prefilter = normalize_prefilter,
+                                                       exclude_features = exclude_features_i),
+                                  DESeq2 = .runDE.DESeq2(mat = matrix_list[[i]],
+                                                         targets = target_list[[i]],
+                                                         design = design_i,
+                                                         design_formula = design_formula,
+                                                         de_test = de_test,
+                                                         de_params = de_params,
+                                                         normalize_prefilter = normalize_prefilter,
+                                                         exclude_features = exclude_features_i),
+                                  limma = .runDE.limma(mat = matrix_list[[i]],
+                                                       targets = target_list[[i]],
+                                                       design = design_i,
+                                                       de_test = de_test,
+                                                       de_params = de_params,
+                                                       normalize_prefilter = normalize_prefilter,
+                                                       exclude_features = exclude_features_i),
+                                  presto = .runDE.presto(mat = matrix_list[[i]],
+                                                         targets = target_list[[i]],
+                                                         de_test = de_test,
+                                                         de_params = de_params,
+                                                         normalize_prefilter = normalize_prefilter,
+                                                         exclude_features = exclude_features_i,
+                                                         non_reference_group = non_reference_group),
+                                  BPCells = .runDE.BPCells(mat = matrix_list[[i]],
+                                                           targets = target_list[[i]],
+                                                           de_test = de_test,
+                                                           de_params = de_params,
+                                                           normalize_prefilter = normalize_prefilter,
+                                                           exclude_features = exclude_features_i,
+                                                           non_reference_group = non_reference_group))
             de_results_i <- de_output_i$results |>
               dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
                             split = names(matrix_list)[i]) |>
@@ -755,6 +780,8 @@ runDE <- function(object,
   # Metadata
   if (pseudobulk == "generate") {
     metadata_list <- list("group_key" = group_key,
+                          "replicates_by_split" = replicates_by_split,
+                          "n_replicates_by_split" = n_replicates_by_split,
                           "feature_metrics" = feature_metrics,
                           "time" = data.frame(total = difftime(time4, time1, units = "secs"),
                                               step1_setup = difftime(time2, time1, units = "secs"),
@@ -762,6 +789,8 @@ runDE <- function(object,
                                               step3_DE = difftime(time4, time3, units = "secs")))
   } else {
     metadata_list <- list("group_key" = group_key,
+                          "replicates_by_split" = replicates_by_split,
+                          "n_replicates_by_split" = n_replicates_by_split,
                           "time" = data.frame(total = difftime(time4, time1, units = "secs"),
                                               step1_setup = difftime(time2, time1, units = "secs"),
                                               step2_get_matrices = difftime(time3, time2, units = "secs"),
@@ -848,54 +877,110 @@ runDE <- function(object,
                          exclude_features = NULL) {
 
   # Create edgeR object
-  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
-                                        "group" = targets$group),
-                                   de_params[["DGEList"]]))
+  dge <- do.call(edgeR::DGEList,
+                 c(list(counts = mat,
+                        group = targets$group),
+                   de_params[["DGEList"]]))
+
   # Get size factors
-  dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
-                                           de_params[["calcNormFactors"]]))
-  # If filtering, do so
+  dge <- do.call(edgeR::calcNormFactors,
+                 c(list(object = dge),
+                   de_params[["calcNormFactors"]]))
+
+  # If filtering, do so after normalization
+  # so normalization factors are calculated from the original matrix
   if (normalize_prefilter & !is.null(exclude_features)) {
-    mat <- mat[!(rownames(mat) %in% exclude_features),]
-    dge_filtered <- do.call(edgeR::DGEList, c(list("counts" = mat,
-                                                   "group" = targets$group),
-                                              de_params[["DGEList"]]))
+    mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
+
+    dge_filtered <- do.call(edgeR::DGEList,
+                            c(list(counts = mat,
+                                   group = targets$group),
+                              de_params[["DGEList"]]))
+
     dge_filtered$samples <- dge$samples
     dge <- dge_filtered
   }
+
   # Estimate dispersion
-  y <- do.call(edgeR::estimateDisp, c(list("y" = dge,
-                                           "design" = design),
-                                      de_params[["estimateDisp"]]))
-  # Run test
+  y <- do.call(edgeR::estimateDisp,
+               c(list(y = dge,
+                      design = design),
+                 de_params[["estimateDisp"]]))
+
+  # Fit model or run exact test.
   fit <- switch(de_test,
-                QLF = do.call(edgeR::glmQLFit, c(list("y" = y,
-                                                      "design" = design),
-                                                 de_params[["glmQLFit"]])),
-                LRT = do.call(edgeR::glmFit, c(list("y" = y,
-                                                    "design" = design),
-                                               de_params[["glmFit"]])),
-                exact = do.call(edgeR::exactTest, c(list("object" = y),
-                                                    de_params[["exactTest"]])))
+                QLF = do.call(edgeR::glmQLFit,
+                              c(list(y = y,
+                                     design = design),
+                                de_params[["glmQLFit"]])),
+                LRT = do.call(edgeR::glmFit,
+                              c(list(y = y,
+                                     design = design),
+                                de_params[["glmFit"]])),
+                exact = do.call(edgeR::exactTest,
+                                c(list(object = y),
+                                  de_params[["exactTest"]])))
+
+  # Group comparison
   test <- switch(de_test,
-                 QLF = do.call(edgeR::glmQLFTest, c(list("glmfit" = fit),
-                                                    de_params[["glmQLFTest"]])),
-                 LRT = do.call(edgeR::glmLRT, c(list("glmfit" = fit),
-                                                de_params[["glmLRT"]])),
+                 QLF = do.call(edgeR::glmQLFTest,
+                               c(list(glmfit = fit,
+                                      coef = ncol(design)),
+                                 de_params[["glmQLFTest"]])),
+                 LRT = do.call(edgeR::glmLRT,
+                               c(list(glmfit = fit,
+                                      coef = ncol(design)),
+                                 de_params[["glmLRT"]])),
                  exact = fit)
+
   # Compile results
   raw_results <- edgeR::topTags(object = test,
                                 n = Inf,
                                 adjust.method = "none") |>
     data.frame()
+
   edgeR_results <- raw_results |>
     dplyr::transmute(feature = rownames(raw_results),
                      lfc = logFC,
                      pvalue = PValue)
+
   rownames(edgeR_results) <- NULL
 
-  return(list("results" = edgeR_results,
-              "raw_results" = raw_results))
+  # Optionally return raw results for all model coefficients
+  return_all_coefficients <- isTRUE(de_params[["return_all_coefficients"]])
+
+  if (return_all_coefficients && de_test %in% c("LRT", "QLF")) {
+    coefficient_names <- colnames(design)
+
+    # Skip intercept when present
+    coefficient_indices <- seq_len(ncol(design))
+    coefficient_indices <- coefficient_indices[coefficient_names != "(Intercept)"]
+
+    coefficient_results <- stats::setNames(lapply(coefficient_indices,
+                                                  function(coefficient_i) {
+                                                    test_i <- switch(de_test,
+                                                                     QLF = do.call(edgeR::glmQLFTest,
+                                                                                   c(list(glmfit = fit,
+                                                                                          coef = coefficient_i),
+                                                                                     de_params[["glmQLFTest"]])),
+                                                                     LRT = do.call(edgeR::glmLRT,
+                                                                                   c(list(glmfit = fit,
+                                                                                          coef = coefficient_i),
+                                                                                     de_params[["glmLRT"]])))
+
+                                                    edgeR::topTags(object = test_i,
+                                                                   n = Inf,
+                                                                   adjust.method = "none") |>
+                                                      data.frame()
+                                                  }),
+                                           coefficient_names[coefficient_indices])
+
+    raw_results <- list(group = raw_results,
+                        coefficients = coefficient_results)
+  }
+
+  return(list(results = edgeR_results,
+              raw_results = raw_results))
 }
 
 # Run DESeq2 differential expression ---------------------------
@@ -929,15 +1014,14 @@ runDE <- function(object,
   }
 
   # Construct DESeq2 dataset
-  dds <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(
-      countData = mat,
-      colData = targets,
-      design = design))
+  dds <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(countData = mat,
+                                                         colData = targets,
+                                                         design = design))
 
   # Estimate size factors
   dds <- do.call(DESeq2::estimateSizeFactors,
-    c(list(object = dds),
-      de_params[["estimateSizeFactors"]]))
+                 c(list(object = dds),
+                   de_params[["estimateSizeFactors"]]))
 
   # If filtering, do so after size factor estimation
   # so the size factors are calculated from the original matrix
@@ -945,8 +1029,8 @@ runDE <- function(object,
     mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
 
     dds_filtered <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(countData = mat,
-        colData = targets,
-        design = design))
+                                                                    colData = targets,
+                                                                    design = design))
 
     DESeq2::sizeFactors(dds_filtered) <- DESeq2::sizeFactors(dds)
     dds <- dds_filtered
@@ -954,27 +1038,43 @@ runDE <- function(object,
 
   # Run DESeq
   if (de_test == "LRT") {
-    # Reduce formula
+    # Reduce formula by dropping the final term, which should be group
     term_labels <- attr(stats::terms(design_formula), "term.labels")
+
     if (length(term_labels) <= 1) {
       reduced_formula <- stats::as.formula("~ 1")
     } else {
       reduced_terms <- term_labels[-length(term_labels)]
       reduced_formula <- stats::as.formula(paste("~", paste(reduced_terms, collapse = " + ")))
     }
+
     reduced_design <- stats::model.matrix(reduced_formula, data = targets)
 
-    dds <- do.call(DESeq2::DESeq, c(list(object = dds,
-                                         test = "LRT",
-                                         reduced = reduced_design), de_params[["DESeq"]]))
+    dds <- do.call(DESeq2::DESeq,
+                   c(list(object = dds,
+                          test = "LRT",
+                          reduced = reduced_design),
+                     de_params[["DESeq"]]))
   } else if (de_test == "Wald") {
-    dds <- do.call(DESeq2::DESeq, c(list(object = dds,
-                                         test = "Wald"),
-                                    de_params[["DESeq"]]))
+    dds <- do.call(DESeq2::DESeq,
+                   c(list(object = dds,
+                          test = "Wald"),
+                     de_params[["DESeq"]]))
   }
 
-  raw_results <- DESeq2::results(dds) |>
-    data.frame()
+  # Group comparison
+  results_names <- DESeq2::resultsNames(dds)
+
+  if (de_test == "Wald") {
+    group_result_name <- results_names[length(results_names)]
+
+    raw_results <- DESeq2::results(dds,
+                                   name = group_result_name) |>
+      data.frame()
+  } else {
+    raw_results <- DESeq2::results(dds) |>
+      data.frame()
+  }
 
   DESeq2_results <- raw_results |>
     dplyr::transmute(feature = rownames(raw_results),
@@ -983,8 +1083,33 @@ runDE <- function(object,
 
   rownames(DESeq2_results) <- NULL
 
-  return(list("results" = DESeq2_results,
-              "raw_results" = raw_results))
+  # Optionally return raw results for all model coefficients
+  # Not supported for LRT because LRT p-values are full-vs-reduced model tests,
+  # not individual coefficient tests.
+  return_all_coefficients <- isTRUE(de_params[["return_all_coefficients"]])
+
+  if (return_all_coefficients && de_test == "Wald") {
+    coefficient_names <- DESeq2::resultsNames(dds)
+
+    # Skip intercept if present
+    coefficient_names <- coefficient_names[coefficient_names != "Intercept"]
+    coefficient_names <- coefficient_names[coefficient_names != "(Intercept)"]
+
+    coefficient_results <- stats::setNames(lapply(coefficient_names, function(coefficient_i) {
+      DESeq2::results(dds,
+                      name = coefficient_i) |>
+        data.frame()
+    }),
+    coefficient_names)
+
+    raw_results <- list(group = raw_results,
+                        coefficients = coefficient_results)
+  }
+
+  return(list(
+    results = DESeq2_results,
+    raw_results = raw_results
+  ))
 }
 
 # Run limma differential expression ---------------------------
@@ -1008,68 +1133,114 @@ runDE <- function(object,
   .requirePackage("limma", source = "bioc")
 
   # Create edgeR object
-  dge <- do.call(edgeR::DGEList, c(list("counts" = mat,
-                                        "group" = targets$group),
-                                   de_params[["DGEList"]]))
+  dge <- do.call(edgeR::DGEList,
+                 c(list(counts = mat,
+                        group = targets$group),
+                   de_params[["DGEList"]]))
 
   if (de_test %in% c("trend", "voom")) {
     # Get size factors
-    dge <- do.call(edgeR::calcNormFactors, c(list("object" = dge),
-                                             de_params[["calcNormFactors"]]))
-    # If filtering, do so
+    dge <- do.call(edgeR::calcNormFactors,
+                   c(list(object = dge),
+                     de_params[["calcNormFactors"]]))
+
+    # If filtering, do so after normalization
+    # so normalization factors are calculated from the original matrix
     if (normalize_prefilter & !is.null(exclude_features)) {
-      mat <- mat[!(rownames(mat) %in% exclude_features),]
-      dge_filtered <- do.call(edgeR::DGEList, c(list("counts" = mat,
-                                                     "group" = targets$group),
-                                                de_params[["DGEList"]]))
+      mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
+
+      dge_filtered <- do.call(edgeR::DGEList,
+                              c(list(counts = mat,
+                                     group = targets$group),
+                                de_params[["DGEList"]]))
+
       dge_filtered$samples <- dge$samples
       dge <- dge_filtered
     }
 
     # Transform
     if (de_test == "trend") {
-      # Apply logCPM (uses stored $samples$lib.size)
-      transformed_dge <- do.call(edgeR::cpm, c(list("y" = dge,
-                                                    "log" = TRUE),
-                                               de_params[["cpm"]]))
+      # Apply logCPM using stored library sizes / normalization factors
+      transformed_dge <- do.call(edgeR::cpm,
+                                 c(list(y = dge,
+                                        log = TRUE),
+                                   de_params[["cpm"]]))
     } else if (de_test == "voom") {
       # Apply voom transformation
-      transformed_dge <- do.call(limma::voom, c(list("counts" = dge,
-                                                     "design" = design),
-                                                de_params[["voom"]]))
+      transformed_dge <- do.call(limma::voom,
+                                 c(list(counts = dge,
+                                        design = design),
+                                   de_params[["voom"]]))
     }
-    # limma DE
-    fit <- do.call(limma::lmFit, c(list("object" = transformed_dge,
-                                        "design" = design),
-                                   de_params[["lmFit"]]))
-    fit <- do.call(limma::eBayes, c(list("fit" = fit),
-                                    de_params[["eBayes"]]))
 
-    raw_results <- limma::topTable(fit, coef = ncol(design), number = Inf) |>
+    # limma DE
+    fit <- do.call(limma::lmFit,
+                   c(list(object = transformed_dge,
+                          design = design),
+                     de_params[["lmFit"]]))
+
+    fit <- do.call(limma::eBayes,
+                   c(list(fit = fit),
+                     de_params[["eBayes"]]))
+
+    # Group comparison
+    raw_results <- limma::topTable(fit,
+                                   coef = ncol(design),
+                                   number = Inf) |>
       data.frame()
+
     limma_results <- raw_results |>
       dplyr::transmute(feature = rownames(raw_results),
                        lfc = logFC,
                        pvalue = P.Value)
+
     rownames(limma_results) <- NULL
+
+    # Optionally return raw results for all model coefficients
+    return_all_coefficients <- isTRUE(de_params[["return_all_coefficients"]])
+
+    if (return_all_coefficients) {
+      coefficient_names <- colnames(design)
+
+      # Skip intercept when present
+      coefficient_indices <- seq_len(ncol(design))
+      coefficient_indices <- coefficient_indices[coefficient_names != "(Intercept)"]
+
+      coefficient_results <- stats::setNames(
+        lapply(coefficient_indices, function(coefficient_i) {
+          limma::topTable(fit,
+                          coef = coefficient_i,
+                          number = Inf) |>
+            data.frame()
+        }),
+        coefficient_names[coefficient_indices])
+
+      raw_results <- list(group = raw_results,
+                          coefficients = coefficient_results)
+    }
   } else if (de_test %in% c("wilcox_cpm", "wilcox_log_cpm")) {
     # Get library sizes
     lib_sizes <- dge$samples[colnames(mat), "lib.size"]
+
     # If filtering, do so
     if (normalize_prefilter & !is.null(exclude_features)) {
-      mat <- mat[!(rownames(mat) %in% exclude_features),]
+      mat <- mat[!(rownames(mat) %in% exclude_features), , drop = FALSE]
     }
+
     # Normalization
     if (de_test == "wilcox_cpm") {
-      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
-                                            "lib.size" = lib_sizes),
-                                       de_params[["cpm"]]))
+      cpm_mat <- do.call(edgeR::cpm,
+                         c(list(y = mat,
+                                lib.size = lib_sizes),
+                           de_params[["cpm"]]))
     } else if (de_test == "wilcox_log_cpm") {
-      cpm_mat <- do.call(edgeR::cpm, c(list("y" = mat,
-                                            "lib.size" = lib_sizes,
-                                            "log" = TRUE),
-                                       de_params[["cpm"]]))
+      cpm_mat <- do.call(edgeR::cpm,
+                         c(list(y = mat,
+                                lib.size = lib_sizes,
+                                log = TRUE),
+                           de_params[["cpm"]]))
     }
+
     # Group indices
     group1_indices <- which(targets$group == levels(targets$group)[1])
     group2_indices <- which(targets$group == levels(targets$group)[2])
@@ -1077,11 +1248,11 @@ runDE <- function(object,
     # Wilcoxon rank sum test p-values
     pvalues <- apply(cpm_mat, 1,
                      FUN = function(x) {
-                       return(min(2 * min(do.call(limma::rankSumTestWithCorrelation, c(list("index" = group1_indices,
-                                                                                            "statistics" = x),
-                                                                                       de_params[["rankSumTestWithCorrelation"]]))), 1))
-                     }
-    )
+                       min(2 * min(do.call(limma::rankSumTestWithCorrelation,
+                                           c(list(index = group1_indices,
+                                                  statistics = x),
+                                             de_params[["rankSumTestWithCorrelation"]]))), 1)
+                     })
 
     # LFC
     if ("pseudocount" %in% de_params[["lfc"]]) {
@@ -1089,20 +1260,23 @@ runDE <- function(object,
     } else {
       pseudocount <- 1
     }
-    lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount)/rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
+
+    lfcs <- log2(rowMeans(cpm_mat[, group1_indices, drop = FALSE] + pseudocount) /
+                   rowMeans(cpm_mat[, group2_indices, drop = FALSE] + pseudocount))
 
     # Results
     limma_results <- data.frame(feature = rownames(cpm_mat),
                                 lfc = lfcs,
                                 pvalue = pvalues)
+
     rownames(limma_results) <- NULL
 
     # Raw results are the same here
     raw_results <- limma_results
   }
 
-  return(list("results" = limma_results,
-              "raw_results" = raw_results))
+  return(list(results = limma_results,
+              raw_results = raw_results))
 }
 
 # Run Wilcoxon rank sum test differential expression using presto ---------------------------
@@ -1203,9 +1377,9 @@ runDE <- function(object,
 
   # Run Wilcoxon rank sum test using BPCells.
   raw_results <- do.call(BPCells::marker_features,
-                             c(list(mat = cpm_mat,
-                                    groups = targets$group),
-                               de_params[["marker_features"]]))
+                         c(list(mat = cpm_mat,
+                                groups = targets$group),
+                           de_params[["marker_features"]]))
 
   BPCells_results <- raw_results |>
     dplyr::filter(foreground == non_reference_group)
