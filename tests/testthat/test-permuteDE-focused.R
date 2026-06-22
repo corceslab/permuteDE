@@ -185,3 +185,99 @@ test_that("permuteDE uses covariate design during DESeq2 LRT permutations", {
   expect_equal(output$parameters$de_method, "DESeq2")
   expect_equal(output$parameters$de_test, "LRT")
 })
+
+test_that("permuteDE handles small permutation spaces without dropping permutation matrix dimensions", {
+  input <- setInput.PBMatrix()
+
+  output_runDE <- testCase.runDE(input = input,
+                                 split_labels = NULL,
+                                 pseudobulk = "supplied",
+                                 de_method = "edgeR",
+                                 de_test = "LRT",
+                                 return_raw_de = FALSE,
+                                 min_replicates_per_group = 2,
+                                 n_cores = 1,
+                                 verbose = FALSE)
+
+  output_perm <- permuteDE(input = output_runDE,
+                           alpha = 1,
+                           lfc_threshold = 0,
+                           n_iterations = 2,
+                           min_DE = 0,
+                           return_all = FALSE,
+                           n_cores = 1,
+                           verbose = FALSE)
+
+  expectValidOutput.permuteDE(output_perm)
+
+  expect_s3_class(output_perm$permutation_test_results, "data.frame")
+  expect_s3_class(output_perm$permutation_DE_summary, "data.frame")
+
+  expect_true(all(output_perm$permutation_test_results$n_iterations >= 1))
+  expect_true(all(output_perm$permutation_DE_summary$permutation >= 1))
+
+  expect_true(is.list(output_perm$metadata$permutation_reference_group_indices))
+
+  for (split_i in names(output_perm$metadata$permutation_reference_group_indices)) {
+    indices_i <- output_perm$metadata$permutation_reference_group_indices[[split_i]]
+
+    expect_true(is.matrix(indices_i))
+    expect_gt(ncol(indices_i), 0)
+  }
+})
+
+test_that("permuteDE uses runDE excluded features when normalize_prefilter is TRUE", {
+  input <- setInput.CellMatrix()
+
+  forced_excluded_feature <- rownames(input$object)[1]
+
+  input$object[forced_excluded_feature, ] <- 0
+  input$object[forced_excluded_feature, seq_len(3)] <- 1
+
+  output_runDE <- runDE(object = input$object,
+    metadata = input$metadata,
+    replicate_labels = "replicate",
+    group_labels = "group",
+    split_labels = NULL,
+    pseudobulk = "generate",
+    de_method = "edgeR",
+    de_test = "LRT",
+    normalize_prefilter = TRUE,
+    min_cells_per_split = 1,
+    min_cells_per_replicate = 1,
+    min_replicates_per_split = 2,
+    min_replicates_per_group = 1,
+    min_cells_per_feature = 4,
+    min_prop_cells_per_feature = 0,
+    n_cores = 1,
+    verbose = FALSE)
+
+  expectValidOutput.runDE(output_runDE)
+
+  expect_true(isTRUE(output_runDE$parameters$normalize_prefilter))
+  expect_true("exclude_features" %in% names(output_runDE$metadata))
+
+  excluded <- output_runDE$metadata$exclude_features
+
+  expect_type(excluded, "list")
+  expect_true(any(vapply(excluded,
+    FUN = function(x) forced_excluded_feature %in% x,
+    FUN.VALUE = logical(1))))
+
+  expect_false(forced_excluded_feature %in% output_runDE$DE_results$feature)
+
+  output_perm <- permuteDE(input = output_runDE,
+    alpha = 1,
+    lfc_threshold = 0,
+    n_iterations = 3,
+    min_DE = 0,
+    return_all = TRUE,
+    n_cores = 1,
+    verbose = FALSE)
+
+  expectValidOutput.permuteDE(output_perm, return_all = TRUE)
+
+  expect_false(
+    forced_excluded_feature %in% output_perm$permutation_DE_results$feature
+  )
+})

@@ -160,6 +160,7 @@ permuteDE <- function(input,
   de_params <- input$parameters$de_params
   p_adjust_method <- input$parameters$p_adjust_method
   pseudobulk <- input$parameters$pseudobulk
+  normalize_prefilter <- input$parameters$normalize_prefilter
 
   # Validate retrieved parameters
   .validInput(input = p_adjust_method,
@@ -186,7 +187,11 @@ permuteDE <- function(input,
   .validInput(input = de_params,
               name = "de_params",
               class = "list",
-              other = list(de_method, de_test))
+              other = list(de_method, de_test, FALSE))
+  .validInput(input = normalize_prefilter,
+              name = "normalize_prefilter",
+              class = "logical",
+              len = 1)
 
   # Set design formula
   if (is.null(design_formula)) {
@@ -212,6 +217,14 @@ permuteDE <- function(input,
     } else {
       use_splits <- names(input$PB_values)
     }
+  }
+
+  # Fetch excluded features
+  exclude_features <- input$metadata$exclude_features
+
+  # Neutralize return_all_coefficients since behavior is only relevant to runDE
+  if (isTRUE(de_params[["return_all_coefficients"]])) {
+    de_params[["return_all_coefficients"]] <- FALSE
   }
 
   # Configure group key
@@ -291,10 +304,9 @@ permuteDE <- function(input,
     warning(" No splits have sufficient differentially expressed features, so no permutation tests were run. Consider setting parameter 'min_DE' to 0.")
     proceed <- FALSE
   } else if (verbose) {
-    message(format(Sys.time(), "%Y-%m-%d %X"),
-            " : Differential expression results for group ",
+    message(format(Sys.time(), "%Y-%m-%d %X"), " : Differential expression results for group ",
             unique(input$metadata$group_key$group)[1], " vs. ", unique(input$metadata$group_key$group)[2],
-            " across ", n_splits, " pseudobulk matrices..")
+            " across ", n_splits, " ", ifelse(pseudobulk == "none", "cell-level matrices", "pseudobulk matrices"), "..")
   }
 
   # Set up to collect output
@@ -340,13 +352,21 @@ permuteDE <- function(input,
         # Grab PB matrix
         current_mat <- input$PB_values[[current_split]]
       }
+      # Excluded features
+      exclude_features_i <- if (is.null(exclude_features)) {
+        NULL
+      } else if (is.list(exclude_features)) {
+        exclude_features[[current_split]]
+      } else {
+        exclude_features
+      }
       # Our replicates for DE will always be the column names of this matrix
       current_replicates <- colnames(current_mat)
       # Group key for permutation
       current_group_key <- group_key[current_replicates,] |>
         dplyr::select(-replicate) |>
         dplyr::group_by(dplyr::across(dplyr::everything())) |>
-        dplyr::summarise(n = dplyr::n()) |>
+        dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
         dplyr::select(-n) |>
         dplyr::arrange(permute_within) |>
         data.frame()
@@ -449,12 +469,12 @@ permuteDE <- function(input,
         # If true labels were among random permutations, skip, leaving n_iterations - 1
         if (any(ref_group_overlap == 1 & non_ref_group_overlap == 1)) {
           true_index <- which(ref_group_overlap == 1 & non_ref_group_overlap == 1)
-          permuted_group_indices <- permuted_group_indices[,-true_index]
+          permuted_group_indices <- permuted_group_indices[, -true_index, drop = FALSE]
           ref_group_overlap <- ref_group_overlap[-true_index]
           non_ref_group_overlap <- non_ref_group_overlap[-true_index]
         } else {
           # If not, remove one random set of labels, leaving n_iterations - 1
-          permuted_group_indices <- permuted_group_indices[,-1]
+          permuted_group_indices <- permuted_group_indices[,-1 , drop = FALSE]
           ref_group_overlap <- ref_group_overlap[-1]
           non_ref_group_overlap <- non_ref_group_overlap[-1]
         }
@@ -482,24 +502,8 @@ permuteDE <- function(input,
         # Store permuted group indices
         permutation_reference_group_indices[[current_split]] <- permuted_group_indices
 
-        # For cell-level tests, cap concurrent workers based on estimated memory
-        # DE tools create dense matrix copies internally: each worker needs roughly
-        # 5x the sparse matrix size. Target a 4 GB ceiling for concurrent workers.
-        if (pseudobulk == "none") {
-          bytes_per_worker <- as.numeric(utils::object.size(current_mat)) * 5
-          effective_cores <- max(1L, min(n_cores, floor(4e9 / bytes_per_worker)))
-          if (effective_cores < n_cores && verbose) {
-            message(format(Sys.time(), "%Y-%m-%d %X"),
-                    " : Large cell matrix (~", round(bytes_per_worker / 1e6), " MB per worker). ",
-                    "Reducing parallel workers from ", n_cores, " to ", effective_cores,
-                    " to limit memory usage.")
-          }
-        } else {
-          effective_cores <- n_cores
-        }
-
         # Define the per-permutation worker function
-        .run_one_permutation <- function(i) {
+        .runOnePermutation <- function(i) {
           targets_i <- group_key[current_replicates,]
           targets_i$group <- non_reference_group
           targets_i[permuted_group_indices[,i][!is.na(permuted_group_indices[,i])], "group"] <- reference_group
@@ -515,27 +519,37 @@ permuteDE <- function(input,
                                                      targets = targets_i,
                                                      design = design_i,
                                                      de_test = de_test,
-                                                     de_params = de_params),
+                                                     de_params = de_params,
+                                                     normalize_prefilter = normalize_prefilter,
+                                                     exclude_features = exclude_features_i),
                                 DESeq2 = .runDE.DESeq2(mat = current_mat,
                                                        targets = targets_i,
                                                        design = design_i,
                                                        design_formula = design_formula,
                                                        de_test = de_test,
-                                                       de_params = de_params),
+                                                       de_params = de_params,
+                                                       normalize_prefilter = normalize_prefilter,
+                                                       exclude_features = exclude_features_i),
                                 limma = .runDE.limma(mat = current_mat,
                                                      targets = targets_i,
                                                      design = design_i,
                                                      de_test = de_test,
-                                                     de_params = de_params),
+                                                     de_params = de_params,
+                                                     normalize_prefilter = normalize_prefilter,
+                                                     exclude_features = exclude_features_i),
                                 presto = .runDE.presto(mat = current_mat,
                                                        targets = targets_i,
                                                        de_test = de_test,
                                                        de_params = de_params,
+                                                       normalize_prefilter = normalize_prefilter,
+                                                       exclude_features = exclude_features_i,
                                                        non_reference_group = non_reference_group),
                                 BPCells = .runDE.BPCells(mat = current_mat,
                                                          targets = targets_i,
                                                          de_test = de_test,
                                                          de_params = de_params,
+                                                         normalize_prefilter = normalize_prefilter,
+                                                         exclude_features = exclude_features_i,
                                                          non_reference_group = non_reference_group))
 
           de_results_i <- de_output_i$results |>
@@ -547,7 +561,7 @@ permuteDE <- function(input,
           if (return_all != TRUE) {
             de_results_i <- de_results_i |>
               dplyr::group_by(split, permutation) |>
-              dplyr::summarise(n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold),
+              dplyr::summarise(n_sig = sum(padj < alpha & abs(lfc) > lfc_threshold, na.rm = TRUE),
                                min_lfc_sig = {
                                  sig <- padj < alpha & abs(lfc) > lfc_threshold
                                  if (any(sig, na.rm = TRUE)) min(lfc[sig], na.rm = TRUE) else NA_real_
@@ -580,47 +594,26 @@ permuteDE <- function(input,
                              " : Running ", current_n_iterations, " permutations for split ", current_split,
                              " (", s, "/", n_splits, ")..")
 
-        # Run permutations in batches to bound peak memory.
-        # For pseudobulk this is a single batch (batch_size = all iterations).
-        # For cell-level, batch_size = effective_cores so each batch frees
-        # its DE objects before the next batch starts.
-        if (pseudobulk == "none") {
-          batch_size <- effective_cores
-        } else {
-          batch_size <- current_n_iterations - 1L
-        }
-        iter_indices <- seq_len(current_n_iterations - 1L)
-        batches <- split(iter_indices,
-                         ceiling(seq_along(iter_indices) / batch_size))
-
-        permutation_DE_results_list <- vector("list", length(iter_indices))
-        for (batch in batches) {
-          if (effective_cores > 1L) {
-            batch_results <- tryCatch(
-              pbmcapply::pbmclapply(batch,
-                                    FUN = .run_one_permutation,
-                                    mc.cores = effective_cores,
-                                    mc.set.seed = TRUE),
-              error = function(e) {
-                if (grepl("mcfork|allocate memory|Cannot fork", conditionMessage(e))) {
-                  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
-                                       " : Unable to fork processes (out of memory). Falling back to sequential processing.")
-                  lapply(batch, FUN = .run_one_permutation)
-                } else {
-                  stop(e)
-                }
-              }
-            )
-          } else {
-            batch_results <- lapply(batch, FUN = .run_one_permutation)
-          }
-
-          for (idx in seq_along(batch)) {
-            permutation_DE_results_list[[batch[idx]]] <- batch_results[[idx]]
-          }
-          rm(batch_results)
-          gc(verbose = FALSE)
-        }
+        # Run permutations
+        permutation_DE_results_list <- tryCatch(pbmcapply::pbmclapply(
+          X = seq_len(current_n_iterations - 1L),
+          FUN = .runOnePermutation,
+          mc.cores = n_cores,
+          mc.set.seed = TRUE),
+          error = function(e) {
+            if (grepl("mcfork|allocate memory|Cannot fork|unable to fork", conditionMessage(e), ignore.case = TRUE)) {
+              stop("Parallel permutation testing failed because R could not fork worker ",
+                   "processes or allocate enough memory. This most often happens for ",
+                   "cell-level differential expression analysis for large datasets with high 'n_cores'. ",
+                   "Try the following: (1) switch to pseudobulk differential expression analysis by setting pseudobulk = 'generate', ",
+                   "(2) use de_method = 'BPCells' with a BPCells-backed matrix for cell-level tests, (3) reduce 'n_cores', or ",
+                   "(4) run the job on an HPC node with more memory.\n\nOriginal error: ",
+                   conditionMessage(e),
+                   call. = FALSE)
+            } else {
+              stop(e)
+            }
+          })
 
         if (return_all == TRUE) {
           permutation_DE_results_s <- do.call(rbind, permutation_DE_results_list) |> data.frame()

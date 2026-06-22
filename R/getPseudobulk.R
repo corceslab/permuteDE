@@ -418,8 +418,8 @@ getPseudobulk <- function(object,
       n_features_exclude <- n_all_features - n_features_for_DE
       prop_features_exclude <- n_features_exclude/n_all_features
       n_all_reads <- sum(Matrix::rowSums(count_matrix_s))
-      n_reads_exclude <- if (any(exclude_feature_indices)) {
-        sum(Matrix::rowSums(output_mat[exclude_feature_indices,]))
+      n_reads_exclude <- if (length(exclude_features) > 0) {
+        sum(Matrix::rowSums(output_mat[exclude_feature_indices, , drop = FALSE]))
       } else {
         0
       }

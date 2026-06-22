@@ -321,3 +321,35 @@ test_that("runDE rejects return_all_coefficients for unsupported tests", {
                               de_params = list(return_all_coefficients = TRUE)),
                "return_all_coefficients.*only supported|coefficient-based model tests")
 })
+
+test_that("runDE stores excluded features when normalize_prefilter is TRUE", {
+  input <- setInput.CellMatrix()
+
+  output_runDE <- runDE(object = input$object,
+    metadata = input$metadata,
+    replicate_labels = "replicate",
+    group_labels = "group",
+    split_labels = "split",
+    pseudobulk = "generate",
+    de_method = "edgeR",
+    de_test = "LRT",
+    normalize_prefilter = TRUE,
+    min_cells_per_split = 1,
+    min_cells_per_replicate = 1,
+    min_replicates_per_split = 2,
+    min_replicates_per_group = 1,
+    min_cells_per_feature = 2,
+    min_prop_cells_per_feature = 0,
+    n_cores = 1,
+    verbose = FALSE)
+
+  expectValidOutput.runDE(output_runDE)
+
+  expect_true(isTRUE(output_runDE$parameters$normalize_prefilter))
+  expect_true("exclude_features" %in% names(output_runDE$metadata))
+
+  expect_true(
+    is.null(output_runDE$metadata$exclude_features) ||
+      is.list(output_runDE$metadata$exclude_features)
+  )
+})

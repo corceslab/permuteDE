@@ -356,7 +356,8 @@
     }
     # n_iterations >= 2
     if (name == "n_iterations" && input < 2) {
-        stop("Input value for '", name, "' must be at least 2. Please supply valid input!")
+        stop("Input value for '", name,
+             "' must be at least 2. Note that output from function runDE using true group labels is counted as one of the iterations. Please supply valid input!")
     }
     # Warnings
     if (name %in% c("min_cells_per_split", "min_cells_per_replicate", "min_cells_per_feature") && other == "supplied") {

@@ -312,4 +312,43 @@ test_that("getPseudobulk works with Seurat input", {
   expect_equal(as.matrix(output$PB_values$split2), as.matrix(expected_split2))
 })
 
+# Larger input
 
+test_that("getPseudobulk handles exactly one excluded feature", {
+  input <- setInput.CellMatrix()
+
+  forced_excluded_feature <- rownames(input$object)[1]
+
+  input$object[forced_excluded_feature, ] <- 0
+  input$object[forced_excluded_feature, seq_len(3)] <- 1
+
+  output <- getPseudobulk(
+    object = input$object,
+    metadata = input$metadata,
+    replicate_labels = "replicate",
+    split_labels = NULL,
+    pseudobulk = "generate",
+    filter = FALSE,
+    min_cells_per_split = 1,
+    min_cells_per_replicate = 1,
+    min_replicates_per_split = 2,
+    min_cells_per_feature = 4,
+    min_prop_cells_per_feature = 0,
+    n_cores = 1,
+    verbose = FALSE
+  )
+
+  expect_type(output, "list")
+  expect_true("PB_values" %in% names(output))
+  expect_true("metadata" %in% names(output))
+  expect_true("exclude_features" %in% names(output$metadata))
+
+  excluded <- output$metadata$exclude_features
+
+  expect_type(excluded, "list")
+  expect_true(any(vapply(
+    excluded,
+    FUN = function(x) forced_excluded_feature %in% x,
+    FUN.VALUE = logical(1)
+  )))
+})

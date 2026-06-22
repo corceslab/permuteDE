@@ -656,18 +656,25 @@ getInputGrid <- function(input_info) {
 
 # Run one runDE test case ---------------------------
 #
-# input      -- Input to runDE
-# de_method  -- DE method
-# de_test    -- DE test
-# pseudobulk -- Pseudobulk setting
+# input                     -- Input to runDE
+# split_labels              -- runDE parameter
+# pseudobulk                -- runDE parameter
+# de_method                 -- runDE parameter
+# de_test                   -- runDE parameter
+# de_params                 -- runDE parameter
+# return_raw_de             -- runDE parameter
+# min_replicates_per_group  -- runDE parameter
+# n_cores                   -- runDE parameter
+# verbose                   -- runDE parameter
 testCase.runDE <- function(input,
+                           split_labels = NULL,
+                           design = NULL,
+                           pseudobulk,
                            de_method,
                            de_test,
                            de_params = list(),
-                           pseudobulk,
-                           split_labels = NULL,
-                           design = NULL,
                            return_raw_de = FALSE,
+                           min_replicates_per_group = 1,
                            n_cores = 1,
                            verbose = FALSE) {
   skipUninstalled(de_method)
@@ -691,16 +698,16 @@ testCase.runDE <- function(input,
                                       replicate_labels = replicate_labels,
                                       group_labels = input$group_labels,
                                       split_labels = split_labels,
+                                      design = design,
                                       pseudobulk = pseudobulk,
                                       de_method = de_method,
                                       de_test = de_test,
                                       de_params = de_params,
                                       return_raw_de = return_raw_de,
-                                      design = design,
                                       min_cells_per_split = 1,
                                       min_cells_per_replicate = 1,
                                       min_replicates_per_split = 1,
-                                      min_replicates_per_group = 1,
+                                      min_replicates_per_group = min_replicates_per_group,
                                       min_cells_per_feature = 1,
                                       min_prop_cells_per_feature = 0,
                                       use_assay = input$use_assay,

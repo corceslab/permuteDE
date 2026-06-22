@@ -436,6 +436,10 @@ For cell-level tests where the input count matrix is stored as a `BPCells` `Iter
 
 In such cases, please specify parameters `de_method = "BPCells"` and `de_test = "wilcox_log_cpm"` or `de_test = "wilcox_cpm"`.
 
+### Computational efficiency considerations for atlas-scale datasets
+
+For multi-million cell datasets, consider splitting the dataset into multiple objects (e.g., by major cell type) before running permuteDE functions such as `getPseudobulk()` or `runDE()`, rather than relying on parameter `split_labels`. Moreover, consider storing the input count matrices in the `BPCells` `IterableMatrix` format (within a Seurat object).
+
 ------
 
 ## Palettes
