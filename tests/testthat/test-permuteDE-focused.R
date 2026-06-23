@@ -235,22 +235,22 @@ test_that("permuteDE uses runDE excluded features when normalize_prefilter is TR
   input$object[forced_excluded_feature, seq_len(3)] <- 1
 
   output_runDE <- runDE(object = input$object,
-    metadata = input$metadata,
-    replicate_labels = "replicate",
-    group_labels = "group",
-    split_labels = NULL,
-    pseudobulk = "generate",
-    de_method = "edgeR",
-    de_test = "LRT",
-    normalize_prefilter = TRUE,
-    min_cells_per_split = 1,
-    min_cells_per_replicate = 1,
-    min_replicates_per_split = 2,
-    min_replicates_per_group = 1,
-    min_cells_per_feature = 4,
-    min_prop_cells_per_feature = 0,
-    n_cores = 1,
-    verbose = FALSE)
+                        metadata = input$metadata,
+                        replicate_labels = "replicate",
+                        group_labels = "group",
+                        split_labels = NULL,
+                        pseudobulk = "generate",
+                        de_method = "edgeR",
+                        de_test = "LRT",
+                        normalize_prefilter = TRUE,
+                        min_cells_per_split = 1,
+                        min_cells_per_replicate = 1,
+                        min_replicates_per_split = 2,
+                        min_replicates_per_group = 1,
+                        min_cells_per_feature = 4,
+                        min_prop_cells_per_feature = 0,
+                        n_cores = 1,
+                        verbose = FALSE)
 
   expectValidOutput.runDE(output_runDE)
 
@@ -261,23 +261,122 @@ test_that("permuteDE uses runDE excluded features when normalize_prefilter is TR
 
   expect_type(excluded, "list")
   expect_true(any(vapply(excluded,
-    FUN = function(x) forced_excluded_feature %in% x,
-    FUN.VALUE = logical(1))))
+                         FUN = function(x) forced_excluded_feature %in% x,
+                         FUN.VALUE = logical(1))))
 
   expect_false(forced_excluded_feature %in% output_runDE$DE_results$feature)
 
   output_perm <- permuteDE(input = output_runDE,
-    alpha = 1,
-    lfc_threshold = 0,
-    n_iterations = 3,
-    min_DE = 0,
-    return_all = TRUE,
-    n_cores = 1,
-    verbose = FALSE)
+                           alpha = 1,
+                           lfc_threshold = 0,
+                           n_iterations = 3,
+                           min_DE = 0,
+                           return_all = TRUE,
+                           n_cores = 1,
+                           verbose = FALSE)
 
   expectValidOutput.permuteDE(output_perm, return_all = TRUE)
 
   expect_false(
     forced_excluded_feature %in% output_perm$permutation_DE_results$feature
   )
+})
+
+test_that("permuteDE uses fdrtool p-value adjustment by default", {
+  skip_if_not_installed("fdrtool")
+
+  input <- setInput.PBMatrix()
+
+  captured_runDE <- capture_warnings(runDE(object = input$object,
+                                           metadata = input$metadata,
+                                           replicate_labels = "replicate",
+                                           group_labels = "group",
+                                           split_labels = NULL,
+                                           pseudobulk = "supplied",
+                                           de_method = "edgeR",
+                                           de_test = "LRT",
+                                           p_adjust_method = "fdrtool",
+                                           min_replicates_per_split = 2,
+                                           min_replicates_per_group = 1,
+                                           n_cores = 1,
+                                           verbose = FALSE))
+
+  output_runDE <- captured_runDE$value
+
+  expect_true(any(grepl("fdrtool.*discretion", captured_runDE$warnings)))
+  expectValidOutput.runDE(output_runDE)
+  expect_equal(output_runDE$parameters$p_adjust_method, "fdrtool")
+
+  captured_perm <- capture_warnings(permuteDE(input = output_runDE,
+                                              alpha = 1,
+                                              lfc_threshold = 0,
+                                              n_iterations = 3,
+                                              min_DE = 0,
+                                              return_all = TRUE,
+                                              n_cores = 1,
+                                              verbose = FALSE))
+
+  output_perm <- captured_perm$value
+
+  expectValidOutput.permuteDE(output_perm, return_all = TRUE)
+  expect_equal(output_perm$parameters$p_adjust_method, "fdrtool")
+  expect_equal(output_perm$parameters$de_method, "edgeR")
+  expect_equal(output_perm$parameters$de_test, "LRT")
+  expect_true(all(is.na(output_perm$permutation_DE_results$padj) |
+                    (output_perm$permutation_DE_results$padj >= 0 &
+                       output_perm$permutation_DE_results$padj <= 1)))
+  expect_true(all(is.na(output_perm$permutation_DE_summary$n_sig) |
+                    output_perm$permutation_DE_summary$n_sig >= 0))
+})
+
+test_that("permuteDE uses fdrtool zscore adjustment for DESeq2 Wald", {
+  skip_if_not_installed("DESeq2")
+  skip_if_not_installed("fdrtool")
+
+  input <- setInput.PBMatrix()
+
+  captured_runDE <- capture_warnings(runDE(object = input$object,
+                                           metadata = input$metadata,
+                                           replicate_labels = "replicate",
+                                           group_labels = "group",
+                                           split_labels = NULL,
+                                           pseudobulk = "supplied",
+                                           de_method = "DESeq2",
+                                           de_test = "Wald",
+                                           p_adjust_method = "fdrtool",
+                                           de_params = list(fdrtool = list(statistic = "zscore")),
+                                           min_replicates_per_split = 2,
+                                           min_replicates_per_group = 1,
+                                           n_cores = 1,
+                                           verbose = FALSE))
+
+  output_runDE <- captured_runDE$value
+
+  expect_true(any(grepl("fdrtool.*discretion", captured_runDE$warnings)))
+  expectValidOutput.runDE(output_runDE)
+
+  expect_equal(output_runDE$parameters$p_adjust_method, "fdrtool")
+  expect_equal(output_runDE$parameters$de_params$fdrtool$statistic, "zscore")
+
+  captured_perm <- capture_warnings(permuteDE(input = output_runDE,
+                                              alpha = 1,
+                                              lfc_threshold = 0,
+                                              n_iterations = 5,
+                                              min_DE = 0,
+                                              return_all = TRUE,
+                                              n_cores = 1,
+                                              verbose = FALSE))
+
+  output_perm <- captured_perm$value
+
+  expectValidOutput.permuteDE(output_perm, return_all = TRUE)
+  expect_equal(output_perm$parameters$p_adjust_method, "fdrtool")
+  expect_equal(output_perm$parameters$de_method, "DESeq2")
+  expect_equal(output_perm$parameters$de_test, "Wald")
+  expect_equal(output_perm$parameters$de_params$fdrtool$statistic, "zscore")
+  expect_true(all(is.na(output_perm$permutation_DE_results$padj) |
+                    (output_perm$permutation_DE_results$padj >= 0 &
+                       output_perm$permutation_DE_results$padj <= 1)))
+  expect_true(all(is.na(output_perm$permutation_DE_summary$n_sig) |
+                    output_perm$permutation_DE_summary$n_sig >= 0))
 })

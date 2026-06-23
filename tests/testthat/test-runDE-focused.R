@@ -326,22 +326,22 @@ test_that("runDE stores excluded features when normalize_prefilter is TRUE", {
   input <- setInput.CellMatrix()
 
   output_runDE <- runDE(object = input$object,
-    metadata = input$metadata,
-    replicate_labels = "replicate",
-    group_labels = "group",
-    split_labels = "split",
-    pseudobulk = "generate",
-    de_method = "edgeR",
-    de_test = "LRT",
-    normalize_prefilter = TRUE,
-    min_cells_per_split = 1,
-    min_cells_per_replicate = 1,
-    min_replicates_per_split = 2,
-    min_replicates_per_group = 1,
-    min_cells_per_feature = 2,
-    min_prop_cells_per_feature = 0,
-    n_cores = 1,
-    verbose = FALSE)
+                        metadata = input$metadata,
+                        replicate_labels = "replicate",
+                        group_labels = "group",
+                        split_labels = "split",
+                        pseudobulk = "generate",
+                        de_method = "edgeR",
+                        de_test = "LRT",
+                        normalize_prefilter = TRUE,
+                        min_cells_per_split = 1,
+                        min_cells_per_replicate = 1,
+                        min_replicates_per_split = 2,
+                        min_replicates_per_group = 1,
+                        min_cells_per_feature = 2,
+                        min_prop_cells_per_feature = 0,
+                        n_cores = 1,
+                        verbose = FALSE)
 
   expectValidOutput.runDE(output_runDE)
 
@@ -352,4 +352,99 @@ test_that("runDE stores excluded features when normalize_prefilter is TRUE", {
     is.null(output_runDE$metadata$exclude_features) ||
       is.list(output_runDE$metadata$exclude_features)
   )
+})
+
+test_that("fdrtool p-value adjustment works by default", {
+  skip_if_not_installed("fdrtool")
+
+  input <- setInput.PBMatrix()
+
+  captured <- capture_warnings(runDE(object = input$object,
+                                     metadata = input$metadata,
+                                     replicate_labels = "replicate",
+                                     group_labels = "group",
+                                     split_labels = NULL,
+                                     pseudobulk = "supplied",
+                                     de_method = "edgeR",
+                                     de_test = "LRT",
+                                     p_adjust_method = "fdrtool",
+                                     min_replicates_per_split = 2,
+                                     min_replicates_per_group = 1,
+                                     n_cores = 1,
+                                     verbose = FALSE))
+
+  output <- captured$value
+
+  expect_true(any(grepl("fdrtool.*discretion", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_split.*not used", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_replicate.*not used", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_feature.*not used", captured$warnings)))
+  expect_true(any(grepl("min_prop_cells_per_feature.*not used", captured$warnings)))
+
+  expectValidOutput.runDE(output)
+  expect_equal(output$parameters$p_adjust_method, "fdrtool")
+  expect_true(all(is.na(output$DE_results$padj) |
+                    (output$DE_results$padj >= 0 & output$DE_results$padj <= 1)))
+})
+
+test_that("fdrtool zscore adjustment is supported for DESeq2 Wald", {
+  skip_if_not_installed("DESeq2")
+  skip_if_not_installed("fdrtool")
+
+  input <- setInput.PBMatrix()
+
+  captured <- capture_warnings(runDE(object = input$object,
+                                     metadata = input$metadata,
+                                     replicate_labels = "replicate",
+                                     group_labels = "group",
+                                     split_labels = NULL,
+                                     pseudobulk = "supplied",
+                                     de_method = "DESeq2",
+                                     de_test = "Wald",
+                                     p_adjust_method = "fdrtool",
+                                     de_params = list(fdrtool = list(statistic = "zscore")),
+                                     min_replicates_per_split = 2,
+                                     min_replicates_per_group = 1,
+                                     n_cores = 1,
+                                     verbose = FALSE))
+
+  output <- captured$value
+
+  expect_true(any(grepl("fdrtool.*discretion", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_split.*not used", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_replicate.*not used", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_feature.*not used", captured$warnings)))
+  expect_true(any(grepl("min_prop_cells_per_feature.*not used", captured$warnings)))
+
+  expectValidOutput.runDE(output)
+  expect_equal(output$parameters$p_adjust_method, "fdrtool")
+  expect_equal(output$parameters$de_params$fdrtool$statistic, "zscore")
+  expect_true(all(is.na(output$DE_results$padj) |
+                    (output$DE_results$padj >= 0 & output$DE_results$padj <= 1)))
+})
+
+test_that("fdrtool zscore adjustment is rejected outside DESeq2 Wald", {
+  input <- setInput.PBMatrix()
+
+  captured <- capture_warnings(expect_error(runDE(object = input$object,
+                                                  metadata = input$metadata,
+                                                  replicate_labels = "replicate",
+                                                  group_labels = "group",
+                                                  split_labels = NULL,
+                                                  pseudobulk = "supplied",
+                                                  de_method = "edgeR",
+                                                  de_test = "LRT",
+                                                  p_adjust_method = "fdrtool",
+                                                  de_params = list(fdrtool = list(statistic = "zscore")),
+                                                  min_replicates_per_split = 2,
+                                                  min_replicates_per_group = 1,
+                                                  n_cores = 1,
+                                                  verbose = FALSE),
+                                            "zscore.*DESeq2.*Wald"))
+
+  expect_true(any(grepl("fdrtool.*discretion", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_split.*not used", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_replicate.*not used", captured$warnings)))
+  expect_true(any(grepl("min_cells_per_feature.*not used", captured$warnings)))
+  expect_true(any(grepl("min_prop_cells_per_feature.*not used", captured$warnings)))
 })

@@ -23,6 +23,7 @@ Imports:
 Suggests: 
     BPCells,
     DESeq2,
+    fdrtool,
     ggbeeswarm,
     ggrepel,
     knitr,

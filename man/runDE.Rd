@@ -109,7 +109,11 @@ filtering out features with low counts. Defaults to \code{FALSE}.}
 
 \item{p_adjust_method}{A string indicating which multiple comparison
 adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
-Defaults to "fdr" (Benjamini & Hochberg, 1995).}
+Defaults to "fdr" (Benjamini & Hochberg, 1995). For advanced users, this
+parameter can also be set to "fdrtool" to use the \code{fdrtool} package
+(applied to raw p-values by default, or for DESeq2 Wald, apply to z-scores
+by setting parameter \code{de_params} to
+\code{list(fdrtools = list(statistic = "zscore"))}).}
 
 \item{min_cells_per_split}{A numeric value indicating the minimum number of
 cells within one split. Pseudobulk and differential expression steps will not

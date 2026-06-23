@@ -479,12 +479,18 @@
                   "type")) {
     allowed_values <- switch(name,
                              normalization_method = c("cpm", "log_cpm", "none"),
-                             p_adjust_method = stats::p.adjust.methods,
+                             p_adjust_method = c(stats::p.adjust.methods, "fdrtool"),
                              plot_type = c("boxplot", "bar_se", "bar_sd", "beeswarm"),
                              type = c("discrete", "gradient"))
     if (!(input %in% allowed_values)) {
       stop("Input for '", name, "' must be among allowed values (",
            paste0(allowed_values, collapse = ", "), "), please supply valid input!")
+    }
+    if (name == "p_adjust_method" && input == "fdrtool") {
+      warning("Input 'fdrtool' for parameter 'p_adjust_method' uses adaptive false discovery rate estimation. ",
+              "For DESeq2 Wald test, fdrtool can be applied to z-scores by setting de_params$fdrtool$statistic = 'zscore'. ",
+              "If not specified, fdrtool is applied to backend p-values and the returned q-values are used as adjusted ",
+              "p-values. Use this option at your discretion.")
     }
     return(invisible(NULL))
   }
@@ -549,6 +555,7 @@
     de_method <- other[[1]]
     de_test <- other[[2]]
     return_raw_de <- other[[3]]
+    p_adjust_method <- other[[4]]
 
     function_values <- switch(de_method,
       edgeR = switch(de_test,
@@ -565,6 +572,9 @@
       BPCells = c("DGEList", "cpm", "marker_features", "lfc"))
 
     allowed_values <- c(function_values, "return_all_coefficients")
+    if (identical(p_adjust_method, "fdrtool")) {
+      allowed_values <- c(allowed_values, "fdrtool")
+    }
 
     if (!all(names(input) %in% allowed_values)) {
       stop("When supplying additional parameters to '", name, "' for use with '",
@@ -573,6 +583,7 @@
         paste0(allowed_values, collapse = ", "), ").")
     }
 
+    # Return all coefficients
     if ("return_all_coefficients" %in% names(input) &&
         (!is.logical(input[["return_all_coefficients"]]) ||
          length(input[["return_all_coefficients"]]) != 1)) {
@@ -593,6 +604,32 @@
         isFALSE(return_raw_de)) {
       warning("Value provided for 'return_all_coefficients' in 'de_params' will not be used ",
         "when parameter 'return_raw_de' is FALSE.")
+    }
+
+    # fdrtool
+    if ("fdrtool" %in% names(input)) {
+      if (!identical(p_adjust_method, "fdrtool")) {
+        stop("The 'fdrtool' element of 'de_params' can only be used when ",
+          "p_adjust_method = 'fdrtool'.")
+      }
+      if (!is.list(input[["fdrtool"]])) {
+        stop("The 'fdrtool' element of 'de_params' must be a list.")
+      }
+      allowed_fdrtool_params <- "statistic"
+      if (!all(names(input[["fdrtool"]]) %in% allowed_fdrtool_params)) {
+        stop("The only supported value in de_params$fdrtool is 'statistic'.")
+      }
+      if ("statistic" %in% names(input[["fdrtool"]])) {
+        if (!input[["fdrtool"]][["statistic"]] %in% c("pvalue", "zscore")) {
+          stop("de_params$fdrtool$statistic must be either 'pvalue' or 'zscore'.")
+        }
+        if (identical(input[["fdrtool"]][["statistic"]], "zscore") &&
+            !(identical(de_method, "DESeq2") && identical(de_test, "Wald"))) {
+          stop("de_params$fdrtool$statistic = 'zscore' is only supported when ",
+               "de_method = 'DESeq2' and de_test = 'Wald'. For all other DE methods/tests, ",
+               "use de_params$fdrtool$statistic = 'pvalue' or omit de_params$fdrtool.")
+        }
+      }
     }
 
     # All backend function parameters should still be supplied as lists.

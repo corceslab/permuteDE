@@ -395,6 +395,85 @@
   return(use_matrix)
 }
 
+# Adjust p-values ---------------------------
+#
+# Apply multiple comparison correction or other p-value adjustment
+#
+# pvalues     -- Raw p values
+# method      -- Which method to use
+# de_params   -- Additional parameters
+# statistics  -- Other statistics, e.g., z-scores
+
+.adjustPValues <- function(pvalues,
+                           method = "fdr",
+                           de_params = list(),
+                           statistics = NULL) {
+  if (method != "fdrtool") {
+    return(stats::p.adjust(pvalues, method = method))
+  }
+
+  # If using fdrtool
+  .requirePackage("fdrtool", source = "cran")
+
+  fdrtool_statistic <- de_params[["fdrtool"]][["statistic"]]
+  if (is.null(fdrtool_statistic)) {
+    fdrtool_statistic <- "pvalue"
+  }
+
+  if (identical(fdrtool_statistic, "pvalue")) {
+    padj <- rep(NA_real_, length(pvalues))
+
+    valid <- !is.na(pvalues) & is.finite(pvalues)
+    if (!any(valid)) {
+      return(padj)
+    }
+
+    if (any(pvalues[valid] < 0 | pvalues[valid] > 1)) {
+      stop("When p_adjust_method = 'fdrtool', all non-missing p-values must be between 0 and 1.")
+    }
+
+    if (sum(valid) < 2 || length(unique(pvalues[valid])) < 2) {
+      stop("Cannot apply p_adjust_method = 'fdrtool': p-values are too sparse or degenerate.")
+    }
+
+    fdrtool_output <- fdrtool::fdrtool(pvalues[valid],
+                                       statistic = "pvalue",
+                                       plot = FALSE,
+                                       verbose = FALSE)
+    padj[valid] <- fdrtool_output$qval
+
+    return(padj)
+  }
+
+  if (identical(fdrtool_statistic, "zscore")) {
+    padj <- rep(NA_real_, length(pvalues))
+
+    if (is.null(statistics)) {
+      stop("Cannot apply de_params$fdrtool$statistic = 'zscore': no z-scores were provided.")
+    }
+
+    valid <- !is.na(statistics) & is.finite(statistics)
+    if (!any(valid)) {
+      return(padj)
+    }
+
+    if (sum(valid) < 2 || length(unique(statistics[valid])) < 2) {
+      stop("Cannot apply de_params$fdrtool$statistic = 'zscore': z-scores are too sparse or degenerate.")
+    }
+
+    fdrtool_output <- fdrtool::fdrtool(statistics[valid],
+                                       statistic = "normal",
+                                       plot = FALSE,
+                                       verbose = FALSE)
+    padj[valid] <- fdrtool_output$qval
+
+    return(padj)
+  }
+
+  stop("Unsupported de_params$fdrtool$statistic value: '",
+       fdrtool_statistic, "'.")
+}
+
 # Require package ---------------------------
 #
 # Load required package

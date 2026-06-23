@@ -197,11 +197,18 @@ expectValidOutput.runDE <- function(output) {
   for (split_i in unique(output$DE_results$split)) {
     rows_i <- output$DE_results$split == split_i
 
-    expect_equal(output$DE_results$padj[rows_i],
-                 stats::p.adjust(
-                   output$DE_results$pvalue[rows_i],
-                   method = output$parameters$p_adjust_method),
-                 tolerance = 1e-12)
+    if (identical(output$parameters$p_adjust_method, "fdrtool")) {
+      expect_true(all(is.na(output$DE_results$padj[rows_i]) |
+          (output$DE_results$padj[rows_i] >= 0 &
+              output$DE_results$padj[rows_i] <= 1)))
+    } else {
+      expect_equal(output$DE_results$padj[rows_i],
+                   stats::p.adjust(
+                     output$DE_results$pvalue[rows_i],
+                     method = output$parameters$p_adjust_method),
+                   tolerance = 1e-12)
+    }
+
   }
 
   # Check output matrices/cell values
@@ -283,6 +290,7 @@ expectValidOutput.runDE <- function(output) {
   # Check time metadata
   expect_s3_class(output$metadata$time, "data.frame")
 }
+
 # Make set of expectations for permuteDE output ---------------------------
 #
 # output     -- permuteDE output
@@ -845,4 +853,22 @@ standardizePermutationResults <- function(output) {
                        max_lfc_all) |>
          dplyr::arrange(split, permutation) |>
          data.frame())
+}
+
+# ---------------------------------------------------------------------------
+# Other helpers
+# ---------------------------------------------------------------------------
+
+# Capture warnings ---------------------------
+#
+# expr -- expression
+capture_warnings <- function(expr) {
+  warnings <- character()
+
+  value <- withCallingHandlers(expr,
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    })
+  list(value = value, warnings = warnings)
 }

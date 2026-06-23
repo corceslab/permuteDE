@@ -69,7 +69,11 @@
 #' filtering out features with low counts. Defaults to \code{FALSE}.
 #' @param p_adjust_method A string indicating which multiple comparison
 #' adjustment to use. For permitted values, see \code{stats::p.adjust.methods}.
-#' Defaults to "fdr" (Benjamini & Hochberg, 1995).
+#' Defaults to "fdr" (Benjamini & Hochberg, 1995). For advanced users, this
+#' parameter can also be set to "fdrtool" to use the \code{fdrtool} package
+#' (applied to raw p-values by default, or for DESeq2 Wald, apply to z-scores
+#' by setting parameter \code{de_params} to
+#' \code{list(fdrtools = list(statistic = "zscore"))}).
 #' @param min_cells_per_split A numeric value indicating the minimum number of
 #' cells within one split. Pseudobulk and differential expression steps will not
 #' be performed for splits with fewer cells. Defaults to 100.
@@ -274,7 +278,7 @@ runDE <- function(object,
   .validInput(input = de_params,
               name = "de_params",
               class = "list",
-              other = list(de_method, de_test, return_raw_de))
+              other = list(de_method, de_test, return_raw_de, p_adjust_method))
   .validInput(input = design,
               name = "design",
               null_allowed = TRUE,
@@ -680,10 +684,24 @@ runDE <- function(object,
                                                            normalize_prefilter = normalize_prefilter,
                                                            exclude_features = exclude_features_i,
                                                            non_reference_group = non_reference_group))
+
+            # Adjust p-values
+            if ("statistic" %in% colnames(de_output_i$results)) {
+              statistics_i <- de_output_i$results$statistic
+            } else {
+              statistics_i <- NULL
+            }
+            padj_values_i <- .adjustPValues(pvalues = de_output_i$results$pvalue,
+                                            method = p_adjust_method,
+                                            de_params = de_params,
+                                            statistics = statistics_i)
+
             de_results_i <- de_output_i$results |>
-              dplyr::mutate(padj = stats::p.adjust(pvalue, method = p_adjust_method),
+              dplyr::select(feature, lfc, pvalue) |>
+              dplyr::mutate(padj = padj_values_i,
                             split = names(matrix_list)[i]) |>
               dplyr::arrange(padj)
+
             raw_results_i <- de_output_i$raw_results
           } else {
             de_results_i <- NULL
@@ -1081,7 +1099,8 @@ runDE <- function(object,
   DESeq2_results <- raw_results |>
     dplyr::transmute(feature = rownames(raw_results),
                      lfc = log2FoldChange,
-                     pvalue = pvalue)
+                     pvalue = pvalue,
+                     statistic = if ("stat" %in% colnames(raw_results)) stat else NA_real_)
 
   rownames(DESeq2_results) <- NULL
 
