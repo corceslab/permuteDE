@@ -92,6 +92,7 @@ test_that("runDE returns raw DE output for all method/test combinations with Seu
 
     expectValidOutput.runDE(output)
   }
+  message("Finished loop.")
 })
 
 test_that("runDE resolves split_labels from metadata for supplied pseudobulk matrices", {
