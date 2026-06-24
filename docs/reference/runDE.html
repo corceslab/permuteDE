@@ -178,7 +178,11 @@ filtering out features with low counts. Defaults to <code>FALSE</code>.</p></dd>
 <dt id="arg-p-adjust-method">p_adjust_method<a class="anchor" aria-label="anchor" href="#arg-p-adjust-method"></a></dt>
 <dd><p>A string indicating which multiple comparison
 adjustment to use. For permitted values, see <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust.methods</a></code>.
-Defaults to "fdr" (Benjamini &amp; Hochberg, 1995).</p></dd>
+Defaults to "fdr" (Benjamini &amp; Hochberg, 1995). For advanced users, this
+parameter can also be set to "fdrtool" to use the <code>fdrtool</code> package
+(applied to raw p-values by default, or for DESeq2 Wald, apply to z-scores
+by setting parameter <code>de_params</code> to
+<code>list(fdrtools = list(statistic = "zscore"))</code>).</p></dd>
 
 
 <dt id="arg-min-cells-per-split">min_cells_per_split<a class="anchor" aria-label="anchor" href="#arg-min-cells-per-split"></a></dt>

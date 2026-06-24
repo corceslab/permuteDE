@@ -39,7 +39,7 @@ Notes:
 
 ## Usage
 
-Please see the [tutorial](<LINK>). It takes less than 10 minutes to run on a standard laptop.
+Please see the [tutorial](https://www.permuteDE.com/articles/permuteDE.html). It takes less than 10 minutes to run on a standard laptop.
 
 ## How permuteDE works
 
@@ -47,7 +47,7 @@ permuteDE takes as input a Seurat object, SingleCellExperiment object, or matrix
 
 These results are then passed to the `permuteDE()` function. Across a number of iterations, permuteDE shuffles the group labels for a given set of replicates and then performs pseudobulk differential expression between those permuted groups. The metric used by the permutation test is the number of significantly differentially expressed features for the true group comparison vs. the comparisons that use permuted group labels. 
 
-See the [tutorial](<LINK>) for further details.
+See the [tutorial](https://www.permuteDE.com/articles/permuteDE.html) for further details.
 
 <hr>
 

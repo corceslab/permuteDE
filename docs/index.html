@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Permutation Testing for Differential Expression Analysis • permuteDE</title>
+<title>permuteDE: Permutation testing for differential expression analysis (www.permuteDE.com) • permuteDE</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -15,7 +15,7 @@
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Permutation Testing for Differential Expression Analysis">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="permuteDE: Permutation testing for differential expression analysis (www.permuteDE.com)">
 <meta name="description" content="This package performs permutation testing for differential expression analysis by shuffling the group labels for a given set of replicates and then performing pseudobulk differential expression between those permuted groups. This can help to assess how many false positive significant differentially expressed features can be expected by chance. The metric used by the permutation test is the number of significantly differentially expressed features for the true group comparison vs. the comparisons that use permuted group labels.">
 <meta property="og:description" content="This package performs permutation testing for differential expression analysis by shuffling the group labels for a given set of replicates and then performing pseudobulk differential expression between those permuted groups. This can help to assess how many false positive significant differentially expressed features can be expected by chance. The metric used by the permutation test is the number of significantly differentially expressed features for the true group comparison vs. the comparisons that use permuted group labels.">
 <meta property="og:image" content="/logo.png">
@@ -77,14 +77,14 @@
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>Please see the <a href="LINK">tutorial</a>. It takes less than 10 minutes to run on a standard laptop.</p>
+<p>Please see the <a href="https://www.permuteDE.com/articles/permuteDE.html" class="external-link">tutorial</a>. It takes less than 10 minutes to run on a standard laptop.</p>
 </div>
 <div class="section level2">
 <h2 id="how-permutede-works">How permuteDE works<a class="anchor" aria-label="anchor" href="#how-permutede-works"></a>
 </h2>
 <p>permuteDE takes as input a Seurat object, SingleCellExperiment object, or matrix. permuteDE enables the user to run several different methods for differential expression analysis using the <code><a href="reference/runDE.html">runDE()</a></code> function. We encourage users to run pseudobulk differential expression methods to decrease the number of likely false positives, but permuteDE is also compatible with cell-level tests.</p>
 <p>These results are then passed to the <code><a href="reference/permuteDE.html">permuteDE()</a></code> function. Across a number of iterations, permuteDE shuffles the group labels for a given set of replicates and then performs pseudobulk differential expression between those permuted groups. The metric used by the permutation test is the number of significantly differentially expressed features for the true group comparison vs. the comparisons that use permuted group labels.</p>
-<p>See the <a href="LINK">tutorial</a> for further details.</p>
+<p>See the <a href="https://www.permuteDE.com/articles/permuteDE.html" class="external-link">tutorial</a> for further details.</p>
 <hr>
 <p align="left">
 <a href="https://www.corceslab.com/" class="external-link"><img src="reference/figures/CorcesLab_logo.png" alt="" width="300"></a>

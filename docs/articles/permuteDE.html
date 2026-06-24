@@ -93,9 +93,9 @@ package intended to help users assess which differential expression
 comparisons can be trusted and which should be met with skepticism.</p>
 <p>permuteDE is applicable to any sequencing data suitable for
 differential expression analysis. It takes as input a Seurat object,
-SingleCellExperiment object, or matrix (see <a href="LINK">Advanced
+SingleCellExperiment object, or matrix (see <a href="https://www.permuteDE.com/articles/permuteDE.html#input-object-types" class="external-link">Advanced
 Options</a> for details about input object types). Detailed parameter
-definitions are available under the <a href="LINK">Functions</a>
+definitions are available under the <a href="https://www.permuteDE.com/reference/index.html" class="external-link">Functions</a>
 tab.</p>
 <p>Differential expression analyses are susceptible to false positives,
 and it can be difficult to prioritize the most robust results for
@@ -122,7 +122,7 @@ tutorial:</p>
 <p>permuteDE takes as input a Seurat, SingleCellExperiment, or matrix.
 If a matrix is provided, it may be either a cell-level matrix or a
 pre-generated pseudobulk matrix. This tutorial uses a Seurat object; for
-details related to other object types, see <a href="LINK">Advanced
+details related to other object types, see <a href="https://www.permuteDE.com/articles/permuteDE.html#input-object-types" class="external-link">Advanced
 Options</a>. permuteDE expects raw counts, and normalization is
 performed during the differential expression analysis depending on the
 selected method.</p>
@@ -161,7 +161,7 @@ separately using function <code><a href="../reference/getPseudobulk.html">getPse
 <p>Alternately, users may opt to run cell-level tests instead of
 pseudobulk tests (set parameter <code>pseudobulk</code> to “none”) or to
 provide pre-generated pseudobulk matrices (set parameter
-<code>pseudobulk</code> to “supplied”). See <a href="LINK">Advanced
+<code>pseudobulk</code> to “supplied”). See <a href="https://www.permuteDE.com/articles/permuteDE.html#matrix-input" class="external-link">Advanced
 Options</a> for more details.</p>
 <p>Function <code><a href="../reference/runDE.html">runDE()</a></code> allows the user to run several
 different methods of differential expression analysis, by adjusting
@@ -193,13 +193,13 @@ number of splits.</p>
 <span>                      split_labels <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>                      reference_group <span class="op">=</span> <span class="st">"WT"</span>,</span>
 <span>                      n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:01 AM : Generating 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:01 AM : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:22:55 PM : Generating 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:22:55 PM : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..</span></span>
 <span><span class="co">#&gt; Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.</span></span>
 <span><span class="co">#&gt; Highest % of features excluded in split 'Microglia'.</span></span>
 <span><span class="co">#&gt; Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.</span></span>
 <span><span class="co">#&gt; Highest % of reads excluded in split 'Microglia'.</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:01 AM : Running DE on 6 matrices..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-06-24 12:22:55 PM : Running DE on 6 matrices..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -253,25 +253,25 @@ efficiency greatly improves as <code>n_cores</code> is increased.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:03 AM : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:03 AM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:03 AM : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:03 AM : Running 70 permutations for split Astrocytes (1/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:17 AM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:17 AM : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:17 AM : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:38 AM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:38 AM : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:38 AM : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:57 AM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:57 AM : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:53:57 AM : Running 70 permutations for split Microglia (4/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:54:09 AM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:54:09 AM : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:54:09 AM : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:54:21 AM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:54:21 AM : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
-<span><span class="co">#&gt; 2026-06-04 10:54:21 AM : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
+<span><span class="co">#&gt; 2026-06-24 12:22:58 PM : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:22:58 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:22:58 PM : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:22:58 PM : Running 70 permutations for split Astrocytes (1/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:23:21 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:23:21 PM : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:23:21 PM : Running 70 permutations for split Excitatory Neurons (2/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:23:50 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:23:50 PM : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:23:50 PM : Running 70 permutations for split Inhibitory Neurons (3/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:24:18 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:24:18 PM : Generating 70 of 70 possible combinations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:24:18 PM : Running 70 permutations for split Microglia (4/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:24:39 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:24:39 PM : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:24:39 PM : Running 70 permutations for split Oligodendrocytes (5/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:25:02 PM : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:25:02 PM : Generating 70 of 70 possible combinations for split OPCs (6/6)..</span></span>
+<span><span class="co">#&gt; 2026-06-24 12:25:02 PM : Running 70 permutations for split OPCs (6/6)..</span></span></code></pre></div>
 <p>The output is a list containing the following elements:</p>
 <ul>
 <li>
@@ -588,7 +588,7 @@ vs. inhibitory neurons in the sample dataset, our model formula would be
 it is important to provide the correct input to parameter
 <code>permute_within</code>, such that group labels are shuffled
 separately within each paired set. In this example,
-<code>permute_within</code> should be set to <code>sample</code>.</p>
+<code>permute_within</code> should be set to <code>"sample"</code>.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">permuteDE_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permuteDE.html">permuteDE</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">runDE_output</span>,</span>
 <span>                              permute_within <span class="op">=</span> <span class="st">"sample"</span>,</span>
@@ -610,6 +610,14 @@ using parameter <code>p_adjust_method</code> (for permitted values, see
 <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust.methods</a></code>). By default, permuteDE also
 requires that significant differentially expressed features have a |LFC|
 &gt; 0.5 (parameter <code>lfc_threshold</code>).</p>
+<p>Parameter <code>p_adjust_method</code> can also accept the value
+<code>"fdrtool"</code>, for advanced users who wish to apply
+<code>fdrtool</code> p-value adjustment. By default,
+<code>fdrtool</code> will be applied to raw p-values. For DE method
+<code>DESeq2</code> using the <code>"Wald"</code> test, users can apply
+<code>fdrtool</code> to z-scores by setting parameter
+<code>de_params</code> to
+<code>list(fdrtool = list(statistic = "zscore"))</code>.</p>
 </div>
 <div class="section level4">
 <h4 id="filters">Filters<a class="anchor" aria-label="anchor" href="#filters"></a>
@@ -684,6 +692,17 @@ currently compatible is <code>BPCells</code>, which uses function
 <code>de_method = "BPCells"</code> and
 <code>de_test = "wilcox_log_cpm"</code> or
 <code>de_test = "wilcox_cpm"</code>.</p>
+</div>
+<div class="section level4">
+<h4 id="computational-efficiency-considerations-for-atlas-scale-datasets">Computational efficiency considerations for atlas-scale
+datasets<a class="anchor" aria-label="anchor" href="#computational-efficiency-considerations-for-atlas-scale-datasets"></a>
+</h4>
+<p>For multi-million cell datasets, consider splitting the dataset into
+multiple objects (e.g., by major cell type) before running permuteDE
+functions such as <code><a href="../reference/getPseudobulk.html">getPseudobulk()</a></code> or <code><a href="../reference/runDE.html">runDE()</a></code>,
+rather than relying on parameter <code>split_labels</code>. Moreover,
+consider storing the input count matrices in the <code>BPCells</code>
+<code>IterableMatrix</code> format (within a Seurat object).</p>
 <hr>
 </div>
 </div>

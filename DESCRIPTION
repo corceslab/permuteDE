@@ -1,5 +1,5 @@
 Package: permuteDE
-Title: Permutation Testing for Differential Expression Analysis
+Title: permuteDE: Permutation testing for differential expression analysis (www.permuteDE.com)
 Version: 0.2.1
 Authors@R: 
   c(person("Cathrine", "Sant", , "cathrine.sant@gladstone.ucsf.edu", role = c("aut", "cre"),

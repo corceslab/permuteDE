@@ -45,7 +45,7 @@ remotes::install_github("corceslab/permuteDE", ref="main", repos = BiocManager::
 
 This tutorial provides a basic example of how to run permuteDE, an R package intended to help users assess which differential expression comparisons can be trusted and which should be met with skepticism. 
 
-permuteDE is applicable to any sequencing data suitable for differential expression analysis. It takes as input a Seurat object, SingleCellExperiment object, or matrix (see [Advanced Options](<LINK>) for details about input object types). Detailed parameter definitions are available under the [Functions](<LINK>) tab.
+permuteDE is applicable to any sequencing data suitable for differential expression analysis. It takes as input a Seurat object, SingleCellExperiment object, or matrix (see [Advanced Options](https://www.permuteDE.com/articles/permuteDE.html#input-object-types) for details about input object types). Detailed parameter definitions are available under the [Functions](https://www.permuteDE.com/reference/index.html) tab.
 
 Differential expression analyses are susceptible to false positives, and it can be difficult to prioritize the most robust results for further study. permuteDE is based on the premise that the differential expression results that are most likely to be validated in subsequent experiments come from comparisons that have a higher number of significant differentially expressed features than would be expected by chance. The use of permutation testing allows permuteDE to generate a distribution estimating how many false positive significant differentially expressed features occur by chance alone.
 
@@ -59,7 +59,7 @@ library(permuteDE)
 
 ### Input data
 
-permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. If a matrix is provided, it may be either a cell-level matrix or a pre-generated pseudobulk matrix. This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](<LINK>). permuteDE expects raw counts, and normalization is performed during the differential expression analysis depending on the selected method.
+permuteDE takes as input a Seurat, SingleCellExperiment, or matrix. If a matrix is provided, it may be either a cell-level matrix or a pre-generated pseudobulk matrix. This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](https://www.permuteDE.com/articles/permuteDE.html#input-object-types). permuteDE expects raw counts, and normalization is performed during the differential expression analysis depending on the selected method.
 
 To demonstrate how to run permuteDE, we’ll use a small sample dataset consisting of mouse brain snRNA-seq data, stored as a Seurat object.
 
@@ -87,7 +87,7 @@ Function `runDE()` will run differential expression analysis to compare two grou
 
 By default, `runDE()` will generate pseudobulk matrices using the metadata provided to parameters `replicate_labels` (representing each biological replicate) and, optionally, `split_labels` (representing a further division of the data, often cell types). The pseudobulk matrices will be returned as part of the output of `runDE()`, but they can also be extracted separately using function `getPseudobulk()`.
 
-Alternately, users may opt to run cell-level tests instead of pseudobulk tests (set parameter `pseudobulk`  to "none") or to provide pre-generated pseudobulk matrices (set parameter `pseudobulk`  to "supplied"). See [Advanced Options](<LINK>) for more details.
+Alternately, users may opt to run cell-level tests instead of pseudobulk tests (set parameter `pseudobulk`  to "none") or to provide pre-generated pseudobulk matrices (set parameter `pseudobulk`  to "supplied"). See [Advanced Options](https://www.permuteDE.com/articles/permuteDE.html#matrix-input) for more details.
 
 Function `runDE()` allows the user to run several different methods of differential expression analysis, by adjusting parameters `de_method` and `de_test`:
 
@@ -378,7 +378,7 @@ runDE_output <- runDE(object = sample_data,
                       n_cores = 2)
 ```
 
-When running function `permuteDE()` on paired comparisons, it is important to provide the correct input to parameter `permute_within`, such that group labels are shuffled separately within each paired set. In this example, `permute_within` should be set to `sample`.
+When running function `permuteDE()` on paired comparisons, it is important to provide the correct input to parameter `permute_within`, such that group labels are shuffled separately within each paired set. In this example, `permute_within` should be set to `"sample"`.
 
 ```{r, eval = FALSE}
 permuteDE_output <- permuteDE(input = runDE_output,
@@ -394,6 +394,8 @@ permuteDE_output <- permuteDE(input = runDE_output,
 ### Significance level & multiple comparison correction
 
 The default significance level used by permuteDE is `alpha = 0.05` with multiple comparison correction using FDR = 0.05. The method of multiple comparison correction can be changed using parameter `p_adjust_method` (for permitted values, see `stats::p.adjust.methods`). By default, permuteDE also requires that significant differentially expressed features have a |LFC| > 0.5 (parameter `lfc_threshold`).
+
+Parameter `p_adjust_method` can also accept the value `"fdrtool"`, for advanced users who wish to apply `fdrtool` p-value adjustment. By default, `fdrtool` will be applied to raw p-values. For DE method `DESeq2` using the `"Wald"` test, users can apply `fdrtool` to z-scores by setting parameter `de_params` to `list(fdrtool = list(statistic = "zscore"))`.
 
 ### Filters
 
