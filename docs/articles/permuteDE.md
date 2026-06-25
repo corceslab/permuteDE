@@ -154,13 +154,13 @@ runDE_output <- runDE(object = sample_data,
                       split_labels = "cell_type",
                       reference_group = "WT",
                       n_cores = 2)
-#> 2026-06-24 23:09:21 : Generating 6 pseudobulk matrices..
-#> 2026-06-24 23:09:21 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..
+#> 2026-06-24 23:24:07 : Generating 6 pseudobulk matrices..
+#> 2026-06-24 23:24:07 : Fetching feature x cell matrix using 'RNA' assay and 'counts' layer..
 #> Excluded between 19.43% (340 features) and 69.6% (1218 features) of features in each split.
 #> Highest % of features excluded in split 'Microglia'.
 #> Excluded between 1.89% (6632 reads) and 21.72% (49437 reads) of reads in each split.
 #> Highest % of reads excluded in split 'Microglia'.
-#> 2026-06-24 23:09:22 : Running DE on 6 matrices..
+#> 2026-06-24 23:24:08 : Running DE on 6 matrices..
 ```
 
 The output is a list containing the following elements:
@@ -213,25 +213,25 @@ function is highly parallelized, so efficiency greatly improves as
 ``` r
 permuteDE_output <- permuteDE(input = runDE_output,
                               n_cores = 2)
-#> 2026-06-24 23:09:22 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..
-#> 2026-06-24 23:09:22 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).
-#> 2026-06-24 23:09:22 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..
-#> 2026-06-24 23:09:22 : Running 70 permutations for split Astrocytes (1/6)..
-#> 2026-06-24 23:09:26 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).
-#> 2026-06-24 23:09:26 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..
-#> 2026-06-24 23:09:26 : Running 70 permutations for split Excitatory Neurons (2/6)..
-#> 2026-06-24 23:09:32 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).
-#> 2026-06-24 23:09:32 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..
-#> 2026-06-24 23:09:32 : Running 70 permutations for split Inhibitory Neurons (3/6)..
-#> 2026-06-24 23:09:38 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).
-#> 2026-06-24 23:09:38 : Generating 70 of 70 possible combinations for split Microglia (4/6)..
-#> 2026-06-24 23:09:38 : Running 70 permutations for split Microglia (4/6)..
-#> 2026-06-24 23:09:41 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).
-#> 2026-06-24 23:09:41 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..
-#> 2026-06-24 23:09:41 : Running 70 permutations for split Oligodendrocytes (5/6)..
-#> 2026-06-24 23:09:44 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).
-#> 2026-06-24 23:09:44 : Generating 70 of 70 possible combinations for split OPCs (6/6)..
-#> 2026-06-24 23:09:44 : Running 70 permutations for split OPCs (6/6)..
+#> 2026-06-24 23:24:09 : Differential expression results for group WT vs. Tg across 6 pseudobulk matrices..
+#> 2026-06-24 23:24:09 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Astrocytes (1/6).
+#> 2026-06-24 23:24:09 : Generating 70 of 70 possible combinations for split Astrocytes (1/6)..
+#> 2026-06-24 23:24:09 : Running 70 permutations for split Astrocytes (1/6)..
+#> 2026-06-24 23:24:12 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Excitatory Neurons (2/6).
+#> 2026-06-24 23:24:12 : Generating 70 of 70 possible combinations for split Excitatory Neurons (2/6)..
+#> 2026-06-24 23:24:12 : Running 70 permutations for split Excitatory Neurons (2/6)..
+#> 2026-06-24 23:24:18 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Inhibitory Neurons (3/6).
+#> 2026-06-24 23:24:18 : Generating 70 of 70 possible combinations for split Inhibitory Neurons (3/6)..
+#> 2026-06-24 23:24:18 : Running 70 permutations for split Inhibitory Neurons (3/6)..
+#> 2026-06-24 23:24:24 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Microglia (4/6).
+#> 2026-06-24 23:24:24 : Generating 70 of 70 possible combinations for split Microglia (4/6)..
+#> 2026-06-24 23:24:24 : Running 70 permutations for split Microglia (4/6)..
+#> 2026-06-24 23:24:27 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split Oligodendrocytes (5/6).
+#> 2026-06-24 23:24:27 : Generating 70 of 70 possible combinations for split Oligodendrocytes (5/6)..
+#> 2026-06-24 23:24:27 : Running 70 permutations for split Oligodendrocytes (5/6)..
+#> 2026-06-24 23:24:30 : Input 1000 for parameter 'n_combinations' exceeds the number of possible combinations 70. Only 70 combinations will be generated for split OPCs (6/6).
+#> 2026-06-24 23:24:30 : Generating 70 of 70 possible combinations for split OPCs (6/6)..
+#> 2026-06-24 23:24:30 : Running 70 permutations for split OPCs (6/6)..
 ```
 
 The output is a list containing the following elements:
