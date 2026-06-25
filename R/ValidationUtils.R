@@ -116,9 +116,9 @@
       if (!("group_key" %in% names(input$metadata))) {
         stop("Structure of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. Element 'metadata' must contain a dataframe under name 'group_key'. Please supply valid input!")
       }
-      required_parameters <- c("reference_group", "non_reference_group", "design_formula", "de_method", "de_test", "de_params", "p_adjust_method", "pseudobulk")
+      required_parameters <- c("reference_group", "non_reference_group", "design", "de_method", "de_test", "de_params", "p_adjust_method", "pseudobulk")
       if (!all(required_parameters %in% names(input$parameters))) {
-        stop("Structure of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. Element 'parameters' must be a list containing a minimal set of named elements ('reference_group', 'non_reference_group', 'design_formula', 'de_method', 'de_test', 'de_params', 'p_adjust_method', 'pseudobulk'). Please supply valid input!")
+        stop("Structure of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. Element 'parameters' must be a list containing a minimal set of named elements ('reference_group', 'non_reference_group', 'design', 'de_method', 'de_test', 'de_params', 'p_adjust_method', 'pseudobulk'). Please supply valid input!")
       }
       if (length(input$parameters$reference_group) != 1 || length(input$parameters$non_reference_group) != 1) {
         stop("Content of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. The reference/non-reference groups provided under element 'parameters' must be single values. Please supply valid input!")
@@ -128,24 +128,6 @@
       }
       if (!(input$parameters$non_reference_group %in% input$metadata$group_key[, "group"])) {
         stop("Content of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. The non-reference group provided under element 'parameters' was not found within the 'group_key' provided under element 'metadata'. Please supply valid input!")
-      }
-      if (!is.null(input$parameters$design_formula)) {
-        if (!methods::is(input$parameters$design_formula, "formula")) {
-          stop("Content of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. The 'design_formula' provided under element 'parameters' must be of class 'formula'. Please supply valid input!")
-        }
-        terms <- attr(terms(input$parameters$design_formula), "term.labels")
-        if (any(grepl("group:", terms) | grepl(":group", terms))) {
-          stop("Content of list provided for parameter 'input' is unexpected. The terms within the 'design_formula' provided under element 'parameters' include interaction term(s) that involve the primary comparison groups to be permuted. The 'permuteDE()' function is not compatible with these interaction terms. Please supply valid input!")
-        }
-        terms <- unique(unlist(strsplit(terms, ":", fixed = TRUE)))
-        if (!all(terms %in% colnames(input$metadata$group_key))) {
-          stop("Content of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. The terms within the 'design_formula' provided under element 'parameters' must correspond to the column names of dataframe 'group_key' provided under element 'metadata'. Please supply valid input!")
-        }
-        for (t in terms) {
-          if (any(is.na(input$metadata$group_key[, t]))) {
-            stop("Content of list provided for parameter 'input' is unexpected. It should be the output returned by function 'runDE()' or a list following the same structure. Dataframe 'group_key' provided under element 'metadata' cannot contain NA values. Please supply valid input!")
-          }
-        }
       }
     }
     # For plots

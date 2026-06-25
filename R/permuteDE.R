@@ -154,7 +154,7 @@ permuteDE <- function(input,
   # Fetch values
   reference_group <- input$parameters$reference_group
   non_reference_group <- input$parameters$non_reference_group
-  design_formula <- input$parameters$design_formula
+  design <- input$parameters$design
   de_method <- input$parameters$de_method
   de_test <- input$parameters$de_test
   de_params <- input$parameters$de_params
@@ -194,8 +194,12 @@ permuteDE <- function(input,
               len = 1)
 
   # Set design formula
-  if (is.null(design_formula)) {
-    design_formula <- stats::as.formula("~ group")
+  if (is.null(design)) {
+    design_formula <- stats::as.formula("~ group", env = baseenv())
+  } else {
+    terms <- attr(stats::terms(stats::as.formula(design, env = baseenv())), "term.labels")
+    terms[length(terms)] <- "group"
+    design_formula <- stats::as.formula(paste("~", paste(terms, collapse = " + ")), env = baseenv())
   }
 
   # Additional validation

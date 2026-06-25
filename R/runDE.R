@@ -419,7 +419,9 @@ runDE <- function(object,
   if (!is.null(design)) {
     # Replace last term of design formula string with "group"
     # Convert to formula and extract terms
-    design_formula <- stats::as.formula(sub(" [^ ]+$", " group", design))
+    terms <- attr(stats::terms(stats::as.formula(design, env = baseenv())), "term.labels")
+    terms[length(terms)] <- "group"
+    design_formula <- stats::as.formula(paste("~", paste(terms, collapse = " + ")), env = baseenv())
     terms <- attr(terms(design_formula), "term.labels")
     # Remove last term (because that's refers to groups, so it's already in group_key)
     terms <- terms[-length(terms)]
@@ -448,7 +450,7 @@ runDE <- function(object,
       }
     }
   } else {
-    design_formula <- stats::as.formula("~ group")
+    design_formula <- stats::as.formula("~ group", env = baseenv())
   }
 
   group_key <- group_key |>
@@ -826,7 +828,6 @@ runDE <- function(object,
                          "reference_group" = reference_group,
                          "non_reference_group" = non_reference_group,
                          "design" = design,
-                         "design_formula" = design_formula,
                          "use_cells" = use_cells,
                          "pseudobulk" = pseudobulk,
                          "de_method" = de_method,

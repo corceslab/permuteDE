@@ -740,15 +740,6 @@ testCase.runDE <- function(input,
   expect_equal(output$parameters$de_test, de_test)
   expect_equal(output$parameters$pseudobulk, pseudobulk)
 
-  expect_s3_class(output$parameters$design_formula, "formula")
-  expected_design_formula <- if (is.null(design)) {
-    stats::as.formula("~ group")
-  } else {
-    stats::as.formula(sub(" [^ ]+$", " group", design))
-  }
-  expect_equal(paste(deparse(output$parameters$design_formula), collapse = ""),
-               paste(deparse(expected_design_formula), collapse = ""))
-
   return(output)
 }
 
