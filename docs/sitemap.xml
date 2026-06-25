@@ -9,8 +9,11 @@
 <url><loc>/news/index.html</loc></url>
 <url><loc>/reference/countCombinations.html</loc></url>
 <url><loc>/reference/getCombinations.html</loc></url>
+<url><loc>/reference/getHistograms.html</loc></url>
 <url><loc>/reference/getPseudobulk.html</loc></url>
+<url><loc>/reference/getVolcanos.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/palette_permuteDE.html</loc></url>
 <url><loc>/reference/permuteDE.html</loc></url>
 <url><loc>/reference/permuteDEpalette.html</loc></url>
 <url><loc>/reference/permuteDEtheme.html</loc></url>
@@ -21,5 +24,6 @@
 <url><loc>/reference/plotVolcano.html</loc></url>
 <url><loc>/reference/runDE.html</loc></url>
 <url><loc>/reference/sample_data.html</loc></url>
+<url><loc>/reference/theme_permuteDE.html</loc></url>
 </urlset>
 
