@@ -1,0 +1,106 @@
+  
+[![](reference/figures/logo.png)](%3CLINK%3E)
+
+**permuteDE** is an R package intended to help users assess which
+differential expression comparisons can be trusted and which should be
+met with skepticism.
+
+Differential expression analyses are susceptible to false positives, and
+it can be difficult to prioritize the most robust results for further
+study. permuteDE uses permutation testing to identify which comparisons
+have a higher number of significant differentially expressed features
+than would be expected by chance.
+
+  
+
+## Installation
+
+permuteDE is designed to be run on Unix-based operating systems such as
+macOS and linux.
+
+permuteDE installation currently requires `remotes` and `BiocManager`
+for installation of GitHub and Bioconductor packages. Run the following
+commands to install the various dependencies used by permuteDE:
+
+First, install remotes (for installing GitHub packages) if it isn’t
+already installed:
+
+    if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+
+Then, install BiocManager (for installing bioconductor packages) if it
+isn’t already installed:
+
+    if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+Then, install permuteDE:
+
+    remotes::install_github("corceslab/permuteDE", ref="main", repos = BiocManager::repositories(), upgrade = "never")
+
+Notes:
+
+- Installation should complete in under 2 minutes.
+- This package is supported for macOS and Linux.
+- Package dependencies can be found in the “DESCRIPTION” file.
+
+## Usage
+
+Please see the
+[tutorial](https://www.permuteDE.com/articles/permuteDE.html). It takes
+less than 10 minutes to run on a standard laptop.
+
+## How permuteDE works
+
+permuteDE takes as input a Seurat object, SingleCellExperiment object,
+or matrix. permuteDE enables the user to run several different methods
+for differential expression analysis using the
+[`runDE()`](reference/runDE.md) function. We encourage users to run
+pseudobulk differential expression methods to decrease the number of
+likely false positives, but permuteDE is also compatible with cell-level
+tests.
+
+These results are then passed to the
+[`permuteDE()`](reference/permuteDE.md) function. Across a number of
+iterations, permuteDE shuffles the group labels for a given set of
+replicates and then performs pseudobulk differential expression between
+those permuted groups. The metric used by the permutation test is the
+number of significantly differentially expressed features for the true
+group comparison vs. the comparisons that use permuted group labels.
+
+See the [tutorial](https://www.permuteDE.com/articles/permuteDE.html)
+for further details.
+
+------------------------------------------------------------------------
+
+[![](reference/figures/CorcesLab_logo.png)](https://www.corceslab.com/)
+
+permuteDE is developed and maintained by the [Corces
+Lab](https://www.corceslab.com/) at the Gladstone Institutes.
+
+# Package index
+
+## All functions
+
+- [`countCombinations()`](countCombinations.md) : Calculate the number
+  of possible group combinations
+- [`getCombinations()`](getCombinations.md) : Generate combinations
+- [`getPseudobulk()`](getPseudobulk.md) : Calculate pseudobulk values
+- [`permuteDE()`](permuteDE.md) : Perform permutation test
+- [`permuteDEpalette()`](permuteDEpalette.md) : Generate color palette
+- [`permuteDEtheme()`](permuteDEtheme.md) : permuteDE ggplot theme
+- [`plotDimReduction()`](plotDimReduction.md) : Plot dimensionality
+  reduction
+- [`plotFeature()`](plotFeature.md) : Plot levels of a single feature
+  across groups
+- [`plotHistogram()`](plotHistogram.md) : Generate histogram plot(s) of
+  permutation test results
+- [`plotVolcano()`](plotVolcano.md) : Generate volcano plot(s) from
+  differential expression results
+- [`runDE()`](runDE.md) : Run differential expression analysis to
+  compare two groups
+- [`sample_data`](sample_data.md) : Sample dataset: sample_data
+
+# Articles
+
+### All vignettes
+
+- [permuteDE](permuteDE.md):
